@@ -1,4 +1,4 @@
-# Mariseth360
+# Mariseth Farms
 
 ## Features
 - **User Accounts Management**: Create and manage user accounts with role-based access control.
@@ -16,7 +16,7 @@
 ### Installation
 1. Clone the repository:
    ```bash
-   git clone git@github.com:premiertechlab/mariseth-backend.git
+   git clone git@github.com:/mariseth-backend.git
    cd mariseth-backend
    ```
 
