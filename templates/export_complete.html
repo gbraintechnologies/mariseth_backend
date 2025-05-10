@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Export Complete - ShareDirect-360{% endblock %}
+
+{% block header %}
+<h2>Your Export is Ready!</h2>
+{% endblock %}
+
+{% block content %}
+<p>Your {{ export_type }} export has been completed and is ready for download.</p>
+
+<div style="text-align: center;">
+    <a href="{{ file_url }}" class="button">Download Export</a>
+</div>
+
+{% endblock %}

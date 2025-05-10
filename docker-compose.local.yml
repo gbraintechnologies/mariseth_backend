@@ -1,0 +1,94 @@
+
+volumes:
+  redis_data:
+  postgres_data:
+  elastic_search_data:
+networks:
+  app_network:
+    driver: bridge
+
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - ./.env
+    environment:
+      - SERVICE_TYPE=web
+      - ENVIRONMENT=local
+    networks:
+      - app_network
+
+  db:
+    image: postgres:14
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5437:${DB_PORT}"
+    volumes:
+      - 'postgres_data:/var/lib/postgresql/data'
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app_network
+
+
+  redis:
+    image: "redis:latest"
+    volumes:
+      - 'redis_data:/data'
+    ports:
+      - "6379:6379"
+    networks:
+      - app_network
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 10s
+      retries: 3
+
+  celery:
+    build: .
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+      - redis
+    env_file:
+      - ./.env
+    networks:
+      - app_network
+    environment:
+      - SERVICE_TYPE=celery
+      - ENVIRONMENT=local
+    command: celery -A mariseth worker -l info -Q local
+
+
+  celery-beat:
+    build: .
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+      - redis
+    env_file:
+      - ./.env
+    networks:
+      - app_network
+    environment:
+      - SERVICE_TYPE=celery-beat
+      - ENVIRONMENT=local
+    command: celery -A mariseth beat -l info

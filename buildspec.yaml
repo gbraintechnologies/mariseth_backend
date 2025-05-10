@@ -1,0 +1,33 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - echo "Logging into ECR..."
+      - set -e
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_REPO_URI
+      - echo "Fetching .env file from S3..."
+      - aws s3 cp s3://premier-app-management/$APP_NAME/$APP_TYPE/$ENVIRONMENT/.env .env
+      - echo "Successfully fetched .env file:"
+
+  build:
+    commands:
+      - echo "Building Docker image..."
+      - set -e
+      - docker build --build-arg ENV_FILE=.env -f $DOCKERFILE_PATH -t $ECR_REPO_URI:$CODEBUILD_RESOLVED_SOURCE_VERSION .
+      - docker tag $ECR_REPO_URI:$CODEBUILD_RESOLVED_SOURCE_VERSION $ECR_REPO_URI:latest
+
+  post_build:
+    commands:
+      - echo "Pushing Docker image to ECR..."
+      - set -e
+      - docker push $ECR_REPO_URI:$CODEBUILD_RESOLVED_SOURCE_VERSION
+      - docker push $ECR_REPO_URI:latest
+      - echo "Image successfully pushed to ECR."
+      - |
+        if [ -n "${CLUSTER_NAME:-}" ] && [ -n "${SERVICE_NAME:-}" ]; then
+          echo "Deploying to ECS..."
+          aws ecs update-service --cluster "$CLUSTER_NAME" --service "$SERVICE_NAME" --force-new-deployment
+        else
+          echo "Skipping ECS deployment: CLUSTER_NAME or SERVICE_NAME not set."
+        fi

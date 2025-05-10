@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ShareDirect-360{% endblock %}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333333;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f7fa;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .email-wrapper {
+            background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%);
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #0046b5 0%, #00a0e9 100%);
+            padding: 30px 20px;
+            text-align: center;
+            color: white;
+        }
+        .header h2 {
+            margin: 10px 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .logo {
+            max-width: 300px;
+            height: auto;
+        }
+        .content {
+            padding: 40px 30px;
+            background: white;
+        }
+        .message {
+            font-size: 16px;
+            color: #555;
+            margin-bottom: 20px;
+        }
+        .highlight {
+            color: #009245;
+            font-weight: 600;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666666;
+            border-top: 1px solid #eaeaea;
+        }
+        .time-notice {
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+            margin-top: 15px;
+            font-style: italic;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #0046b5 0%, #00a0e9 100%);
+            color: white !important;
+            text-decoration: none;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 70, 181, 0.2);
+        }
+        .alert-box {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 2px dashed #009245;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 25px 0;
+            text-align: center;
+        }
+        .verification-box {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 2px dashed #009245;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 25px 0;
+            text-align: center;
+        }
+        .verification-code {
+            font-family: 'Courier New', monospace;
+            font-size: 32px;
+            font-weight: bold;
+            letter-spacing: 8px;
+            color: #009245;
+            margin: 10px 0;
+            text-shadow: 2px 2px 4px rgba(0, 146, 69, 0.1);
+        }
+        .security-notice {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            font-size: 14px;
+            color: #856404;
+            border-radius: 0 8px 8px 0;
+        }
+        {% block extra_styles %}{% endblock %}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="email-wrapper">
+            <div class="header">
+                <img src="" alt="" class="logo">
+                {% block header %}{% endblock %}
+            </div>
+
+            <div class="content">
+                <div class="message">
+                    Hello <span class="highlight">{{ user_fullname }}</span>,
+                </div>
+                {% block content %}{% endblock %}
+            </div>
+
+            <div class="footer">
+                {% block footer %}
+                <p>This is an automated message sent to {{ user_email }}</p>
+                <p>&copy; {% now "Y" %} ShareDirect-360</p>
+                <p>Please do not reply to this email.</p>
+                {% endblock %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>
