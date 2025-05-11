@@ -7,6 +7,8 @@ from celery import shared_task
 from django.contrib.auth import get_user_model
 from django.db.models import Q
 
+from apps.credit.models import Credit
+from apps.credit.serializers.credits import CreditExportSerializer
 from apps.farm.models import Farm, Farmer, Product
 from apps.farm.serializers.farm import FarmExportSerializer
 from apps.farm.serializers.farmer import FarmerExportSerializer
@@ -403,3 +405,86 @@ def process_farmer_export(filter_params):
     except Exception as e:
         sentry_sdk.capture_exception(e)
         logger.error(f"Farmer export failed: {str(e)}")
+
+
+@shared_task
+def process_credit_export(filter_params):
+    try:
+        user = User.objects.get(pk=filter_params['user_id'])
+        organization = Organization.objects.get(pk=filter_params['organization_id'])
+        query = filter_params.get('query')
+        payment_status = filter_params.get('payment_status')
+        input_type = filter_params.get('input_type')
+        date_from = filter_params.get('date_from')
+        date_to = filter_params.get('date_to')
+        filter_q = Q(is_active=True, organization=organization)
+        if query:
+            filter_q &= (
+                    Q(id__icontains=query) |
+                    Q(farmer__first_name__icontains=query) |
+                    Q(farmer__last_name__icontains=query)
+            )
+        if payment_status:
+            filter_q &= Q(payment_status=payment_status.lower())
+        if input_type:
+            filter_q &= Q(type=input_type.lower())
+        if date_from and date_to:
+            filter_q &= Q(issue_date__range=[date_from, date_to])
+        credits = Credit.objects.select_related('farmer').filter(filter_q).order_by('-issue_date')
+        serializer = CreditExportSerializer(credits, many=True)
+        df = pd.DataFrame(serializer.data)
+        column_map = {
+            'id': 'Credit ID',
+            'farmer': 'Farmer',
+            'type': 'Credit Type',
+            'quantity': 'Quantity',
+            'credit_amount': 'Credit Amount',
+            'issue_date': 'Issue Date',
+            'due_date': 'Due Date',
+            'interest_rate': 'Interest Rate (%)',
+            'outstanding_amount': 'Outstanding Amount',
+            'payment_status': 'Payment Status',
+            'approval_status': 'Approval Status',
+            'main_crops': 'Main Crops',
+            'created_by': 'Created By',
+            'date_created': 'Creation Date'
+        }
+        df.rename(columns=column_map, inplace=True)
+        file_name = f"Credits_Export_{datetime.now().strftime('%Y-%m-%d_%H-%M')}.csv"
+        csv_buffer = StringIO()
+        df.to_csv(csv_buffer, index=False)
+        file_data = BytesIO(csv_buffer.getvalue().encode('utf-8'))
+
+        s3_url = upload_to_s3(file_data, file_name)
+        if not s3_url:
+            return
+        group_names = [f'user_{user.id}']
+        message = {
+            "has_permission": True,
+            "results": s3_url,
+            "export_type": "export_credits"
+        }
+        send_client_notification(
+            message=message,
+            message_type="export_complete",
+            group_names=group_names
+        )
+
+        # # Send email notification
+        # template = get_template('export_complete.html')
+        # context = {
+        #     'user_fullname': user.get_full_name(),
+        #     'file_url': s3_url,
+        #     'export_type': 'Credits Data'
+        # }
+        # email_client.send_email(
+        #     sender=f'{organization.name} <{organization.email}>',
+        #     recipients=[user.email],
+        #     subject='Your Credits Export is Ready',
+        #     body_html=template.render(context),
+        #     body_text=f"Download your export: {s3_url}"
+        # )
+
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
+        logger.error(f"Credit export failed: {str(e)}")

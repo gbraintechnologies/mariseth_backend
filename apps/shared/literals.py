@@ -21,10 +21,11 @@ DELETE_ADMIN = 'account_management|delete_admin'
 UPDATE_ADMIN = 'account_management|update_admin'
 
 # FARMS
-CREATE_FARM = 'farm|create_farm'
 UPDATE_FARM = 'farm|update_farm'
+CREATE_FARM = 'farm|create_farm'
 DELETE_FARM = 'farm|delete_farm'
 VIEW_FARM = 'farm|view_farm'
+LIST_FARMS = 'farm|list_farms'
 DELETE_FARM_PRODUCTS = 'farm|delete_farm_products'
 UPLOAD_FARMS = 'farm|upload_farms'
 
@@ -33,6 +34,7 @@ CREATE_FARMER = 'farmer|create_farmer'
 UPDATE_FARMER = 'farmer|update_farmer'
 DELETE_FARMER = 'farmer|delete_farmer'
 VIEW_FARMER = 'farmer|view_farmer'
+LIST_FARMERS = 'farmer|list_farmers'
 UPLOAD_FARMERS = 'farmer|upload_farmers'
 
 # Farmer
@@ -40,7 +42,22 @@ CREATE_PRODUCT = 'product|create_product'
 UPDATE_PRODUCT = 'product|update_product'
 DELETE_PRODUCT = 'product|delete_product'
 VIEW_PRODUCT = 'product|view_product'
+LIST_PRODUCTS = 'product|list_products'
 UPLOAD_PRODUCTS = 'product|upload_products'
+
+# Credits
+CREATE_CREDIT = 'credit|create_credit'
+UPDATE_CREDIT = 'credit|update_credit'
+DELETE_CREDIT = 'credit|delete_credit'
+VIEW_CREDIT = 'credit|view_credit'
+LIST_CREDITS = 'credit|list_credits'
+UPLOAD_CREDITS = 'credit|upload_credits'
+APPROVE_OR_DENY_CREDIT = 'credit|approve_deny_credit'
+
+# PAYBACKS
+CREATE_PAYBACK = 'payback|create_payback'
+UPDATE_PAYBACK = 'payback|update_payback'
+LIST_PAYBACKS = 'payback|list_paybacks'
 
 # custom type
 CREATE_CUSTOM_TYPE = 'shared_custom_types|create_custom_type'

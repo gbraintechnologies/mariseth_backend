@@ -332,8 +332,6 @@ def add_swagger_to_farmer_viewset(viewset_cls):
     return viewset_cls
 
 
-
-
 def add_swagger_to_product_viewset(viewset_cls):
     # Create Product
     viewset_cls.create = swagger_auto_schema(
@@ -407,15 +405,22 @@ def add_swagger_to_product_viewset(viewset_cls):
         ),
         manual_parameters=[
             openapi.Parameter('query', openapi.IN_QUERY, "Search by name or product_id", type=openapi.TYPE_STRING),
-            openapi.Parameter('type', openapi.IN_QUERY, "Filter by product type (e.g., 'crops', 'livestock')", type=openapi.TYPE_STRING),
+            openapi.Parameter('type', openapi.IN_QUERY, "Filter by product type (e.g., 'crops', 'livestock')",
+                              type=openapi.TYPE_STRING),
             openapi.Parameter('category', openapi.IN_QUERY, "Filter by category ID", type=openapi.TYPE_INTEGER),
             openapi.Parameter('status', openapi.IN_QUERY, "Filter by product status", type=openapi.TYPE_STRING),
             openapi.Parameter('season_status', openapi.IN_QUERY, "Filter by season status", type=openapi.TYPE_STRING),
-            openapi.Parameter('date_from', openapi.IN_QUERY, "Filter by creation start date (YYYY-MM-DD)", type=openapi.TYPE_STRING),
-            openapi.Parameter('date_to', openapi.IN_QUERY, "Filter by creation end date (YYYY-MM-DD)", type=openapi.TYPE_STRING),
-            openapi.Parameter('last_updated_from', openapi.IN_QUERY, "Filter by last-updated start date (YYYY-MM-DD)", type=openapi.TYPE_STRING),
-            openapi.Parameter('last_updated_to', openapi.IN_QUERY, "Filter by last-updated end date (YYYY-MM-DD)", type=openapi.TYPE_STRING),
-            openapi.Parameter('export', openapi.IN_QUERY, "Set to 'true' to start export background job (requires `type`)", type=openapi.TYPE_BOOLEAN, default=False),
+            openapi.Parameter('date_from', openapi.IN_QUERY, "Filter by creation start date (YYYY-MM-DD)",
+                              type=openapi.TYPE_STRING),
+            openapi.Parameter('date_to', openapi.IN_QUERY, "Filter by creation end date (YYYY-MM-DD)",
+                              type=openapi.TYPE_STRING),
+            openapi.Parameter('last_updated_from', openapi.IN_QUERY, "Filter by last-updated start date (YYYY-MM-DD)",
+                              type=openapi.TYPE_STRING),
+            openapi.Parameter('last_updated_to', openapi.IN_QUERY, "Filter by last-updated end date (YYYY-MM-DD)",
+                              type=openapi.TYPE_STRING),
+            openapi.Parameter('export', openapi.IN_QUERY,
+                              "Set to 'true' to start export background job (requires `type`)",
+                              type=openapi.TYPE_BOOLEAN, default=False),
             openapi.Parameter('page', openapi.IN_QUERY, "Page number", type=openapi.TYPE_INTEGER, default=1),
             openapi.Parameter('page_size', openapi.IN_QUERY, "Results per page", type=openapi.TYPE_INTEGER, default=10),
         ],
@@ -425,8 +430,10 @@ def add_swagger_to_product_viewset(viewset_cls):
                 schema=openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
-                        'export_response': openapi.Schema(type=openapi.TYPE_STRING, description="Background export initiation message"),
-                        'results': openapi.Schema(type=openapi.TYPE_ARRAY, items=openapi.Items(type=openapi.TYPE_OBJECT)),
+                        'export_response': openapi.Schema(type=openapi.TYPE_STRING,
+                                                          description="Background export initiation message"),
+                        'results': openapi.Schema(type=openapi.TYPE_ARRAY,
+                                                  items=openapi.Items(type=openapi.TYPE_OBJECT)),
                         'pagination': openapi.Schema(
                             type=openapi.TYPE_OBJECT,
                             properties={
@@ -482,11 +489,5 @@ def add_swagger_to_product_viewset(viewset_cls):
     # )(viewset_cls.upload_products)
 
     return viewset_cls
-
-
-
-
-
-
 
 

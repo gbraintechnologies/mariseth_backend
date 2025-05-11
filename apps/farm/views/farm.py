@@ -11,8 +11,9 @@ from apps.farm.models import Farm
 from apps.farm.serializers.farm import FarmDeleteSerializer, FarmProductDeleteSerializer, FarmSerializer, \
     FullFarmSerializer
 from apps.farm.swaagger import add_swagger_to_farm_viewset
-from apps.shared.literals import CREATE_FARM, DELETE_FARM, DELETE_FARM_PRODUCTS, UPDATE_FARM, UPLOAD_FARMS, VIEW_FARM
-from apps.shared.tasks.farm_tasks import process_farm_export
+from apps.shared.literals import CREATE_FARM, DELETE_FARM, DELETE_FARM_PRODUCTS, LIST_FARMS, UPDATE_FARM, UPLOAD_FARMS, \
+    VIEW_FARM
+from apps.shared.tasks.export_tasks import process_farm_export
 from apps.shared.utils.permissions import UserPermission
 
 
@@ -26,7 +27,7 @@ class FarmViewSet(viewsets.GenericViewSet):
             'create': CREATE_FARM,
             'update': UPDATE_FARM,
             'retrieve': VIEW_FARM,
-            'list': VIEW_FARM,
+            'list': LIST_FARMS,
             'destroy': DELETE_FARM,
             'delete_farm_products': DELETE_FARM_PRODUCTS,
             'upload_farms': UPLOAD_FARMS

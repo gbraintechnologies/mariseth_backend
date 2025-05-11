@@ -8,10 +8,27 @@ from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from apps.shared.literals import (ADD_ADMIN, CREATE_CUSTOM_TYPE, CREATE_GROUPS_AND_ROLES,
-                                  CREATE_OR_UPDATE_SETTINGS, DELETE_ADMIN, DELETE_CUSTOM_TYPE, DELETE_GROUPS_AND_ROLES,
-                                  LIST_ADMINS, UPDATE_ADMIN, UPDATE_CUSTOM_TYPE, UPDATE_GROUPS_AND_ROLES,
-                                  VIEW_GROUPS_AND_ROLES)
+from apps.shared.literals import (ADD_ADMIN, APPROVE_OR_DENY_CREDIT, CREATE_CREDIT, CREATE_CUSTOM_TYPE, CREATE_FARM,
+                                  CREATE_FARMER,
+                                  CREATE_GROUPS_AND_ROLES,
+                                  CREATE_OR_UPDATE_SETTINGS, CREATE_PAYBACK, CREATE_PRODUCT, DELETE_ADMIN,
+                                  DELETE_CREDIT,
+                                  DELETE_CUSTOM_TYPE,
+                                  DELETE_FARM,
+                                  DELETE_FARMER, DELETE_FARM_PRODUCTS, DELETE_GROUPS_AND_ROLES,
+                                  DELETE_PRODUCT, LIST_ADMINS, LIST_CREDITS, LIST_FARMERS, LIST_FARMS, LIST_PAYBACKS,
+                                  LIST_PRODUCTS, UPDATE_ADMIN,
+                                  UPDATE_CREDIT,
+                                  UPDATE_CUSTOM_TYPE,
+                                  UPDATE_FARM,
+                                  UPDATE_FARMER,
+                                  UPDATE_GROUPS_AND_ROLES,
+                                  UPDATE_PAYBACK, UPDATE_PRODUCT, UPLOAD_CREDITS, UPLOAD_FARMERS, UPLOAD_FARMS,
+                                  UPLOAD_PRODUCTS,
+                                  VIEW_CREDIT,
+                                  VIEW_GROUPS_AND_ROLES,
+                                  VIEW_FARM,
+                                  VIEW_FARMER, VIEW_PRODUCT, )
 from apps.shared.models import BaseModel
 from apps.shared.overrides import FileNameEngine
 from apps.shared.utils.validators import validate_only_digits
@@ -194,6 +211,41 @@ class User(AbstractUser, BaseModel, PermissionsMixin):
             (UPDATE_CUSTOM_TYPE, 'update custom type'),
             (DELETE_CUSTOM_TYPE, 'delete custom type'),
             (CREATE_OR_UPDATE_SETTINGS, 'create or update settings'),
+
+            # fmrms
+            (CREATE_FARM, 'create a farm'),
+            (UPDATE_FARM, 'update a farm'),
+            (DELETE_FARM, 'delete a farm'),
+            (VIEW_FARM, 'view a farm'),
+            (LIST_FARMS, 'list all farms'),
+            (DELETE_FARM_PRODUCTS, 'remove a product from a farm'),
+            # farms
+            # (UPLOAD_FARMS, ''),
+            (CREATE_FARMER, 'create a farmer'),
+            (UPDATE_FARMER, 'update a farmer'),
+            (DELETE_FARMER, 'delete a farmer'),
+            (LIST_FARMERS, 'list all farmers'),
+            (VIEW_FARMER, 'view a farmer'),
+            # (UPLOAD_FARMERS, ''),
+            # products
+            (CREATE_PRODUCT, 'create a product'),
+            (UPDATE_PRODUCT, 'update a product'),
+            (DELETE_PRODUCT, 'delete a product'),
+            (LIST_PRODUCTS, 'list all products'),
+            (VIEW_PRODUCT, 'view a product'),
+            # (UPLOAD_PRODUCTS, ''),
+            # credit
+            (CREATE_CREDIT, 'create a credit'),
+            (UPDATE_CREDIT, 'update a credit'),
+            (DELETE_CREDIT, 'delete a credit'),
+            (VIEW_CREDIT, 'view a credit'),
+            (LIST_CREDITS, 'list all credits'),
+            # (UPLOAD_CREDITS, ''),
+            (APPROVE_OR_DENY_CREDIT, 'approve or deny credit'),
+            # paybacks
+            (CREATE_PAYBACK, 'create a payback for a credit'),
+            (UPDATE_PAYBACK, 'update a payback for a credit'),
+            (LIST_PAYBACKS, 'list all paybacks'),
         ]
 
     def set_email_verification_code(self):

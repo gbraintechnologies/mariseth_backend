@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'apps.shared.apps.SharedConfig',
     'apps.organizations.apps.OrganizationsConfig',
     'apps.farm.apps.FarmConfig',
+    'apps.credit.apps.CreditConfig',
 ]
 
 MIDDLEWARE = [

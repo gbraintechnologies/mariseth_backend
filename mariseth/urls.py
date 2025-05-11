@@ -1,9 +1,7 @@
-import os
-from django.contrib import admin
-from django.urls import include, path, re_path
-from django.views.generic import RedirectView
 from django.conf import settings
-
+from django.contrib import admin
+from django.urls import include, path
+from django.views.generic import RedirectView
 
 urlpatterns = [
     path('', RedirectView.as_view(url='admin/'), name='redirect-to-admin'),
@@ -11,6 +9,7 @@ urlpatterns = [
     path('api/v1/', include('apps.accounts.urls')),
     path('api/v1/', include('apps.shared.urls')),
     path('api/v1/farm-management/', include('apps.farm.urls')),
+    path('api/v1/', include('apps.credit.urls')),
 ]
 
 if settings.ENVIRONMENT in ['local', 'staging']:

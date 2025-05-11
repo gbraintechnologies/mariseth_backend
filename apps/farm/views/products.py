@@ -11,10 +11,10 @@ from apps.farm.serializers.farm import FarmSerializer
 from apps.farm.serializers.products import FullProductSerializer, ProductSerializer
 from apps.farm.swaagger import add_swagger_to_product_viewset
 from apps.shared.literals import (
-    CREATE_PRODUCT, DELETE_PRODUCT, UPDATE_PRODUCT,
+    CREATE_PRODUCT, DELETE_PRODUCT, LIST_PRODUCTS, UPDATE_PRODUCT,
     UPLOAD_PRODUCTS, VIEW_PRODUCT
 )
-from apps.shared.tasks.farm_tasks import process_product_export
+from apps.shared.tasks.export_tasks import process_product_export
 from apps.shared.utils.permissions import UserPermission
 
 
@@ -28,7 +28,7 @@ class ProductViewSet(viewsets.GenericViewSet):
             'create': CREATE_PRODUCT,
             'update': UPDATE_PRODUCT,
             'retrieve': VIEW_PRODUCT,
-            'list': VIEW_PRODUCT,
+            'list': LIST_PRODUCTS,
             'destroy': DELETE_PRODUCT,
             'upload_products': UPLOAD_PRODUCTS
         }

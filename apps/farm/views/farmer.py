@@ -11,8 +11,8 @@ from apps.farm.serializers.farm import FarmSerializer
 from apps.farm.serializers.farmer import FarmerSerializer, FullFarmerSerializer
 from apps.farm.swaagger import add_swagger_to_farmer_viewset
 from apps.shared.general_response import GENERAL_SUCCESS_RESPONSE
-from apps.shared.literals import CREATE_FARMER, DELETE_FARMER, UPDATE_FARMER, UPLOAD_FARMERS, VIEW_FARMER
-from apps.shared.tasks.farm_tasks import process_farmer_export
+from apps.shared.literals import CREATE_FARMER, DELETE_FARMER, LIST_FARMERS, UPDATE_FARMER, UPLOAD_FARMERS, VIEW_FARMER
+from apps.shared.tasks.export_tasks import process_farmer_export
 from apps.shared.utils.permissions import UserPermission
 
 
@@ -26,7 +26,7 @@ class FarmerViewSet(viewsets.GenericViewSet):
             'create': CREATE_FARMER,
             'update': UPDATE_FARMER,
             'retrieve': VIEW_FARMER,
-            'list': VIEW_FARMER,
+            'list': LIST_FARMERS,
             'destroy': DELETE_FARMER,
             'upload_farmers': UPLOAD_FARMERS
         }

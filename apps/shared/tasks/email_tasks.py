@@ -50,3 +50,18 @@ def send_verification_email(verification_code, template_name, user):
         logger.error(f"Error sending verification email: {str(e)}")
         raise
 
+from django.utils import timezone
+
+from apps.credit.models import Credit
+from mariseth.celery import app
+
+
+@app.task(bind=True)
+def update_overdue_credits(self) -> None:
+    print("------Updating overdue credits-----")
+    today = timezone.localdate()
+    updates = Credit.objects.filter(
+        due_date__lt=today,
+        payment_status__in=['active', 'partial']
+    ).update(payment_status='overdue')
+    print(f"------Overdue credits updated-----")
