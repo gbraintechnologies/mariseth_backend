@@ -67,6 +67,7 @@ class CreditViewSet(viewsets.GenericViewSet):
         page_size = request.query_params.get('page_size', 10)
         query = request.query_params.get('query')
         payment_status = request.query_params.get('payment_status')
+        farmer = request.query_params.get('farmer')
         input_type = request.query_params.get('input_type')
         date_from = request.query_params.get('date_from')
         date_to = request.query_params.get('date_to')
@@ -90,7 +91,10 @@ class CreditViewSet(viewsets.GenericViewSet):
         if date_from and date_to:
             filter_q &= Q(issue_date__range=[date_from, date_to])
 
-        credits = Credit.objects.select_related('farmer').filter(filter_q).order_by('-issue_date')
+        if farmer:
+            filter_q &= Q(farmer__id=farmer)
+
+        queryset = Credit.objects.select_related('farmer').filter(filter_q).order_by('-issue_date')
 
         export_response = None
         if export == 'true':
@@ -106,14 +110,14 @@ class CreditViewSet(viewsets.GenericViewSet):
             process_credit_export.delay(filter_params)
             export_response = 'Export started. You will receive a notification when it is done.'
 
-        paginator = Paginator(credits, page_size)
+        paginator = Paginator(queryset, page_size)
         page_obj = paginator.get_page(page)
 
         return Response({
             'export_response': export_response,
             'results': FullCreditSerializer(page_obj.object_list, many=True).data,
             'pagination': {
-                'total': credits.count(),
+                'total': queryset.count(),
                 'page': page_obj.number,
                 'pages': paginator.num_pages,
                 'has_next': page_obj.has_next(),
