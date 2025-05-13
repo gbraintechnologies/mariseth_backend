@@ -59,6 +59,20 @@ CREATE_PAYBACK = 'payback|create_payback'
 UPDATE_PAYBACK = 'payback|update_payback'
 LIST_PAYBACKS = 'payback|list_paybacks'
 
+# warehouse
+CREATE_WAREHOUSE = 'warehouse|create_warehouse'
+UPDATE_WAREHOUSE = 'warehouse|update_warehouse'
+DELETE_WAREHOUSE = 'warehouse|delete_warehouse'
+VIEW_WAREHOUSE = 'warehouse|view_warehouse'
+LIST_WAREHOUSES = 'warehouse|list_warehouses'
+UPLOAD_WAREHOUSES = 'warehouse|upload_warehouses'
+
+# Customers
+CREATE_CUSTOMER = 'create_customer'
+UPDATE_CUSTOMER = 'update_customer'
+DELETE_CUSTOMER = 'delete_customer'
+LIST_CUSTOMERS = 'list_customers'
+
 # custom type
 CREATE_CUSTOM_TYPE = 'shared_custom_types|create_custom_type'
 UPDATE_CUSTOM_TYPE = 'shared_custom_types|update_custom_type'

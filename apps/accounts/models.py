@@ -8,27 +8,22 @@ from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from apps.shared.literals import (ADD_ADMIN, APPROVE_OR_DENY_CREDIT, CREATE_CREDIT, CREATE_CUSTOM_TYPE, CREATE_FARM,
-                                  CREATE_FARMER,
-                                  CREATE_GROUPS_AND_ROLES,
-                                  CREATE_OR_UPDATE_SETTINGS, CREATE_PAYBACK, CREATE_PRODUCT, DELETE_ADMIN,
-                                  DELETE_CREDIT,
+from apps.shared.literals import (ADD_ADMIN, APPROVE_OR_DENY_CREDIT, CREATE_CREDIT, CREATE_CUSTOMER, CREATE_CUSTOM_TYPE,
+                                  CREATE_FARM,
+                                  CREATE_FARMER, CREATE_GROUPS_AND_ROLES, CREATE_OR_UPDATE_SETTINGS, CREATE_PAYBACK,
+                                  CREATE_PRODUCT, CREATE_WAREHOUSE, DELETE_ADMIN, DELETE_CREDIT, DELETE_CUSTOMER,
                                   DELETE_CUSTOM_TYPE,
                                   DELETE_FARM,
-                                  DELETE_FARMER, DELETE_FARM_PRODUCTS, DELETE_GROUPS_AND_ROLES,
-                                  DELETE_PRODUCT, LIST_ADMINS, LIST_CREDITS, LIST_FARMERS, LIST_FARMS, LIST_PAYBACKS,
-                                  LIST_PRODUCTS, UPDATE_ADMIN,
-                                  UPDATE_CREDIT,
-                                  UPDATE_CUSTOM_TYPE,
+                                  DELETE_FARMER, DELETE_FARM_PRODUCTS, DELETE_GROUPS_AND_ROLES, DELETE_PRODUCT,
+                                  DELETE_WAREHOUSE, LIST_ADMINS, LIST_CREDITS, LIST_CUSTOMERS, LIST_FARMERS, LIST_FARMS,
+                                  LIST_PAYBACKS,
+                                  LIST_PRODUCTS,
+                                  LIST_WAREHOUSES, UPDATE_ADMIN, UPDATE_CREDIT, UPDATE_CUSTOMER, UPDATE_CUSTOM_TYPE,
                                   UPDATE_FARM,
                                   UPDATE_FARMER,
-                                  UPDATE_GROUPS_AND_ROLES,
-                                  UPDATE_PAYBACK, UPDATE_PRODUCT, UPLOAD_CREDITS, UPLOAD_FARMERS, UPLOAD_FARMS,
-                                  UPLOAD_PRODUCTS,
-                                  VIEW_CREDIT,
-                                  VIEW_GROUPS_AND_ROLES,
-                                  VIEW_FARM,
-                                  VIEW_FARMER, VIEW_PRODUCT, )
+                                  UPDATE_GROUPS_AND_ROLES, UPDATE_PAYBACK, UPDATE_PRODUCT, UPDATE_WAREHOUSE,
+                                  UPLOAD_WAREHOUSES, VIEW_CREDIT, VIEW_FARM,
+                                  VIEW_FARMER, VIEW_GROUPS_AND_ROLES, VIEW_PRODUCT, VIEW_WAREHOUSE)
 from apps.shared.models import BaseModel
 from apps.shared.overrides import FileNameEngine
 from apps.shared.utils.validators import validate_only_digits
@@ -246,6 +241,20 @@ class User(AbstractUser, BaseModel, PermissionsMixin):
             (CREATE_PAYBACK, 'create a payback for a credit'),
             (UPDATE_PAYBACK, 'update a payback for a credit'),
             (LIST_PAYBACKS, 'list all paybacks'),
+
+            # warehouse
+            (CREATE_WAREHOUSE, 'create a warehouse'),
+            (UPDATE_WAREHOUSE, 'update a warehouse'),
+            (DELETE_WAREHOUSE, 'delete a warehouse'),
+            (VIEW_WAREHOUSE, 'view a warehouse'),
+            (LIST_WAREHOUSES, 'list all warehouses'),
+            (UPLOAD_WAREHOUSES, 'upload warehouses'),
+
+            # customers
+            (CREATE_CUSTOMER, 'create a customer'),
+            (UPDATE_CUSTOMER, 'update a customer'),
+            (DELETE_CUSTOMER, 'delete a customer'),
+            (LIST_CUSTOMERS, 'list all customers'),
         ]
 
     def set_email_verification_code(self):

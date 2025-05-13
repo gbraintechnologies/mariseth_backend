@@ -37,6 +37,8 @@ INSTALLED_APPS = [
     'apps.organizations.apps.OrganizationsConfig',
     'apps.farm.apps.FarmConfig',
     'apps.credit.apps.CreditConfig',
+    'apps.customers.apps.CustomersConfig',
+    'apps.warehouse.apps.WarehouseConfig',
 ]
 
 MIDDLEWARE = [

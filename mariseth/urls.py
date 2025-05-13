@@ -10,6 +10,8 @@ urlpatterns = [
     path('api/v1/', include('apps.shared.urls')),
     path('api/v1/farm-management/', include('apps.farm.urls')),
     path('api/v1/', include('apps.credit.urls')),
+    path('api/v1/', include('apps.customers.urls')),
+    path('api/v1/', include('apps.warehouse.urls')),
 ]
 
 if settings.ENVIRONMENT in ['local', 'staging']:
