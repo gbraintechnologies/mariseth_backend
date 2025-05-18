@@ -1,3 +1,5 @@
+
+
 import random
 
 from django.contrib.auth.models import AbstractUser, Permission, PermissionsMixin, UserManager
@@ -6,24 +8,18 @@ from django.core.validators import MinLengthValidator
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
-from django.utils.translation import gettext_lazy as _
 
-from apps.shared.literals import (ADD_ADMIN, APPROVE_OR_DENY_CREDIT, CREATE_CREDIT, CREATE_CUSTOMER, CREATE_CUSTOM_TYPE,
-                                  CREATE_FARM,
-                                  CREATE_FARMER, CREATE_GROUPS_AND_ROLES, CREATE_OR_UPDATE_SETTINGS, CREATE_PAYBACK,
-                                  CREATE_PRODUCT, CREATE_WAREHOUSE, DELETE_ADMIN, DELETE_CREDIT, DELETE_CUSTOMER,
-                                  DELETE_CUSTOM_TYPE,
-                                  DELETE_FARM,
-                                  DELETE_FARMER, DELETE_FARM_PRODUCTS, DELETE_GROUPS_AND_ROLES, DELETE_PRODUCT,
-                                  DELETE_WAREHOUSE, LIST_ADMINS, LIST_CREDITS, LIST_CUSTOMERS, LIST_FARMERS, LIST_FARMS,
-                                  LIST_PAYBACKS,
-                                  LIST_PRODUCTS,
-                                  LIST_WAREHOUSES, UPDATE_ADMIN, UPDATE_CREDIT, UPDATE_CUSTOMER, UPDATE_CUSTOM_TYPE,
-                                  UPDATE_FARM,
-                                  UPDATE_FARMER,
-                                  UPDATE_GROUPS_AND_ROLES, UPDATE_PAYBACK, UPDATE_PRODUCT, UPDATE_WAREHOUSE,
-                                  UPLOAD_WAREHOUSES, VIEW_CREDIT, VIEW_FARM,
-                                  VIEW_FARMER, VIEW_GROUPS_AND_ROLES, VIEW_PRODUCT, VIEW_WAREHOUSE)
+from apps.shared.literals import (
+    ADD_ADMIN, APPROVE_INFLOW_DELIVERY_INSPECTION, APPROVE_INFLOW_ORDER, APPROVE_OR_DENY_CREDIT, CREATE_CREDIT,
+    CREATE_CUSTOMER, CREATE_CUSTOM_TYPE, CREATE_FARM, CREATE_FARMER, CREATE_GROUPS_AND_ROLES, CREATE_INFLOW_ORDER,
+    CREATE_OR_UPDATE_SETTINGS, CREATE_PAYBACK, CREATE_PRODUCT, CREATE_WAREHOUSE, DELETE_ADMIN, DELETE_CREDIT,
+    DELETE_CUSTOMER, DELETE_CUSTOM_TYPE, DELETE_FARM, DELETE_FARMER, DELETE_FARM_PRODUCTS, DELETE_GROUPS_AND_ROLES,
+    DELETE_INFLOW_ORDER, DELETE_PRODUCT, DELETE_WAREHOUSE, LIST_ADMINS, LIST_CREDITS, LIST_CUSTOMERS,
+    LIST_FARMERS, LIST_FARMS, LIST_INFLOW_ORDERS, LIST_PAYBACKS, LIST_PRODUCTS, LIST_WAREHOUSES, UPDATE_ADMIN,
+    UPDATE_CREDIT, UPDATE_CUSTOMER, UPDATE_CUSTOM_TYPE, UPDATE_FARM, UPDATE_FARMER, UPDATE_GROUPS_AND_ROLES,
+    UPDATE_INFLOW_ORDER, UPDATE_PAYBACK, UPDATE_PRODUCT, UPDATE_WAREHOUSE, UPLOAD_WAREHOUSES, VIEW_CREDIT,
+    VIEW_FARM, VIEW_FARMER, VIEW_GROUPS_AND_ROLES, VIEW_INFLOW_ORDER, VIEW_PRODUCT, VIEW_WAREHOUSE
+)
 from apps.shared.models import BaseModel
 from apps.shared.overrides import FileNameEngine
 from apps.shared.utils.validators import validate_only_digits
@@ -176,9 +172,9 @@ class User(AbstractUser, BaseModel, PermissionsMixin):
 
     groups = models.ManyToManyField(
         AppGroup,
-        verbose_name=_("groups"),
+        verbose_name=("groups"),
         blank=True,
-        help_text=_(
+        help_text=(
             "The groups this user belongs to. A user will get all permissions "
             "granted to each of their groups."
         ),
@@ -249,6 +245,15 @@ class User(AbstractUser, BaseModel, PermissionsMixin):
             (VIEW_WAREHOUSE, 'view a warehouse'),
             (LIST_WAREHOUSES, 'list all warehouses'),
             (UPLOAD_WAREHOUSES, 'upload warehouses'),
+
+            # inflow
+            (CREATE_INFLOW_ORDER, 'create an inflow order'),
+            (UPDATE_INFLOW_ORDER, 'update an inflow order'),
+            (DELETE_INFLOW_ORDER, 'delete an inflow order'),
+            (VIEW_INFLOW_ORDER, 'view an inflow order'),
+            (LIST_INFLOW_ORDERS, 'list all inflows orders'),
+            (APPROVE_INFLOW_DELIVERY_INSPECTION, 'approve inflow delivery inspection'),
+            (APPROVE_INFLOW_ORDER, 'approve an inflow order'),
 
             # customers
             (CREATE_CUSTOMER, 'create a customer'),

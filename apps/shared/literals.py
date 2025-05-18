@@ -79,6 +79,15 @@ UPDATE_CUSTOM_TYPE = 'shared_custom_types|update_custom_type'
 DELETE_CUSTOM_TYPE = 'shared_custom_types|delete_custom_type'
 CREATE_OR_UPDATE_SETTINGS = 'shared_app_settings|create_or_update_settings'
 
+# inflow orders
+CREATE_INFLOW_ORDER = 'inflow_orders|create_inflow_order'
+UPDATE_INFLOW_ORDER = 'inflow_orders|update_inflow_order'
+VIEW_INFLOW_ORDER = 'inflow_orders|view_inflow_order'
+DELETE_INFLOW_ORDER = 'inflow_orders|delete_inflow_order'
+LIST_INFLOW_ORDERS = 'inflow_orders|list_inflow_orders'
+APPROVE_INFLOW_DELIVERY_INSPECTION = 'inflow_orders|approve_inflow_delivery_inspection'
+APPROVE_INFLOW_ORDER = 'inflow_orders|approve_inflow_order'
+
 # EVENT TYPES
 CREATE_STRING = 'create'
 UPDATE_FIELD_STRING = 'update_field'

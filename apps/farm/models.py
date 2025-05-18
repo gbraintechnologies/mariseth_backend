@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db import models
+from decimal import Decimal
 
 from apps.shared.literals import DECREASE_QUANTITY_STRING, INCREASE_QUANTITY_STRING, UPDATE_FIELD_STRING
 from apps.shared.models import BaseModel, CustomType
@@ -138,7 +139,7 @@ class Product(BaseModel):
     weight_metric = models.ForeignKey(CustomType, on_delete=models.SET_NULL, null=True, blank=True,
                                       related_name='product_weight_metrics',
                                       limit_choices_to={'category_name': 'weight_metric'})
-    quantity = models.FloatField(null=True, blank=True)
+    quantity = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     quantity_metric = models.ForeignKey(CustomType, on_delete=models.SET_NULL, null=True, blank=True,
                                         related_name='product_quantity_metrics',
                                         limit_choices_to={'category_name': 'quantity_metric'})
@@ -152,6 +153,10 @@ class Product(BaseModel):
 
     def __str__(self):
         return self.name
+
+    def add_quantity(self, quantity):
+        self.quantity = (self.quantity or Decimal(0)) + Decimal(quantity)
+        self.save()
 
 
 class ProductChangeLog(BaseModel):

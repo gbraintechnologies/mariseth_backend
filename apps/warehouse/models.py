@@ -1,12 +1,12 @@
-from django.db import models
 from decimal import Decimal
-# Create your models here.
-# TODO: MAKE SURE TO UPDATE THE PRODUCT QUANTITY IN THE WAREHOUSE AND THE OVERALL PRODUCT TABLE
 
-from django.db import models
 from django.contrib.auth import get_user_model
+from django.db import models
 
 from apps.shared.models import BaseModel
+
+# Create your models here.
+# TODO: MAKE SURE TO UPDATE THE PRODUCT QUANTITY IN THE WAREHOUSE AND THE OVERALL PRODUCT TABLE
 
 User = get_user_model()
 
@@ -43,17 +43,17 @@ class WarehouseProduct(BaseModel):
     def __str__(self):
         return f"{self.product.name} in {self.warehouse.name}: {self.quantity} bags"
 
-    def add_stock(self, quantity: int, weight: int):
+    def add_stock(self, quantity: int):
         """Handle inflow of products"""
-        self.quantity -= Decimal(quantity)
-        self.weight -= Decimal(weight)
+        self.quantity = (self.quantity or Decimal(0)) + Decimal(quantity)
+        self.weight = (self.weight or Decimal(0)) + (Decimal(quantity) * Decimal(self.product.weight))
         self.save()
 
-    def remove_stock(self, quantity: int, weight: int):
+    def remove_stock(self, quantity: int):
         """Handle outflow of products"""
-        if self.quantity >= quantity and self.weight >= weight:
-            self.quantity += Decimal(quantity)
-            self.weight += Decimal(weight)
+        if self.quantity >= quantity:
+            self.quantity -= Decimal(quantity)
+            self.weight = (self.weight or Decimal(0)) - (Decimal(quantity) * Decimal(self.product.weight))
             self.save()
         else:
             raise ValueError("Insufficient stock for this operation")
@@ -71,12 +71,10 @@ class WarehouseProductMovement(BaseModel):
     movement_type = models.CharField(max_length=7, choices=MOVEMENT_CHOICES)
     quantity = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     weight = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
-    date = models.DateTimeField(auto_now_add=True)
-
-    # Future-proof foreign keys (commented out for now)
-    # inflow_order = models.ForeignKey('Inflow', on_delete=models.CASCADE,
-    #                                 null=True, blank=True,
-    #                                 related_name='movements')
+    record_date = models.DateField(null=True, blank=True)
+    inflow_order = models.ForeignKey('inflow.InflowOrder', on_delete=models.CASCADE,
+                                     null=True, blank=True, related_name='movements'
+                                     )
     # outflow_order = models.ForeignKey('Outflow', on_delete=models.CASCADE,
     #                                  null=True, blank=True,
     #                                  related_name='movements')
@@ -89,7 +87,7 @@ class WarehouseProductMovement(BaseModel):
     notes = models.TextField(blank=True)
 
     class Meta:
-        ordering = ['-date']
+        ordering = ['-record_date']
 
-    def __str__(self):
-        return f"{self.movement_type} of {self.quantity} {self.warehouse_product.warehouse}"
+    # def __str__(self):
+    #     return f"{self.movement_type} of {self.quantity} {self.warehouse_product.warehouse}"

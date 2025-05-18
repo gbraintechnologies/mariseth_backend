@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'apps.credit.apps.CreditConfig',
     'apps.customers.apps.CustomersConfig',
     'apps.warehouse.apps.WarehouseConfig',
+    'apps.inflow.apps.InflowConfig',
 ]
 
 MIDDLEWARE = [
