@@ -220,3 +220,6 @@ sentry_sdk.init(
     environment=env('ENVIRONMENT'),
     integrations=[DjangoIntegration()]
 )
+
+EMAIL_PROVIDER = "sendgrid"
+SENDGRID_API_KEY = env("SENDGRID_API_KEY")
