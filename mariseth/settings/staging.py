@@ -5,8 +5,10 @@ from mariseth.settings.base import *
 
 ALLOWED_HOSTS = ['*']
 CSRF_TRUSTED_ORIGINS = [
-    "https://dwg0gwkko0w0kw0ccgogwo0c.135.181.238.146.sslip.io",
+    "http://*",
+    "https://*"
 ]
+CORS_ALLOW_ALL_ORIGINS = True
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 DEBUG = True
@@ -23,4 +25,3 @@ AWS_S3_CUSTOM_DOMAIN = env('AWS_S3_CUSTOM_DOMAIN')
 STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/static/'
 # Media files
 MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/'
-CORS_ALLOW_ALL_ORIGINS = True
