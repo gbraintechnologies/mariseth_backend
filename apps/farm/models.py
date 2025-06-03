@@ -1,6 +1,7 @@
+from decimal import Decimal
+
 from django.contrib.auth import get_user_model
 from django.db import models
-from decimal import Decimal
 
 from apps.shared.literals import DECREASE_QUANTITY_STRING, INCREASE_QUANTITY_STRING, UPDATE_FIELD_STRING
 from apps.shared.models import BaseModel, CustomType
@@ -31,7 +32,7 @@ class Farm(BaseModel):
     district = models.CharField(max_length=100, null=True, blank=True)
     size = models.IntegerField()
     size_metric = models.ForeignKey(CustomType, on_delete=models.SET_NULL, null=True,
-                                    related_name='farm_size_metrics', limit_choices_to={'category_name': 'size_metric'})
+                                    related_name='farm_size_metrics')
     livestock_kept = models.CharField(max_length=255, blank=True, null=True)
     has_access_to_market = models.BooleanField(default=False)
     irrigation = models.BooleanField(default=False, blank=True, null=True)
@@ -132,17 +133,14 @@ class Product(BaseModel):
     product_id = models.CharField(max_length=50, unique=True)
     name = models.CharField(max_length=100)
     category = models.ForeignKey(CustomType, on_delete=models.SET_NULL, null=True, blank=True,
-                                 related_name='product_categories',
-                                 limit_choices_to={'category_name': 'product_category'})
+                                 related_name='product_categories', )
     last_updated = models.DateField(auto_now=True)
     weight = models.FloatField(null=True, blank=True)
     weight_metric = models.ForeignKey(CustomType, on_delete=models.SET_NULL, null=True, blank=True,
-                                      related_name='product_weight_metrics',
-                                      limit_choices_to={'category_name': 'weight_metric'})
+                                      related_name='product_weight_metrics')
     quantity = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     quantity_metric = models.ForeignKey(CustomType, on_delete=models.SET_NULL, null=True, blank=True,
-                                        related_name='product_quantity_metrics',
-                                        limit_choices_to={'category_name': 'quantity_metric'})
+                                        related_name='product_quantity_metrics', )
     type = models.CharField(max_length=20, choices=PRODUCT_TYPE_CHOICES)
     season_status = models.CharField(max_length=10, choices=PRODUCT_SEASON_CHOICES, null=True, blank=True)
     status = models.CharField(max_length=10, choices=PRODUCT_STATUS_CHOICES, default='active')
