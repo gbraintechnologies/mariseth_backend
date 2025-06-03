@@ -1,7 +1,9 @@
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-from apps.shared.serializers.custom_types import CustomTypeSerializer
+
 from apps.shared.serializers.app_settings import AppSettingSerializer
+from apps.shared.serializers.custom_types import CustomTypeSerializer
+from apps.shared.serializers.regions import RegionSerializer
 
 
 def add_swagger_to_custom_type_viewset(viewset_cls):
@@ -154,3 +156,43 @@ def add_swagger_to_app_setting_viewset(view_cls):
 
     return view_cls
 
+
+def add_swagger_to_region_viewset(view_cls):
+    # List all regions
+    view_cls.list = swagger_auto_schema(
+        tags=['Common'],
+        operation_summary="List all regions",
+        operation_description="Retrieve a list of all Ghana regions with their districts",
+        responses={
+            200: openapi.Response(
+                description="List of regions retrieved successfully",
+                schema=RegionSerializer(many=True)
+            )
+        }
+    )(view_cls.list)
+
+    view_cls.retrieve = swagger_auto_schema(
+        tags=['Common'],
+        operation_summary="Retrieve region details",
+        operation_description="Get detailed information about a specific region by its code",
+        responses={
+            200: openapi.Response(
+                description="Region details retrieved successfully",
+                schema=RegionSerializer()
+            ),
+            404: openapi.Response(
+                description="Region not found",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'detail': openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            example="Region with code 'XX' does not exist"
+                        )
+                    }
+                )
+            )
+        }
+    )(view_cls.retrieve)
+
+    return view_cls
