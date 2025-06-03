@@ -107,3 +107,20 @@ class AppSettingLog(BaseModel):
         verbose_name_plural = 'App Setting Logs'
 
 
+
+class Region(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    code = models.CharField(max_length=4, unique=True)
+
+    def __str__(self):
+        return self.name
+
+class District(models.Model):
+    name = models.CharField(max_length=100)
+    region = models.ForeignKey(Region, related_name='districts', on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ('name', 'region')
+
+    def __str__(self):
+        return self.name
