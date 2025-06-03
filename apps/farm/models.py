@@ -29,7 +29,9 @@ class Farm(BaseModel):
     type = models.CharField(max_length=50, null=True, blank=True)
     name = models.CharField(max_length=100, null=True, blank=True)
     location = models.CharField(max_length=255, null=True, blank=True)
-    district = models.CharField(max_length=100, null=True, blank=True)
+    region = models.ForeignKey('shared.Region', related_name='farms', on_delete=models.SET_NULL, null=True, blank=True)
+    district = models.ForeignKey('shared.District', related_name='farms', on_delete=models.SET_NULL, null=True,
+                                 blank=True)
     size = models.IntegerField()
     size_metric = models.ForeignKey(CustomType, on_delete=models.SET_NULL, null=True,
                                     related_name='farm_size_metrics')
@@ -88,7 +90,10 @@ class Farmer(BaseModel):
     email = models.EmailField(null=True, blank=True)
     address = models.CharField(max_length=255, null=True, blank=True)
     village = models.CharField(max_length=100, null=True, blank=True)
-    district = models.CharField(max_length=100, null=True, blank=True)
+    region = models.ForeignKey('shared.Region', related_name='farmers', on_delete=models.SET_NULL, null=True,
+                               blank=True)
+    district = models.ForeignKey('shared.District', related_name='farmers', on_delete=models.SET_NULL, null=True,
+                                 blank=True)
     country = models.CharField(max_length=100, null=True, blank=True)
     farm = models.ForeignKey(Farm, on_delete=models.SET_NULL, null=True, blank=True, related_name='farmers')
     lead_farmer = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True,

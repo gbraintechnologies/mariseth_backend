@@ -3,6 +3,8 @@ from rest_framework import serializers
 from apps.accounts.serializers.users import ShortUserSerializer
 from apps.farm.models import Farm, FarmProduct, Product
 from apps.farm.utils import generate_farm_id
+from apps.shared.models import District, Region
+from apps.shared.serializers.regions import DistrictSerializer, ShortRegionSerializer
 
 
 class ShortFarmSerializer(serializers.ModelSerializer):
@@ -22,11 +24,13 @@ class FarmProductSerializer(serializers.ModelSerializer):
 
 class FarmSerializer(serializers.ModelSerializer):
     products = FarmProductSerializer(many=True)
+    region = serializers.PrimaryKeyRelatedField(queryset=Region.objects.all(), required=False)
+    district = serializers.PrimaryKeyRelatedField(queryset=District.objects.all(), required=False)
 
     class Meta:
         model = Farm
         fields = (
-            'id', 'farm_type', 'type', 'name', 'location', 'district',
+            'id', 'farm_type', 'type', 'name', 'location', 'region', 'district',
             'size', 'size_metric', 'livestock_kept', 'has_access_to_market',
             'irrigation', 'use_of_fertilizers', 'farming_methods', 'provide_training',
             'government_ngo_support', 'specify_support', 'areas_of_assistance',
@@ -35,6 +39,10 @@ class FarmSerializer(serializers.ModelSerializer):
         read_only_fields = ('id',)
 
     def validate(self, data):
+        if data.get('district') and not data.get('region'):
+            raise serializers.ValidationError(
+                {'region': 'Region must be provided when district is specified.'}
+            )
         for field in data.keys():
             if field not in self.Meta.fields:
                 raise serializers.ValidationError({field: "Invalid field."})
@@ -63,11 +71,13 @@ class FarmSerializer(serializers.ModelSerializer):
 class FullFarmSerializer(serializers.ModelSerializer):
     created_by = ShortUserSerializer()
     products = serializers.SerializerMethodField()
+    region = ShortRegionSerializer()
+    district = DistrictSerializer()
 
     class Meta:
         model = Farm
         fields = (
-            'id', 'farm_id', 'farm_type', 'type', 'name', 'location', 'district',
+            'id', 'farm_id', 'farm_type', 'type', 'name', 'location','region', 'district',
             'size', 'size_metric', 'livestock_kept', 'has_access_to_market',
             'irrigation', 'use_of_fertilizers', 'farming_methods', 'provide_training',
             'government_ngo_support', 'specify_support', 'areas_of_assistance',
@@ -126,11 +136,13 @@ class FarmExportSerializer(serializers.ModelSerializer):
     created_by = serializers.SerializerMethodField()
     farmer = serializers.SerializerMethodField()
     date_created = serializers.DateTimeField(format="%d-%m-%Y %H:%M:%S", read_only=True, allow_null=True)
+    region = serializers.StringRelatedField(source='region.name')
+    district = serializers.StringRelatedField(source='district.name')
 
     class Meta:
         model = Farm
         fields = (
-            'farm_id', 'farm_type', 'type', 'name', 'location', 'district',
+            'farm_id', 'farm_type', 'type', 'name', 'location', 'region', 'district',
             'size', 'size_metric', 'livestock_kept', 'has_access_to_market',
             'irrigation', 'use_of_fertilizers', 'farming_methods',
             'provide_training', 'government_ngo_support', 'specify_support',
