@@ -52,10 +52,10 @@ jobs:
         echo "HTTP Status: $http_code"
         echo "Response: $body"
         
-        if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+        if [ "https://app.coolify.io/api/v1/deployments" -ge 200 ] && [ "https://app.coolify.io/api/v1/deployments" -lt 300 ]; then
           echo "✅ Deployment triggered successfully"
         else
-          echo "❌ Deployment failed with status $http_code"
+          echo "❌ Deployment failed with status https://app.coolify.io/api/v1/deployments"
           exit 1
         fi
 
