@@ -18,7 +18,7 @@ class ShortProductSerializer(serializers.ModelSerializer):
 
 class ProductSerializer(serializers.ModelSerializer):
     category = serializers.PrimaryKeyRelatedField(
-        queryset=CustomType.objects.filter(category_name='product_category'),
+        queryset=CustomType.objects.filter(is_active=True),
         required=False,
         allow_null=True
     )
