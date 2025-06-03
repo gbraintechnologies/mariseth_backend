@@ -88,6 +88,23 @@ LIST_INFLOW_ORDERS = 'inflow_orders|list_inflow_orders'
 APPROVE_INFLOW_DELIVERY_INSPECTION = 'inflow_orders|approve_inflow_delivery_inspection'
 APPROVE_INFLOW_ORDER = 'inflow_orders|approve_inflow_order'
 
+# OUTFLOW
+#     SUPPLY CHAIN
+CREATE_OUTFLOW_ORDER = 'outflow_orders|create_outflow_order'
+UPDATE_OUTFLOW_ORDER = 'outflow_orders|update_outflow_order'
+VIEW_OUTFLOW_ORDER = 'outflow_orders|view_outflow_order'
+DELETE_OUTFLOW_ORDER = 'outflow_orders|delete_outflow_order'
+LIST_OUTFLOW_ORDERS = 'outflow_orders|list_outflow_orders'
+MARK_OUTFLOW_DELIVERED = 'outflow_orders|mark_outflow_delivered'
+RECORD_OUTFLOW_PAYMENT = 'outflow_orders|record_outflow_payment'
+MARK_OUTFLOW_COMPLETE = 'outflow_orders|mark_outflow_complete'
+ASSIGN_DELIVERY_INFO = 'outflow_orders|assign_delivery_info'
+#     APPROVALS
+VIEW_OUTFLOW_APPROVAL = 'outflow_approvals|view_outflow_approval'
+VERIFY_OUTFLOW_AVAILABILITY = 'outflow_approvals|verify_outflow_availability'
+MARK_OUTFLOW_ORDER_PICKED = 'outflow_approvals|mark_outflow_order_picked'
+
+
 # EVENT TYPES
 CREATE_STRING = 'create'
 UPDATE_FIELD_STRING = 'update_field'

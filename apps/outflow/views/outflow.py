@@ -1,0 +1,182 @@
+from django.core.paginator import Paginator
+from django.db import transaction
+from django.db.models import Q
+from rest_framework import status, viewsets
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from django.utils import timezone
+
+from apps.outflow.models import OutflowOrder, OutflowOrderWarehouse, OutflowOrderWarehouseProduct
+from apps.outflow.serializers.outflow import (
+    FullOutflowOrderSerializer, OutflowOrderSerializer
+)
+from apps.shared.general_response import GENERAL_SUCCESS_RESPONSE
+from apps.shared.utils.permissions import UserPermission
+
+
+class OutflowOrderViewSet(viewsets.GenericViewSet):
+    queryset = OutflowOrder.objects.filter(is_active=True)
+
+    def get_permissions(self):
+        permissions = {
+            # 'create': CREATE_OUTFLOW_ORDER,
+            # 'update': UPDATE_OUTFLOW_ORDER,
+            # 'retrieve': VIEW_OUTFLOW_ORDER,
+            # 'list': LIST_OUTFLOW_ORDERS,
+            # 'destroy': DELETE_OUTFLOW_ORDER,
+            # 'assign_delivery_info': ASSIGN_DELIVERY_INFO,
+            # 'mark_delivered': MARK_OUTFLOW_DELIVERED,
+            # 'record_payment': RECORD_OUTFLOW_PAYMENT,
+            # 'mark_complete': MARK_OUTFLOW_COMPLETE,
+        }
+        user_permission = permissions.get(self.action, None)
+        if user_permission:
+            return [IsAuthenticated(), UserPermission(user_permission)]
+        return [IsAuthenticated()]
+
+    @transaction.atomic
+    def create(self, request):
+        serializer = OutflowOrderSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            order = serializer.save()
+            return Response(FullOutflowOrderSerializer(order).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @transaction.atomic
+    def update(self, request, pk=None):
+        try:
+            order = OutflowOrder.objects.get(pk=pk, is_active=True, organization=request.organization)
+            if order.status not in ['availability_check', 'pending']:
+                return Response({'error': 'Order cannot be modified in current state'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            serializer = OutflowOrderSerializer(instance=order, data=request.data, partial=True,
+                                                context={'request': request})
+            if serializer.is_valid():
+                updated_order = serializer.save()
+                return Response(FullOutflowOrderSerializer(updated_order).data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except OutflowOrder.DoesNotExist:
+            return Response({'error': 'Order not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    def retrieve(self, request, pk=None):
+        try:
+            order = self.queryset.get(pk=pk, organization=request.organization)
+        except OutflowOrder.DoesNotExist:
+            return Response({'error': 'Outflow Order not found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(FullOutflowOrderSerializer(order).data)
+
+    def list(self, request):
+        page = request.query_params.get('page', 1)
+        page_size = request.query_params.get('page_size', 10)
+        status_filter = request.query_params.get('status')
+        # warehouse = request.query_params.get('warehouse')
+        # date_from = request.query_params.get('date_from')
+        # date_to = request.query_params.get('date_to')
+        # query = request.query_params.get('query')
+        export = request.query_params.get('export', 'false').lower()
+
+        filter_q = Q(is_active=True, organization=request.organization)
+
+        if status_filter:
+            filter_q &= Q(status=status_filter)
+        # if warehouse:
+        #     filter_q &= Q(destination_warehouse=warehouse)
+        # if date_from and date_to:
+        #     filter_q &= Q(order_creation_date__range=[date_from, date_to])
+        # if query:
+        #     filter_q &= (
+        #             Q(order_id__icontains=query) |
+        #             Q(comments__icontains=query)
+        #     )
+
+        if export == 'true':
+            pass
+        # TOD0: ADD AN EXPORT BACKGROUND TASK
+
+        orders = OutflowOrder.objects.filter(filter_q).order_by("-date_created")
+
+        paginator = Paginator(orders, page_size)
+        page_obj = paginator.get_page(page)
+
+        return Response({
+            'results': FullOutflowOrderSerializer(page_obj.object_list, many=True).data,
+            'pagination': {
+                'total': orders.count(),
+                'page': page_obj.number,
+                'pages': paginator.num_pages,
+                'has_next': page_obj.has_next(),
+                'has_previous': page_obj.has_previous(),
+            }
+        }, status=status.HTTP_200_OK)
+
+    @transaction.atomic
+    def destroy(self, request, pk=None):
+        try:
+            order = OutflowOrder.objects.get(id=pk, organization=request.organization, is_active=True)
+        except OutflowOrder.DoesNotExist:
+            return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+        order.soft_delete(owner=request.user)
+        for warehouse in OutflowOrderWarehouse.objects.filter(outflow_order=order, is_active=True):
+            warehouse.soft_delete(owner=request.user)
+            for product in warehouse.products.filter(is_active=True):
+                product.soft_delete(owner=request.user)
+
+        return Response(GENERAL_SUCCESS_RESPONSE, status=status.HTTP_204_NO_CONTENT)
+
+
+    # @action(detail=True, methods=['POST'], url_path='assign-delivery-info')
+    # @transaction.atomic
+    # def assign_delivery_info(self, request, pk=None):
+    #     try:
+    #         order = self.queryset.get(pk=pk, organization=request.organization)
+    #     except OutflowOrder.DoesNotExist:
+    #         return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+    #     s = OutflowOrderDeliveryInfoRequestSerializer(
+    #         data=request.data, context={'order': order}
+    #     )
+    #     s.is_valid(raise_exception=True)
+    #     di = s.save()
+    #     return Response(OutflowOrderDeliveryInfoRequestSerializer(di).data)
+    #
+    # @action(detail=True, methods=['POST'], url_path='mark-delivered')
+    # @transaction.atomic
+    # def mark_delivered(self, request, pk=None):
+    #     try:
+    #         order = self.queryset.get(pk=pk, organization=request.organization)
+    #     except OutflowOrder.DoesNotExist:
+    #         return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+    #     # ensure all warehouses have picked up
+    #     if order.warehouses.exclude(status='order_pickup').exists():
+    #         return Response({'error': 'Not all warehouses have picked up'},
+    #                         status=status.HTTP_400_BAD_REQUEST)
+    #     order.status = OutflowOrder.STATUS_CHOICES[2][0]  # 'delivered'
+    #     order.save()
+    #     # send notifications
+    #     return Response(OutflowOrderResponseSerializer(order).data, status=status.HTTP_200_OK)
+    #
+    # @action(detail=True, methods=['POST'], url_path='record-payment')
+    # @transaction.atomic
+    # def record_payment(self, request, pk=None):
+    #     try:
+    #         order = self.queryset.get(pk=pk, organization=request.organization)
+    #     except OutflowOrder.DoesNotExist:
+    #         return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+    #     s = OutflowOrderPaymentRequestSerializer(
+    #         data=request.data, context={'order': order}
+    #     )
+    #     s.is_valid(raise_exception=True)
+    #     payment = s.save()
+    #     return Response(OutflowOrderPaymentResponseSerializer(payment).data, status=status.HTTP_201_CREATED)
+    #
+    # @action(detail=True, methods=['POST'], url_path='mark-complete')
+    # @transaction.atomic
+    # def mark_complete(self, request, pk=None):
+    #     try:
+    #         order = self.queryset.get(pk=pk, organization=request.organization)
+    #     except OutflowOrder.DoesNotExist:
+    #         return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+    #     if order.status not in ('full_payment',):
+    #         return Response({'error': 'Order not fully paid'}, status=status.HTTP_400_BAD_REQUEST)
+    #     order.status = OutflowOrder.STATUS_CHOICES[6][0]  # 'complete'
+    #     order.save()
+    #     return Response(OutflowOrderResponseSerializer(order).data, status=status.HTTP_200_OK)

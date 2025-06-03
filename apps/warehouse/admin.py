@@ -42,7 +42,7 @@ class WarehouseAdmin(admin.ModelAdmin):
 
 @admin.register(WarehouseProduct)
 class WarehouseProductAdmin(admin.ModelAdmin):
-    list_display = ('product', 'warehouse', 'quantity', 'weight', 'is_active')
+    list_display = ('id', 'product__id', 'warehouse__id', 'product', 'warehouse', 'quantity', 'weight', 'is_active')
     list_filter = ('warehouse', 'product', 'is_active', 'organization')
     search_fields = ('product__name', 'warehouse__name', 'warehouse__warehouse_id')
     inlines = [WarehouseProductMovementInline]
