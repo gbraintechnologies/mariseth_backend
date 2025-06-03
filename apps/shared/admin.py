@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib import admin
 
-from apps.shared.models import AppSetting, CustomType
+from apps.shared.models import AppSetting, CustomType, District, Region
 
 CATEGORY_NAME_CHOICES = [
     ('title', 'Title'),
@@ -40,3 +40,23 @@ class CustomTypeAdmin(admin.ModelAdmin):
 class AppSettingAdmin(admin.ModelAdmin):
     list_display = ('organization', 'date_created', 'is_active')
     search_fields = ('organization__name', 'share_pricing', 'tax_value')
+
+
+class DistrictInline(admin.TabularInline):
+    model = District
+    extra = 1
+    ordering = ['id', 'name']
+
+
+@admin.register(Region)
+class RegionAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'code', 'district_count')
+    list_filter = ('code',)
+    search_fields = ('name', 'code')
+    ordering = ('name',)
+    inlines = [DistrictInline]
+
+    def district_count(self, obj):
+        return obj.districts.count()
+
+    district_count.short_description = 'Districts'

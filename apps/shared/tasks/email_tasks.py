@@ -5,7 +5,7 @@ from django.template.loader import get_template
 
 from apps.organizations.models import OrganizationUser
 from apps.shared.tasks.utils import get_organization_domain, get_organization_email
-from apps.shared.utils.email_client import SESEmailClient
+from apps.shared.utils.email_client import EmailClient
 from mariseth.logging import logger
 
 User = get_user_model()
@@ -35,7 +35,7 @@ def send_verification_email(verification_code, template_name, user):
         body_text = f'Verification Code: {verification_code}'
 
         if to_email:
-            email_client = SESEmailClient()
+            email_client = EmailClient()
             response = email_client.send_email(
                 sender=sender, recipients=to_email,
                 subject=subject, body_html=body_html,
