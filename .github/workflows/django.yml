@@ -35,29 +35,14 @@ jobs:
     steps:
     - name: Trigger Coolify Deployment
       run: |
-        echo "🚀 Triggering Coolify deployment..."
-        response=$(curl -s -w "https://app.coolify.io/api/v1/deployments" -X POST \
-          -H "Authorization: Bearer ${{ secrets.COOLIFY_API_TOKEN }}" \
-          -H "Content-Type: application/json" \
-          -d '{
-            "branch": "main",
-            "force_rebuild": true,
-            "commit_sha": "${{ github.sha }}"
-          }' \
-          ${{ secrets.COOLIFY_WEBHOOK_URL }})
-        
-        http_code=$(echo "$response" | tail -n1)
-        body=$(echo "$response" | head -n -1)
-        
-        echo "HTTP Status: $http_code"
-        echo "Response: $body"
-        
-        if [ "https://app.coolify.io/api/v1/deployments" -ge 200 ] && [ "https://app.coolify.io/api/v1/deployments" -lt 300 ]; then
-          echo "✅ Deployment triggered successfully"
-        else
-          echo "❌ Deployment failed with status https://app.coolify.io/api/v1/deployments"
-          exit 1
-        fi
+          curl -X POST "${{ secrets.COOLIFY_WEBHOOK_URL }}" \
+            -H "Authorization: Bearer ${{ secrets.COOLIFY_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "repo": "devthec3/Meriseth-BE",
+              "branch": "main",
+              "commitHash": "${{ github.sha }}"
+            }'
 
     - name: Wait for deployment completion
       run: |
