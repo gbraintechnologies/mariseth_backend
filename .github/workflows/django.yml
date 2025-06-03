@@ -26,6 +26,10 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
+        
+    - name: Run Tests
+      run: |
+        python manage.py test
 
   deploy:
     needs: build
@@ -33,9 +37,11 @@ jobs:
     if: github.ref == 'refs/heads/main'
     
     steps:
+    - uses: actions/checkout@v4
+    
     - name: Trigger Coolify Deployment
       run: |
-          response=$(curl -s -w "\n%{http_code}" -X POST \
+        response=$(curl -s -w "\n%{http_code}" -X POST \
           -H "Authorization: Bearer ${{ secrets.COOLIFY_API_TOKEN }}" \
           -H "Content-Type: application/json" \
           -d '{
@@ -45,35 +51,32 @@ jobs:
           }' \
           "${{ secrets.COOLIFY_WEBHOOK_URL }}")
         
-          http_code=$(echo "$response" | tail -n1)
-          body=$(echo "$response" | head -n -1)
+        http_code=$(echo "$response" | tail -n1)
+        body=$(echo "$response" | head -n -1)
         
-          echo "HTTP Status: $http_code"
-          echo "Response: $body"
+        echo "HTTP Status: $http_code"
+        echo "Response: $body"
         
-          if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
-            echo "✅ Deployment triggered successfully"
-          else
-            echo "❌ Deployment failed with status $http_code"
+        if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
+          echo "✅ Deployment triggered successfully"
+        else
+          echo "❌ Deployment failed with status $http_code"
           exit 1
-          fi
+        fi
 
     - name: Wait for deployment completion
       run: |
         echo "⏳ Waiting for deployment to complete..."
         sleep 30
         
-        # Optional: Poll deployment status if Coolify provides a status endpoint
-        # Replace with your actual deployment status URL
         max_attempts=20
         attempt=1
         
         while [ $attempt -le $max_attempts ]; do
           echo "🔍 Checking deployment status (attempt $attempt/$max_attempts)..."
           
-          # This is a placeholder - replace with actual Coolify status endpoint
           status_response=$(curl -s -H "Authorization: Bearer ${{ secrets.COOLIFY_API_TOKEN }}" \
-            ${{ secrets.COOLIFY_STATUS_URL }} || echo "error")
+            "${{ secrets.COOLIFY_STATUS_URL }}" || echo "error")
           
           if echo "$status_response" | grep -q "running\|success\|deployed"; then
             echo "✅ Deployment completed successfully!"
@@ -88,7 +91,8 @@ jobs:
         done
         
         if [ $attempt -gt $max_attempts ]; then
-          echo "⚠️ Deployment status check timed out, but this might be normal"
+          echo "⚠️ Deployment status check timed out"
+          exit 1
         fi
 
     - name: Health Check
@@ -102,25 +106,26 @@ jobs:
         while [ $attempt -le $max_attempts ]; do
           echo "🔍 Health check attempt $attempt/$max_attempts..."
           
-          if curl -f -s ${{ secrets.APP_URL }}/health/ > /dev/null; then
+          if curl -f -s "${{ secrets.APP_URL }}/health/" > /dev/null; then
             echo "✅ Application is healthy and responding!"
-            break
+            exit 0
           fi
           
           sleep 10
           attempt=$((attempt + 1))
         done
         
-        if [ $attempt -gt $max_attempts ]; then
-          echo "❌ Health check failed - application may not be responding"
-          exit 1
-        fi
+        echo "❌ Health check failed - application may not be responding"
+        exit 1
 
     - name: Notify deployment status
       if: always()
       run: |
         if [ "${{ job.status }}" == "success" ]; then
           echo "🎉 Deployment completed successfully!"
+          # Add notification logic here (Slack, email, etc.)
         else
           echo "💥 Deployment failed!"
+          # Add failure notification logic here
+          exit 1
         fi
