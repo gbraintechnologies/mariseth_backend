@@ -4,6 +4,8 @@ from apps.accounts.serializers.users import ShortUserSerializer
 from apps.farm.models import Farm, Farmer
 from apps.farm.serializers.farm import ShortFarmSerializer
 from apps.farm.utils import generate_farmer_id
+from apps.shared.models import District, Region
+from apps.shared.serializers.regions import DistrictSerializer, ShortRegionSerializer
 
 
 class ShortFarmerSerializer(serializers.ModelSerializer):
@@ -24,13 +26,23 @@ class FarmerSerializer(serializers.ModelSerializer):
         required=False,
         allow_null=True,
     )
+    district = serializers.PrimaryKeyRelatedField(
+        queryset=District.objects.all(),
+        required=False,
+        allow_null=True,
+    )
+    region = serializers.PrimaryKeyRelatedField(
+        queryset=Region.objects.all(),
+        required=False,
+        allow_null=True,
+    )
 
     class Meta:
         model = Farmer
         fields = (
             'id', 'type', 'first_name', 'last_name', 'other_names', 'gender',
             'date_of_birth', 'id_number', 'phone_number', 'email', 'address',
-            'village', 'district', 'country', 'farm', 'lead_farmer',
+            'village', 'region', 'district', 'country', 'farm', 'lead_farmer',
             'leadership_experience', 'support_assistance'
         )
         read_only_fields = ('id',)
@@ -46,6 +58,10 @@ class FarmerSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {'lead_farmer': 'Assigned lead farmer must be of type "lead"'}
                 )
+        if data.get('district') and not data.get('region'):
+            raise serializers.ValidationError(
+                {'region': 'Region must be provided when district is specified.'}
+            )
         return data
 
     def create(self, validated_data):
@@ -67,13 +83,15 @@ class FullFarmerSerializer(serializers.ModelSerializer):
     created_by = ShortUserSerializer()
     farm = ShortFarmSerializer(allow_null=True, required=False)
     lead_farmer = serializers.SerializerMethodField()
+    region = ShortRegionSerializer()
+    district = DistrictSerializer()
 
     class Meta:
         model = Farmer
         fields = (
             'id', 'type', 'farmer_id', 'first_name', 'last_name', 'other_names', 'gender',
             'date_of_birth', 'id_number', 'phone_number', 'email', 'address',
-            'village', 'district', 'country', 'farm', 'lead_farmer',
+            'village', 'region', 'district', 'country', 'farm', 'lead_farmer',
             'leadership_experience', 'support_assistance', 'created_by',
             'date_created', 'farm'
         )
@@ -93,13 +111,15 @@ class FarmerExportSerializer(serializers.ModelSerializer):
     farm = serializers.SerializerMethodField()
     date_created = serializers.DateTimeField(format="%d-%m-%Y %H:%M:%S", read_only=True, allow_null=True)
     date_of_birth = serializers.DateField(format="%Y-%m-%d", allow_null=True)
+    region = serializers.StringRelatedField(source='region.name')
+    district = serializers.StringRelatedField(source='district.name')
 
     class Meta:
         model = Farmer
         fields = (
             'farmer_id', 'type', 'first_name', 'last_name', 'other_names', 'gender',
             'date_of_birth', 'id_number', 'phone_number', 'email', 'address',
-            'village', 'district', 'country', 'farm', 'lead_farmer',
+            'village', 'region', 'district', 'country', 'farm', 'lead_farmer',
             'leadership_experience', 'support_assistance',
             'created_by', 'date_created'
         )
