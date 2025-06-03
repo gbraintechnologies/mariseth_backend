@@ -35,14 +35,8 @@ jobs:
     steps:
     - name: Trigger Coolify Deployment
       run: |
-          curl -X POST "https://app.coolify.io/api/v1/deployments" \
-            -H "Authorization: Bearer ${{ secrets.COOLIFY_API_KEY }}" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "repo": "devthec3/Meriseth-BE",
-              "branch": "main",
-              "commitHash": "${{ github.sha }}"
-            }'
+          curl 'https://app.coolify.io/api/v1/deploy?uuid=bg8o8wkgw0kow8s0gsg480ok' \
+          --header 'Authorization: Bearer 749|zSBdoh7GBx8n7qF76as8R5nR4ZjbEyjC936TJRNMbdbee54a'
 
     - name: Wait for deployment completion
       run: |
