@@ -35,7 +35,7 @@ jobs:
     steps:
     - name: Trigger Coolify Deployment
       run: |
-          curl -X POST ${{ secrets.COOLIFY_WEBHOOK_URL }} \
+          curl -X POST "https://app.coolify.io/api/v1/deploy?uuid=bg8o8wkgw0kow8s0gsg480ok" \
             -H "Authorization: Bearer ${{ secrets.COOLIFY_API_KEY }}" \
             -H "Content-Type: application/json" \
             -d '{
