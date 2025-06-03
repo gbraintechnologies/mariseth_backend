@@ -36,7 +36,7 @@ jobs:
     - name: Trigger Coolify Deployment
       run: |
         echo "🚀 Triggering Coolify deployment..."
-        response=$(curl -s -w "\n%{http_code}" -X POST \
+        response=$(curl -s -w "https://app.coolify.io/api/v1/deployments" -X POST \
           -H "Authorization: Bearer ${{ secrets.COOLIFY_API_TOKEN }}" \
           -H "Content-Type: application/json" \
           -d '{
