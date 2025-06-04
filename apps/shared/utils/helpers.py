@@ -1,7 +1,10 @@
-from django.conf import settings
-from rest_framework_simplejwt.tokens import RefreshToken
 from decimal import Decimal, ROUND_HALF_UP
 
+from django.contrib.auth import get_user_model
+from django.core.exceptions import ObjectDoesNotExist
+from rest_framework_simplejwt.tokens import RefreshToken
+
+User = get_user_model()
 
 def generate_tokens(user):
     """
@@ -24,3 +27,18 @@ def format_decimal(value):
     if value is None:
         return None
     return Decimal(value).quantize(Decimal('0.00'), rounding=ROUND_HALF_UP)
+
+
+def authenticate(phone_number, pin):
+    """
+    Authenticate a user by phone number and PIN
+    Returns user object if valid, None otherwise
+    """
+    try:
+        user = User.objects.get(phone_number=phone_number, is_active=True)
+        if user.check_password(pin):
+            print(user, "////////////////////////////////")
+            return user
+    except ObjectDoesNotExist:
+        pass
+    return None
