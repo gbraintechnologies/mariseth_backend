@@ -37,7 +37,6 @@ def authenticate(phone_number, pin):
     try:
         user = User.objects.get(phone_number=phone_number, is_active=True)
         if user.check_password(pin):
-            print(user, "////////////////////////////////")
             return user
     except ObjectDoesNotExist:
         pass
