@@ -228,3 +228,4 @@ class MobileUpdateAccount(serializers.ModelSerializer):
             'id', 'first_name', 'last_name',
             'phone_number', 'avatar', 'gender', 'email',
         ]
+        # TODO: ADD FUNCTION TO UPDATE FARMER INFORMATION

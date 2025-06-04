@@ -6,6 +6,7 @@ from apps.consuner_mobile.serializers.auth import MobileAccountVerificationSeria
     MobileRegisterSerializer, MobileResendVerificationCodeSerializer, \
     MobileResetPasswordSerializer, MobileUpdateAccount, MobileUpdatePinSerializer, \
     MobileUserWithTokenAndFarmerSerializer, SetPinSerializer
+from apps.consuner_mobile.serializers.credit import MobileActiveCreditSerializer, MobileCreditPaybackSerializer, MobileCreditSerializer
 
 
 def add_swagger_to_mobile_user_auth_viewset(viewset_cls):
@@ -228,5 +229,97 @@ def add_swagger_to_mobile_user_auth_viewset(viewset_cls):
             400: openapi.Response("Invalid verification code or validation errors")
         }
     )(viewset_cls.reset_password)
+
+    return viewset_cls
+
+
+# ============================== MOBILE/CREDIT ==============================
+def add_swagger_to_mobile_credit_viewset(viewset_cls):
+    # Get Active Credit
+    viewset_cls.get_active_credit = swagger_auto_schema(
+        tags=["Mobile/Credit"],
+        operation_summary="Get active credit for the logged-in farmer",
+        operation_description="Fetch the active credit details for the current farmer.",
+        responses={
+            200: openapi.Response(
+                description="Active credit details returned",
+                schema=MobileActiveCreditSerializer()
+            ),
+            404: openapi.Response(description="No active credit found")
+        },
+        security=[{'Bearer': []}]
+    )(viewset_cls.get_active_credit)
+
+    # Get Credit History
+    viewset_cls.get_credit_history = swagger_auto_schema(
+        tags=["Mobile/Credit"],
+        operation_summary="Get credit history for the logged-in farmer",
+        operation_description="Retrieve a paginated list of credits for the current farmer.",
+        manual_parameters=[
+            openapi.Parameter('page', openapi.IN_QUERY, "Page number", type=openapi.TYPE_INTEGER, default=1),
+            openapi.Parameter('page_size', openapi.IN_QUERY, "Items per page", type=openapi.TYPE_INTEGER, default=10),
+            openapi.Parameter('status', openapi.IN_QUERY, "Filter by payment status", type=openapi.TYPE_STRING),
+            openapi.Parameter('type', openapi.IN_QUERY, "Filter by credit type", type=openapi.TYPE_STRING),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Paginated list of credits",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'results': openapi.Schema(type=openapi.TYPE_ARRAY,
+                                                  items=openapi.Items(type=openapi.TYPE_OBJECT)),
+                        'pagination': openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'total': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'page': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'pages': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'has_next': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                                'has_previous': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                            }
+                        )
+                    }
+                )
+            )
+        },
+        security=[{'Bearer': []}]
+    )(viewset_cls.get_credit_history)
+
+    # Get Payback History
+    viewset_cls.get_payback_history = swagger_auto_schema(
+        tags=["Mobile/Credit"],
+        operation_summary="Get payback history for the logged-in farmer",
+        operation_description="Retrieve a paginated list of paybacks for the current farmer.",
+        manual_parameters=[
+            openapi.Parameter('page', openapi.IN_QUERY, "Page number", type=openapi.TYPE_INTEGER, default=1),
+            openapi.Parameter('page_size', openapi.IN_QUERY, "Items per page", type=openapi.TYPE_INTEGER, default=10),
+            openapi.Parameter('credit_id', openapi.IN_QUERY, "Filter by credit ID", type=openapi.TYPE_STRING),
+            openapi.Parameter('method', openapi.IN_QUERY, "Filter by payback method", type=openapi.TYPE_STRING),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Paginated list of paybacks",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'results': openapi.Schema(type=openapi.TYPE_ARRAY,
+                                                  items=openapi.Items(type=openapi.TYPE_OBJECT)),
+                        'pagination': openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'total': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'page': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'pages': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'has_next': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                                'has_previous': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                            }
+                        )
+                    }
+                )
+            )
+        },
+        security=[{'Bearer': []}]
+    )(viewset_cls.get_payback_history)
 
     return viewset_cls
