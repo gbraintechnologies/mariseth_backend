@@ -5,6 +5,7 @@ from apps.farm.models import Farm, FarmProduct, Product
 from apps.farm.serializers.products import ShortProductSerializer
 from apps.farm.utils import generate_farm_id
 from apps.shared.models import District, Region
+from apps.shared.serializers.custom_types import CustomTypeSerializer
 from apps.shared.serializers.regions import DistrictSerializer, ShortRegionSerializer
 
 
@@ -101,6 +102,7 @@ class FullFarmSerializer(serializers.ModelSerializer):
     livestock = serializers.SerializerMethodField()
     region = ShortRegionSerializer()
     district = DistrictSerializer()
+    size_metric = CustomTypeSerializer()
 
     class Meta:
         model = Farm
