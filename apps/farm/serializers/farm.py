@@ -42,7 +42,7 @@ class FarmSerializer(serializers.ModelSerializer):
             'size', 'size_metric', 'livestock_kept', 'has_access_to_market',
             'irrigation', 'use_of_fertilizers', 'farming_methods', 'provide_training',
             'government_ngo_support', 'specify_support', 'areas_of_assistance',
-            'land_ownership', 'other_specification', 'livestock', 'crops'
+            'land_ownership', 'other_specification', 'livestock', 'crops', 'farmer'
         )
         read_only_fields = ('id',)
 
@@ -103,6 +103,7 @@ class FullFarmSerializer(serializers.ModelSerializer):
     region = ShortRegionSerializer()
     district = DistrictSerializer()
     size_metric = CustomTypeSerializer()
+    farmer = serializers.SerializerMethodField()
 
     class Meta:
         model = Farm
@@ -112,7 +113,7 @@ class FullFarmSerializer(serializers.ModelSerializer):
             'irrigation', 'use_of_fertilizers', 'farming_methods', 'provide_training',
             'government_ngo_support', 'specify_support', 'areas_of_assistance',
             'land_ownership', 'other_specification', 'created_by', 'date_created',
-            'crops', 'livestock'
+            'crops', 'livestock', 'farmer'
         )
         read_only_fields = ('id', 'created_by', 'updated_by', 'date_created')
 
@@ -129,6 +130,17 @@ class FullFarmSerializer(serializers.ModelSerializer):
             product__type='livestock'
         )
         return FarmProductSerializer(livestock_products, many=True).data
+
+    def get_farmer(self, obj):
+        if obj.farmer is not None:
+            return {
+                'id': obj.farmer.id,
+                'first_name': obj.farmer.first_name,
+                'last_name': obj.farmer.last_name,
+                'type': obj.farmer.type,
+                'phone_number': obj.farmer.phone_number
+            }
+        return None
 
 
 class FarmDeleteSerializer(serializers.ModelSerializer):
