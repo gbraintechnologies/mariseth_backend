@@ -1,180 +1,75 @@
-from calendar import monthcalendar
-from collections import OrderedDict
-from datetime import date, datetime, timedelta
+from datetime import datetime
 
-from django.db.models import Case, Count, DecimalField, Q, Sum, When
-from django.db.models.functions import Trunc
-from django.utils import timezone
-from rest_framework import serializers, status, viewsets
+from django.db.models import Count, Q, Value
+from django.db.models.functions import Coalesce
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import ParseError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.shared.literals import VIEW_DIVIDEND_ANALYSIS, VIEW_SHAREHOLDER_ANALYSIS
+from apps.farm.models import Farmer
+from apps.shared.literals import LIST_FARMERS
+from apps.shared.swagger import add_swagger_to_dashboard_viewset
 from apps.shared.utils.permissions import UserPermission
-from apps.shareholders.models import Shareholder, ShareholderPayout
+from apps.warehouse.models import Warehouse
 
 
-class ShareholderDistributionSerializer(serializers.Serializer):
-    individual = serializers.IntegerField()
-    company = serializers.IntegerField()
-    group = serializers.IntegerField()
-
-
-class ShareholderCardSerializer(serializers.Serializer):
-    total_shareholders = serializers.IntegerField()
-    new_shareholders = serializers.IntegerField()
-    total_shares = serializers.DecimalField(max_digits=15, decimal_places=2)
-    shareholder_distribution = ShareholderDistributionSerializer()
-
-
-class PayoutCardSerializer(serializers.Serializer):
-    received_amount = serializers.DecimalField(max_digits=15, decimal_places=2)
-    due_amount = serializers.DecimalField(max_digits=15, decimal_places=2)
-
-
+@add_swagger_to_dashboard_viewset
 class DashboardViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         permissions = {
-          'shareholder_analysis': VIEW_SHAREHOLDER_ANALYSIS,
-          'dividend_analysis': VIEW_DIVIDEND_ANALYSIS
+            'farmer_analysis': LIST_FARMERS,
         }
         user_permission = permissions.get(self.action, None)
         if user_permission:
             return [IsAuthenticated(), UserPermission(user_permission)]
         return [IsAuthenticated()]
 
-    @action(detail=False, methods=['get'], url_path='shareholder-analysis')
-    def shareholder_analysis(self, request):
-        """Retrieves shareholder card data for the given organization."""
-        organization = request.organization
+    @action(detail=False, methods=['GET'], url_path='farmer-analysis')
+    def farmer_analysis(self, request):
+        start_date_str = request.query_params.get('start_date')
+        end_date_str = request.query_params.get('end_date')
+        base_farmer_queryset = Farmer.objects.filter(is_active=True, date_deleted__isnull=True)
+        base_warehouse_queryset = Warehouse.objects.filter(is_active=True, date_deleted__isnull=True)
+        date_filter = Q(is_active=True)
+        if start_date_str and end_date_str:
+            try:
+                start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+                end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
 
-        if not organization:
-            return Response({"error": "Organization not found in request."}, status=status.HTTP_400_BAD_REQUEST)
-
-        queryset = Shareholder.objects.filter(organization=organization, is_active=True)
-
-        total_shareholders = queryset.count()
-        new_shareholders = queryset.filter(date_created__gte=datetime.now() - timedelta(days=7)).count()
-        total_shares = queryset.aggregate(total_shares=Sum('number_of_shares'))['total_shares'] or 0
-
-        distribution_data = queryset.aggregate(
-            individual=Count('id', filter=Q(entity_type='individual')),
-            company=Count('id', filter=Q(entity_type='company')),
-            group=Count('id', filter=Q(entity_type='organized_group')),
+                if start_date > end_date:
+                    return Response(
+                        {"error": "start_date cannot be after end_date."},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                date_filter = Q(date_created__date__gte=start_date, date_created__date__lte=end_date)
+            except ValueError:
+                return Response(
+                    {"error": "Invalid date format. Please use YYYY-MM-DD."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        farmer_queryset = base_farmer_queryset.filter(date_filter)
+        warehouse_queryset = base_warehouse_queryset.filter(date_filter)
+        farmer_stats = farmer_queryset.aggregate(
+            total_lead_farmers=Coalesce(Count('pk', filter=Q(type='lead')), Value(0)),
+            total_smallholder_farmers=Coalesce(Count('pk', filter=Q(type='smallholder')), Value(0)),
+            total_male_farmers=Coalesce(Count('pk', filter=Q(gender='m')), Value(0)),
+            total_female_farmers=Coalesce(Count('pk', filter=Q(gender='f')), Value(0))
         )
-
-        data = {
-            'total_shareholders': total_shareholders,
-            'new_shareholders': new_shareholders,
-            'total_shares': total_shares,
-            'shareholder_distribution': distribution_data,
+        active_warehouses_count = warehouse_queryset.count()
+        response_data = {
+            "lead_farmers": farmer_stats['total_lead_farmers'],
+            "smallholder_farmers": farmer_stats['total_smallholder_farmers'],
+            "active_warehouses": active_warehouses_count,
+            "gender_distribution": {
+                "male": farmer_stats['total_male_farmers'],
+                "female": farmer_stats['total_female_farmers']
+            },
+            "distribution_by_farmer_type": {
+                "lead_farmer": farmer_stats['total_lead_farmers'],
+                "smallholder_farmer": farmer_stats['total_smallholder_farmers']
+            }
         }
 
-        serializer = ShareholderCardSerializer(data)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    @action(detail=False, methods=['get'], url_path='dividend-analysis')
-    def dividend_analysis(self, request):
-        organization = request.organization
-        if not organization:
-            return Response({'error': 'Organization not found in request.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        time_period = request.query_params.get('time_period', 'monthly').lower()
-        valid_time_periods = ['daily', 'weekly', 'monthly', 'yearly']
-        if time_period not in valid_time_periods:
-            raise ParseError(detail='Invalid time period. Must be "daily", "weekly", "monthly", or "yearly".')
-
-        now = timezone.now().date()
-        current_year = now.year
-        current_month = now.month
-
-        if time_period == 'daily':
-            date_range = [now - timedelta(days=i) for i in range(7)]
-            date_format = '%Y-%m-%d'
-            trunc_type = 'day'
-
-        elif time_period == 'weekly':
-            cal = monthcalendar(current_year, current_month)
-            date_range = []
-            for week_days in cal:
-                valid_days = [day for day in week_days if day != 0]
-                if valid_days:
-                    monday = date(current_year, current_month, valid_days[0])
-                    date_range.append(monday)
-            date_format = '%Y-%m-%d'
-            trunc_type = 'week'
-
-        elif time_period == 'monthly':
-            date_range = [
-                date(current_year - (1 if current_month + m > 12 else 0),
-                     (current_month + m - 1) % 12 + 1,
-                     1)
-                for m in range(-11, 1)
-            ]
-            date_format = '%Y-%m'
-            trunc_type = 'month'
-
-        elif time_period == 'yearly':
-            start_year = current_year - 1
-            first_payout = ShareholderPayout.objects.filter(
-                shareholder__organization=organization
-            ).order_by('date').first()
-            min_year = max(first_payout.date.year if first_payout else current_year, start_year)
-            date_range = [date(y, 1, 1) for y in range(min_year, current_year + 1)]
-            date_format = '%Y'
-            trunc_type = 'year'
-
-        else:
-            return Response({'error': 'Invalid time period'}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Single-query approach using Case/When for summations. This avoids multiple DB hits.
-        queryset = (
-            ShareholderPayout.objects
-            .filter(
-                shareholder__organization=organization,
-                date__gte=date_range[0] if date_range else now,
-                is_active=True
-            )
-            .annotate(period=Trunc('date', trunc_type))
-            .values('period')
-            .annotate(
-                received_amount=Sum(
-                    Case(
-                        When(status='complete', then='amount'),
-                        default=0,
-                        output_field=DecimalField()
-                    )
-                ),
-                due_amount=Sum(
-                    Case(
-                        When(status='pending_approval', then='amount'),
-                        default=0,
-                        output_field=DecimalField()
-                    )
-                )
-            )
-            .order_by('period')
-        )
-
-        # Convert queryset into a dict keyed by formatted period
-        data_dict = {}
-        for item in queryset:
-            formatted_period = item['period'].strftime(date_format)
-            data_dict[formatted_period] = {
-                'received_amount': item['received_amount'],
-                'due_amount': item['due_amount'],
-            }
-
-        result = OrderedDict()
-        for d in date_range:
-            formatted_date = d.strftime(date_format)
-            result[formatted_date] = {
-                'received_amount': data_dict.get(formatted_date, {}).get('received_amount', 0),
-                'due_amount': data_dict.get(formatted_date, {}).get('due_amount', 0),
-            }
-
-        return Response(result, status=status.HTTP_200_OK)
-
+        return Response(response_data, status=status.HTTP_200_OK)
