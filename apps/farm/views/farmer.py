@@ -11,7 +11,8 @@ from apps.farm.serializers.farm import FarmSerializer
 from apps.farm.serializers.farmer import FarmerSerializer, FullFarmerSerializer
 from apps.farm.swaagger import add_swagger_to_farmer_viewset
 from apps.shared.general_response import GENERAL_SUCCESS_RESPONSE
-from apps.shared.literals import CREATE_FARMER, DELETE_FARMER, LIST_FARMERS, UPDATE_FARMER, UPLOAD_FARMERS, VIEW_FARMER
+from apps.shared.literals import CREATE_FARMER, DELETE_FARMER, GET_SMALLHOLDERS_BY_LEAD, LIST_FARMERS, UPDATE_FARMER, \
+    UPLOAD_FARMERS, VIEW_FARMER
 from apps.shared.tasks.export_tasks import process_farmer_export
 from apps.shared.utils.permissions import UserPermission
 
@@ -28,6 +29,7 @@ class FarmerViewSet(viewsets.GenericViewSet):
             'retrieve': VIEW_FARMER,
             'list': LIST_FARMERS,
             'destroy': DELETE_FARMER,
+            'get_smallholders_by_lead': GET_SMALLHOLDERS_BY_LEAD,
             'upload_farmers': UPLOAD_FARMERS
         }
         user_permission = permissions.get(self.action, None)
@@ -147,3 +149,40 @@ class FarmerViewSet(viewsets.GenericViewSet):
     @transaction.atomic
     def upload_farmers(self, request):
         pass
+
+    @action(detail=True, methods=['GET'], url_path='smallholders-by-lead')
+    def get_smallholders_by_lead(self, request, pk):
+        page = request.query_params.get('page', 1)
+        page_size = request.query_params.get('page_size', 10)
+        query = request.query_params.get('query')
+
+        filter_q = Q(is_active=True, organization=request.organization,
+                     type='smallholder', lead_farmer__id=pk)
+        if query:
+            filter_q &= (
+                    Q(first_name__icontains=query) |
+                    Q(last_name__icontains=query) |
+                    Q(phone_number__icontains=query) |
+                    Q(email__icontains=query) |
+                    Q(farm__name__icontains=query) |
+                    Q(farmer_id__icontains=query)
+            )
+        farmers = Farmer.objects.select_related(
+            'farm',
+            'lead_farmer',
+            'region',
+            'district'
+        ).filter(filter_q).order_by('-date_created').distinct()
+        paginator = Paginator(farmers, page_size)
+        page_obj = paginator.get_page(page)
+        results = FullFarmerSerializer(instance=page_obj.object_list, many=True).data
+        return Response({
+            'results': results,
+            'pagination': {
+                'total': farmers.count(),
+                'page': page_obj.number,
+                'pages': paginator.num_pages,
+                'has_next': page_obj.has_next(),
+                'has_previous': page_obj.has_previous(),
+            }
+        }, status=status.HTTP_200_OK)

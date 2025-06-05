@@ -85,6 +85,7 @@ class Farmer(BaseModel):
     other_names = models.CharField(max_length=100, blank=True, null=True)
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
     date_of_birth = models.DateField(null=True, blank=True)
+    id_type = models.CharField(max_length=50, null=True, blank=True)
     id_number = models.CharField(max_length=50, null=True, blank=True)
     phone_number = models.CharField(max_length=20, null=True, blank=True)
     email = models.EmailField(null=True, blank=True)

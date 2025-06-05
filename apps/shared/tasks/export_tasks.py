@@ -328,6 +328,7 @@ def process_farmer_export(filter_params):
             'other_names': 'Other Names',
             'gender': 'Gender',
             'date_of_birth': 'Date of Birth',
+            'id_type': 'ID Type',
             'id_number': 'ID Number',
             'phone_number': 'Phone Number',
             'email': 'Email',
@@ -341,33 +342,8 @@ def process_farmer_export(filter_params):
             'created_by': 'Created By',
             'date_created': 'Date Created'
         }
-        if farmer_type == 'lead':
-            column_map.update({
-                'leadership_experience': 'Leadership Experience',
-                'farming_experience': 'Farming Experience (Years)',
-                'provide_training': 'Provides Training',
-                'mentoring_farmers_count': 'Farmers Mentored',
-                'government_support': 'Receives Gov/NGO Support',
-                'support_type': 'Support Type',
-                'areas_of_assistance': 'Areas of Assistance'
-            })
-        elif farmer_type == 'smallholder':
-            column_map.update({
-                'support_assistance': 'Support Assistance',
-                'areas_of_assistance': 'Areas Needed'
-            })
 
         df.rename(columns=column_map, inplace=True)
-        if farmer_type == 'lead':
-            df['Leadership Experience'] = df['Leadership Experience'].apply(
-                lambda x: ", ".join(x.keys()) if isinstance(x, dict) else ""
-            )
-            df['Provides Training'] = df['Provides Training'].map({True: 'Yes', False: 'No'})
-            df['Receives Gov/NGO Support'] = df['Receives Gov/NGO Support'].map({True: 'Yes', False: 'No'})
-        elif farmer_type == 'smallholder':
-            df['Support Assistance'] = df['Support Assistance'].apply(
-                lambda x: ", ".join(x.values()) if isinstance(x, dict) else ""
-            )
 
         file_name = f"Farmers_Export_{datetime.now().strftime('%Y-%m-%d_%H-%M')}.csv"
         csv_buffer = StringIO()

@@ -196,3 +196,83 @@ def add_swagger_to_region_viewset(view_cls):
     )(view_cls.retrieve)
 
     return view_cls
+
+
+
+def add_swagger_to_dashboard_viewset(viewset_cls):
+    # Document 'farmer_analysis' action
+    viewset_cls.farmer_analysis = swagger_auto_schema(
+        tags=['Dashboard'],
+        operation_summary="Get farmer analysis statistics",
+        operation_description=(
+            "Retrieves aggregated statistics about farmers including:\n"
+            "- Count of lead vs smallholder farmers\n"
+            "- Gender distribution\n"
+            "- Active warehouses count\n"
+            "\nOptional date filtering available."
+        ),
+        manual_parameters=[
+            openapi.Parameter(
+                'start_date',
+                openapi.IN_QUERY,
+                description="Start date for filtering (YYYY-MM-DD format)",
+                type=openapi.TYPE_STRING,
+                format='date'
+            ),
+            openapi.Parameter(
+                'end_date',
+                openapi.IN_QUERY,
+                description="End date for filtering (YYYY-MM-DD format)",
+                type=openapi.TYPE_STRING,
+                format='date'
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Farmer analysis statistics",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'lead_farmers': openapi.Schema(type=openapi.TYPE_INTEGER),
+                        'smallholder_farmers': openapi.Schema(type=openapi.TYPE_INTEGER),
+                        'active_warehouses': openapi.Schema(type=openapi.TYPE_INTEGER),
+                        'gender': openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'male': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'female': openapi.Schema(type=openapi.TYPE_INTEGER)
+                            }
+                        ),
+                        'farmer_type': openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'lead_farmer': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'smallholder_farmer': openapi.Schema(type=openapi.TYPE_INTEGER)
+                            }
+                        )
+                    }
+                )
+            ),
+            400: openapi.Response(
+                description="Invalid date parameters",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'error': openapi.Schema(type=openapi.TYPE_STRING)
+                    }
+                )
+            ),
+            403: openapi.Response(
+                description="Permission denied",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'detail': openapi.Schema(type=openapi.TYPE_STRING)
+                    }
+                )
+            )
+        },
+        security=[{'Bearer': []}]
+    )(viewset_cls.farmer_analysis)
+
+    return viewset_cls

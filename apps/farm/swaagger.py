@@ -307,6 +307,80 @@ def add_swagger_to_farmer_viewset(viewset_cls):
         security=[{'Bearer': []}]
     )(viewset_cls.destroy)
 
+    viewset_cls.get_smallholders_by_lead = swagger_auto_schema(
+        tags=['Farmers'],
+        operation_summary="Get smallholders by lead farmer ID",
+        operation_description=(
+            "Retrieve paginated list of smallholder farmers under a specific lead farmer\n\n"
+            "Returns all active smallholder farmers (type='smallholder') that are "
+            "associated with the specified lead farmer ID."
+        ),
+        manual_parameters=[
+            openapi.Parameter(
+                'query',
+                openapi.IN_QUERY,
+                description="Search term to filter smallholders (searches name, phone, email, farm name, farmer ID)",
+                type=openapi.TYPE_STRING
+            ),
+            openapi.Parameter(
+                'page',
+                openapi.IN_QUERY,
+                description="Page number",
+                type=openapi.TYPE_INTEGER,
+                default=1
+            ),
+            openapi.Parameter(
+                'page_size',
+                openapi.IN_QUERY,
+                description="Items per page",
+                type=openapi.TYPE_INTEGER,
+                default=10
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Paginated list of smallholder farmers",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                         'results': openapi.Schema(type=openapi.TYPE_ARRAY,
+                                                  items=openapi.Items(type=openapi.TYPE_OBJECT)),
+                        'pagination': openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'total': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'page': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'pages': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'has_next': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                                'has_previous': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                            }
+                        )
+                    }
+                )
+            ),
+            400: openapi.Response(
+                description="Invalid request",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'error': openapi.Schema(type=openapi.TYPE_STRING)
+                    }
+                )
+            ),
+            404: openapi.Response(
+                description="Lead farmer not found",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'detail': openapi.Schema(type=openapi.TYPE_STRING)
+                    }
+                )
+            )
+        },
+        security=[{'Bearer': []}]
+    )(viewset_cls.get_smallholders_by_lead)
+
+    return viewset_cls
     # # Bulk Upload Farmers
     # viewset_cls.upload_farmers = swagger_auto_schema(
     #     tags=['Farmers'],
