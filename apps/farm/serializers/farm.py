@@ -28,10 +28,11 @@ class FarmSerializer(serializers.ModelSerializer):
     district = serializers.PrimaryKeyRelatedField(queryset=District.objects.all(), required=False)
     livestock = serializers.ListField(
         child=serializers.PrimaryKeyRelatedField(queryset=Product.objects.filter(is_active=True), required=False
-                                                 ))
+                                                 ), required=False, allow_null=True)
     crops = serializers.ListField(
         child=serializers.PrimaryKeyRelatedField(queryset=Product.objects.filter(is_active=True), required=False
-                                                 ))
+                                                 ), required=False, allow_null=True)
+    land_ownership = serializers.CharField(required=False, allow_null=True)
 
     class Meta:
         model = Farm
@@ -59,8 +60,8 @@ class FarmSerializer(serializers.ModelSerializer):
         validated_data['created_by'] = request.user
         validated_data['organization'] = request.organization
         validated_data['farm_id'] = generate_farm_id(validated_data['name'])
-        livestock = validated_data.pop('livestock')
-        crops = validated_data.pop('crops')
+        livestock = validated_data.pop('livestock', [])
+        crops = validated_data.pop('crops', [])
         farm = Farm.objects.create(**validated_data)
         if livestock:
             for livestock_data in livestock:
