@@ -3,12 +3,16 @@ from rest_framework.routers import DefaultRouter
 
 from apps.consuner_mobile.views.auth import MobileUserAuthViewSet
 from apps.consuner_mobile.views.credit import MobileCreditViewSet
+from apps.consuner_mobile.views.farm import MobileFarmViewSet
+from apps.consuner_mobile.views.lead_farmer import MobileLeadFarmerViewSet
 
 # Create your tests here.
 
 router = DefaultRouter(trailing_slash=False)
 router.register(r'/auth', MobileUserAuthViewSet, basename='auth')
 router.register(r'/credit', MobileCreditViewSet, basename='credit')
+router.register(r'/farm', MobileFarmViewSet, basename='farm')
+router.register(r'/lead-farmer', MobileLeadFarmerViewSet, basename='lead-farmer')
 
 urlpatterns = [
     path('', include(router.urls)),
