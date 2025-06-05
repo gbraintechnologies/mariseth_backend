@@ -43,7 +43,7 @@ class FarmerSerializer(serializers.ModelSerializer):
             'id', 'type', 'first_name', 'last_name', 'other_names', 'gender',
             'date_of_birth', 'id_number', 'phone_number', 'email', 'address',
             'village', 'region', 'district', 'country', 'farm', 'lead_farmer',
-            'leadership_experience', 'support_assistance'
+            'leadership_experience', 'support_assistance', 'id_type',
         )
         read_only_fields = ('id',)
 
@@ -93,7 +93,7 @@ class FullFarmerSerializer(serializers.ModelSerializer):
             'date_of_birth', 'id_number', 'phone_number', 'email', 'address',
             'village', 'region', 'district', 'country', 'farm', 'lead_farmer',
             'leadership_experience', 'support_assistance', 'created_by',
-            'date_created', 'farm'
+            'date_created', 'farm', 'id_type',
         )
         read_only_fields = ('id', 'created_by', 'date_created')
 
@@ -121,7 +121,7 @@ class FarmerExportSerializer(serializers.ModelSerializer):
             'date_of_birth', 'id_number', 'phone_number', 'email', 'address',
             'village', 'region', 'district', 'country', 'farm', 'lead_farmer',
             'leadership_experience', 'support_assistance',
-            'created_by', 'date_created'
+            'created_by', 'date_created', 'id_type',
         )
 
     def get_type(self, obj):
