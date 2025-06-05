@@ -236,14 +236,14 @@ def add_swagger_to_dashboard_viewset(viewset_cls):
                         'lead_farmers': openapi.Schema(type=openapi.TYPE_INTEGER),
                         'smallholder_farmers': openapi.Schema(type=openapi.TYPE_INTEGER),
                         'active_warehouses': openapi.Schema(type=openapi.TYPE_INTEGER),
-                        'gender_distribution': openapi.Schema(
+                        'gender': openapi.Schema(
                             type=openapi.TYPE_OBJECT,
                             properties={
                                 'male': openapi.Schema(type=openapi.TYPE_INTEGER),
                                 'female': openapi.Schema(type=openapi.TYPE_INTEGER)
                             }
                         ),
-                        'distribution_by_farmer_type': openapi.Schema(
+                        'farmer_type': openapi.Schema(
                             type=openapi.TYPE_OBJECT,
                             properties={
                                 'lead_farmer': openapi.Schema(type=openapi.TYPE_INTEGER),

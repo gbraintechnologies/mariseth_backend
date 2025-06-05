@@ -15,7 +15,7 @@ from apps.warehouse.models import Warehouse
 
 
 @add_swagger_to_dashboard_viewset
-class DashboardViewSet(viewsets.ModelViewSet):
+class DashboardViewSet(viewsets.GenericViewSet):
 
     def get_permissions(self):
         permissions = {
@@ -62,11 +62,11 @@ class DashboardViewSet(viewsets.ModelViewSet):
             "lead_farmers": farmer_stats['total_lead_farmers'],
             "smallholder_farmers": farmer_stats['total_smallholder_farmers'],
             "active_warehouses": active_warehouses_count,
-            "gender_distribution": {
+            "gender": {
                 "male": farmer_stats['total_male_farmers'],
                 "female": farmer_stats['total_female_farmers']
             },
-            "distribution_by_farmer_type": {
+            "farmer_type": {
                 "lead_farmer": farmer_stats['total_lead_farmers'],
                 "smallholder_farmer": farmer_stats['total_smallholder_farmers']
             }
