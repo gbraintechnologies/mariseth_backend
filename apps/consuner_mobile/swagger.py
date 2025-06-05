@@ -6,7 +6,8 @@ from apps.consuner_mobile.serializers.auth import MobileAccountVerificationSeria
     MobileRegisterSerializer, MobileResendVerificationCodeSerializer, \
     MobileResetPasswordSerializer, MobileUpdateAccount, MobileUpdatePinSerializer, \
     MobileUserWithTokenAndFarmerSerializer, SetPinSerializer
-from apps.consuner_mobile.serializers.credit import MobileActiveCreditSerializer, MobileCreditPaybackSerializer, MobileCreditSerializer
+from apps.consuner_mobile.serializers.credit import MobileActiveCreditSerializer
+from apps.consuner_mobile.serializers.farm import FarmDetailSerializer
 
 
 def add_swagger_to_mobile_user_auth_viewset(viewset_cls):
@@ -321,5 +322,159 @@ def add_swagger_to_mobile_credit_viewset(viewset_cls):
         },
         security=[{'Bearer': []}]
     )(viewset_cls.get_payback_history)
+
+    return viewset_cls
+
+
+# ============================== MOBILE/LEAD FARMER ==============================
+
+def add_swagger_to_mobile_lead_farmer_viewset(viewset_cls):
+    # Document get_farms endpoint
+    viewset_cls.get_farms = swagger_auto_schema(
+        tags=['Mobile/Lead Farmer'],
+        operation_summary="Get lead farmer's farms",
+        operation_description="Retrieve paginated list of farms owned by the authenticated lead farmer",
+        manual_parameters=[
+            openapi.Parameter(
+                'page',
+                openapi.IN_QUERY,
+                description="Page number",
+                type=openapi.TYPE_INTEGER,
+                default=1
+            ),
+            openapi.Parameter(
+                'page_size',
+                openapi.IN_QUERY,
+                description="Items per page",
+                type=openapi.TYPE_INTEGER,
+                default=10
+            ),
+            openapi.Parameter(
+                'query',
+                openapi.IN_QUERY,
+                description="Search term to filter farms (searches name, farm_id, location)",
+                type=openapi.TYPE_STRING
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Paginated list of farms",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'results': openapi.Schema(type=openapi.TYPE_ARRAY,
+                                                  items=openapi.Items(type=openapi.TYPE_OBJECT)),
+                        'pagination': openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'total': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'page': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'pages': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'has_next': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                                'has_previous': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                            }
+                        )
+                    }
+                )
+            ),
+            403: openapi.Response(
+                description="Forbidden - User is not a lead farmer",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'detail': openapi.Schema(type=openapi.TYPE_STRING)
+                    }
+                )
+            )
+        },
+        security=[{'Bearer': []}]
+    )(viewset_cls.get_farms)
+
+    # Document get_smallholders endpoint
+    viewset_cls.get_smallholders = swagger_auto_schema(
+        tags=['Mobile/Lead Farmer'],
+        operation_summary="Get lead farmer's smallholders",
+        operation_description="Retrieve paginated list of smallholder farmers under the authenticated lead farmer",
+        manual_parameters=[
+            openapi.Parameter(
+                'page',
+                openapi.IN_QUERY,
+                description="Page number",
+                type=openapi.TYPE_INTEGER,
+                default=1
+            ),
+            openapi.Parameter(
+                'page_size',
+                openapi.IN_QUERY,
+                description="Items per page",
+                type=openapi.TYPE_INTEGER,
+                default=10
+            ),
+            openapi.Parameter(
+                'query',
+                openapi.IN_QUERY,
+                description="Search term to filter smallholders (searches name, farmer_id, phone, farm name)",
+                type=openapi.TYPE_STRING
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Paginated list of smallholder farmers",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'results': openapi.Schema(type=openapi.TYPE_ARRAY,
+                                                  items=openapi.Items(type=openapi.TYPE_OBJECT)),
+                        'pagination': openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'total': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'page': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'pages': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'has_next': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                                'has_previous': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                            }
+                        )
+                    }
+                )
+            ),
+            403: openapi.Response(
+                description="Forbidden - User is not a lead farmer",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'detail': openapi.Schema(type=openapi.TYPE_STRING)
+                    }
+                )
+            )
+        },
+        security=[{'Bearer': []}]
+    )(viewset_cls.get_smallholders)
+
+    return viewset_cls
+
+
+def add_swagger_to_mobile_farm_viewset(viewset_cls):
+    viewset_cls.get_my_farm = swagger_auto_schema(
+        tags=['Mobile/Farm'],
+        operation_summary="Get current user's farm details",
+        operation_description="Retrieve complete farm details for the authenticated user",
+        responses={
+            200: openapi.Response(
+                description="Farm details",
+                schema=FarmDetailSerializer()
+            ),
+            404: openapi.Response(
+                description="Farm not found",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'detail': openapi.Schema(type=openapi.TYPE_STRING)
+                    }
+                )
+            )
+        },
+        security=[{'Bearer': []}]
+    )(viewset_cls.get_my_farm)
 
     return viewset_cls
