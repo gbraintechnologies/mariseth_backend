@@ -36,6 +36,7 @@ DELETE_FARMER = 'farmer|delete_farmer'
 VIEW_FARMER = 'farmer|view_farmer'
 LIST_FARMERS = 'farmer|list_farmers'
 UPLOAD_FARMERS = 'farmer|upload_farmers'
+GET_SMALLHOLDERS_BY_LEAD = 'farmer|get_smallholders_by_lead'
 
 # Farmer
 CREATE_PRODUCT = 'product|create_product'
