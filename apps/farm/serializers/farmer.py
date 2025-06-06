@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from apps.accounts.serializers.users import ShortUserSerializer
 from apps.farm.models import Farm, Farmer
-from apps.farm.serializers.farm import ShortFarmSerializer
+from apps.farm.serializers.farm import FullFarmSerializer, ShortFarmSerializer
 from apps.farm.utils import generate_farmer_id
 from apps.shared.models import District, Region
 from apps.shared.serializers.regions import DistrictSerializer, ShortRegionSerializer
@@ -81,7 +81,7 @@ class FarmerSerializer(serializers.ModelSerializer):
 
 class FullFarmerSerializer(serializers.ModelSerializer):
     created_by = ShortUserSerializer()
-    farm = ShortFarmSerializer(allow_null=True, required=False)
+    farm = FullFarmSerializer(allow_null=True, required=False)
     lead_farmer = serializers.SerializerMethodField()
     region = ShortRegionSerializer()
     district = DistrictSerializer()
