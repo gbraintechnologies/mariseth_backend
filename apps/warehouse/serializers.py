@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.utils import timezone
 from apps.accounts.serializers.users import ShortUserSerializer
+from apps.shared.serializers.regions import DistrictSerializer, ShortRegionSerializer
 from apps.warehouse.models import Warehouse, WarehouseProduct
 from apps.warehouse.utils import generate_warehouse_id
 
@@ -51,6 +52,8 @@ class WarehouseSerializer(serializers.ModelSerializer):
 class FullWarehouseSerializer(serializers.ModelSerializer):
     manager = ShortUserSerializer()
     products = serializers.SerializerMethodField()
+    region = ShortRegionSerializer()
+    district = DistrictSerializer()
 
     class Meta:
         model = Warehouse

@@ -16,8 +16,8 @@ class Warehouse(BaseModel):
     organization = models.ForeignKey('organizations.Organization', on_delete=models.CASCADE, related_name='warehouses')
     warehouse_id = models.CharField(max_length=20, unique=True)
     name = models.CharField(max_length=100)
-    region = models.CharField(max_length=100)
-    district = models.CharField(max_length=100)
+    region = models.ForeignKey('shared.Region', on_delete=models.SET_NULL, null=True, blank=True)
+    district = models.ForeignKey('shared.District', on_delete=models.SET_NULL, null=True, blank=True)
     capacity = models.CharField(max_length=50)
     manager = models.ForeignKey(User, on_delete=models.SET_NULL,
                                 null=True, blank=True,
