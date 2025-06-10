@@ -9,7 +9,6 @@ CSRF_TRUSTED_ORIGINS = [
     "https://*"
     "dwg0gwkko0w0kw0ccgogwo0c.135.181.238.146.sslip.io"
 ]
-CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOWED_ORIGINS = [
     "https://ukskccsc0cwwo4cockkkks4w.135.181.238.146.sslip.io"
 ]
