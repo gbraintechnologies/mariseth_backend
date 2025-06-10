@@ -145,6 +145,7 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:8000',
     'http://0.0.0.0:8000',
     'http://127.0.0.1:0000',
+    'https://ukskccsc0cwwo4cockkkks4w.135.181.238.146.sslip.io'
 ]
 
 REST_FRAMEWORK = {
