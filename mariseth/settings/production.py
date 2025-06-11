@@ -3,6 +3,9 @@ from datetime import timedelta
 from mariseth.settings.base import *
 
 ALLOWED_HOSTS = ['*']
+CORS_ALLOWED_ORIGINS = [
+    "https://ukskccsc0cwwo4cockkkks4w.135.181.238.146.sslip.io"
+]
 
 DEBUG = False
 
