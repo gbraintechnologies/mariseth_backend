@@ -12,7 +12,8 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_LIFETIME': timedelta(days=120),
 }
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000"
+    "http://localhost:3000",
+    "https://ukskccsc0cwwo4cockkkks4w.135.181.238.146.sslip.io"
 ]
 # AWS S3 configuration
 AWS_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID', None)
