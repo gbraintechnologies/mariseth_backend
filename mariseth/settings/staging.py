@@ -9,8 +9,8 @@ CORS_ALLOWED_ORIGINS = [
 ]
 CSRF_TRUSTED_ORIGINS = [
     "http://*",
-    "https://*"
-    "https://ukskccsc0cwwo4cockkkks4w.135.181.238.146.sslip.io"
+    "https://*",
+    "https://dwg0gwkko0w0kw0ccgogwo0c.135.181.238.146.sslip.io"
 ]
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
