@@ -19,9 +19,11 @@ CORS_ALLOWED_ORIGINS = [
 AWS_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID', None)
 AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY', None)
 AWS_S3_REGION_NAME = env('AWS_S3_REGION_NAME', None)
+
 CSRF_TRUSTED_ORIGINS = [
     "http://*",
-    "https://*"
+    "https://*",
+    "https://dwg0gwkko0w0kw0ccgogwo0c.135.181.238.146.sslip.io"
 ]
 # extra static and media file settings.
 AWS_STORAGE_BUCKET_NAME = env('AWS_STORAGE_BUCKET_NAME')

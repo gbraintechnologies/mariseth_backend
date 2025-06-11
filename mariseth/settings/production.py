@@ -6,7 +6,11 @@ ALLOWED_HOSTS = ['*']
 CORS_ALLOWED_ORIGINS = [
     "https://ukskccsc0cwwo4cockkkks4w.135.181.238.146.sslip.io"
 ]
-
+CSRF_TRUSTED_ORIGINS = [
+    "http://*",
+    "https://*",
+    "https://dwg0gwkko0w0kw0ccgogwo0c.135.181.238.146.sslip.io"
+]
 DEBUG = False
 
 SIMPLE_JWT = {
