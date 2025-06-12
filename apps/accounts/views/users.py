@@ -84,6 +84,7 @@ class UserAccountViewSet(viewsets.GenericViewSet):
             return Response({'detail': 'User does not belong to any organization.'}, status=status.HTTP_400_BAD_REQUEST)
 
         query = request.query_params.get('query')
+        user_type = request.query_params.get('user_type')
         queryset = User.objects.filter(
             is_active=True,
             organization_users__organization=organization
@@ -95,6 +96,8 @@ class UserAccountViewSet(viewsets.GenericViewSet):
                 Q(phone_number__icontains=query) |
                 Q(email__iexact=query)
             )
+        if user_type:
+            queryset = queryset.filter(user_type=user_type)
 
         page_number = request.query_params.get('page', 1)
         page_size = request.query_params.get('page_size', 10)
