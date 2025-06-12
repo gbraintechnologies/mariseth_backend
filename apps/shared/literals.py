@@ -69,10 +69,10 @@ LIST_WAREHOUSES = 'warehouse|list_warehouses'
 UPLOAD_WAREHOUSES = 'warehouse|upload_warehouses'
 
 # Customers
-CREATE_CUSTOMER = 'create_customer'
-UPDATE_CUSTOMER = 'update_customer'
-DELETE_CUSTOMER = 'delete_customer'
-LIST_CUSTOMERS = 'list_customers'
+CREATE_CUSTOMER = 'customer|create_customer'
+UPDATE_CUSTOMER = 'customer|update_customer'
+DELETE_CUSTOMER = 'customer|delete_customer'
+LIST_CUSTOMERS = 'customer|list_customers'
 
 # custom type
 CREATE_CUSTOM_TYPE = 'shared_custom_types|create_custom_type'
