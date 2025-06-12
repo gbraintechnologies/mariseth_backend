@@ -21,12 +21,14 @@ class FileNameEngine:
 
         # Return the whole path to the file
         return os.path.join(self.path, filename)
-    
-class StaticRootS3Boto3Storage(S3Boto3Storage):
-    location = 'static'  # This will store static files in a folder named 'static'
-    default_acl = None
 
+
+class StaticRootS3Boto3Storage(S3Boto3Storage):
+    location = 'static'
+    default_acl = 'public-read'  # Changed from None
+    file_overwrite = True
 
 class MediaRootS3Boto3Storage(S3Boto3Storage):
     location = 'media'
-    default_acl = None
+    default_acl = 'public-read'  # Changed from None
+    file_overwrite = False
