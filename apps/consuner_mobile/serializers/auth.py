@@ -8,6 +8,7 @@ from apps.farm.serializers.farmer import FullFarmerSerializer
 from apps.organizations.models import OrganizationUser
 from apps.shared.general_response import INVALID_LOGIN
 from apps.shared.literals import ACCESS_TOKEN, REFRESH_TOKEN
+from apps.shared.tasks.sms_tasks import send_verification_sms
 from apps.shared.utils.helpers import authenticate, generate_tokens
 from apps.shared.utils.validators import validate_only_digits
 
@@ -51,7 +52,11 @@ class MobileRegisterSerializer(serializers.Serializer):
         user.verification_code = verification_code
         user.save()
 
-        # TODO: SEND SMS
+        send_verification_sms.delay(
+            user_id=user.id,
+            phone_number=phone_number,
+            verification_code=verification_code
+        )
 
         return user
 
@@ -160,14 +165,14 @@ class MobileResendVerificationCodeSerializer(serializers.Serializer):
 
         try:
             user = User.objects.get(phone_number=phone_number, is_active=True)
-            code = random.randint(1000, 9999)
-            user.verification_code = code
+            verification_code = random.randint(1000, 9999)
+            user.verification_code = verification_code
             user.save()
-            # TODO: CHANGE THIS SMS
-            # template_name = VERIFICATION_EMAIL_TEMPLATE
-            # send_verification_email.delay(
-            #      code, template_name=template_name, user=user.id
-            # )
+            send_verification_sms.delay(
+                user_id=user.id,
+                phone_number=phone_number,
+                verification_code=verification_code
+            )
 
         except User.DoesNotExist:
             raise serializers.ValidationError(
