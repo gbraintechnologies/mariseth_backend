@@ -15,34 +15,39 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "https://ukskccsc0cwwo4cockkkks4w.135.181.238.146.sslip.io"
 ]
-# AWS S3 configuration
-AWS_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID', None)
-AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY', None)
-AWS_S3_REGION_NAME = env('AWS_S3_REGION_NAME', None)
-
 CSRF_TRUSTED_ORIGINS = [
     "http://*",
     "https://*",
     "https://dwg0gwkko0w0kw0ccgogwo0c.135.181.238.146.sslip.io"
 ]
-# extra static and media file settings.
-AWS_STORAGE_BUCKET_NAME = env('AWS_STORAGE_BUCKET_NAME')
-AWS_S3_CUSTOM_DOMAIN = env('AWS_S3_CUSTOM_DOMAIN')
-STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/static/'
-MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/'
+# # MinIO Configuration
+# MINIO_ENDPOINT = env('MINIO_ENDPOINT_URL')  # e.g. http://minio:9000
+# MINIO_BUCKET = env('MINIO_BUCKET_NAME')
+#
+# AWS_S3_ENDPOINT_URL = MINIO_ENDPOINT
+# AWS_ACCESS_KEY_ID = env('MINIO_ACCESS_KEY')
+# AWS_SECRET_ACCESS_KEY = env('MINIO_SECRET_KEY')
+# AWS_STORAGE_BUCKET_NAME = MINIO_BUCKET
+# AWS_S3_SIGNATURE_VERSION = 's3v4'
+# AWS_S3_ADDRESSING_STYLE = 'path'  # Crucial for MinIO
+# AWS_S3_USE_SSL = False
+# AWS_S3_VERIFY = False
+#
+# # URL Configuration (FIXED)
+# STATIC_URL = f'{MINIO_ENDPOINT}/{MINIO_BUCKET}/static/'
+# MEDIA_URL = f'{MINIO_ENDPOINT}/{MINIO_BUCKET}/media/'
 
 
-# CHANNEL_LAYERS = {
-#     'default': {
-#         'BACKEND': 'channels_redis.core.RedisChannelLayer',
-#         'CONFIG': {
-#             'hosts': [{
-#                 'address': (env('REDIS_HOST'), int(env('REDIS_PORT', default=6379))),
-#                 'db': 0,
-#             }],
-#             'capacity': 1500,
-#             'expiry': 5
-#         },
-#     },
-# }
-# CHANNEL_REDIS_PREFIX = "socket:"
+STATIC_URL = '/static/'
+STATICFILES_LOCATION = 'static'
+STATICFILES_STORAGE = "blogs.storage.StaticS3Boto3Storage"
+
+MEDIA_URL = '/media/'
+DEFAULT_FILE_STORAGE = "blogs.storage.S3MediaStorage"
+
+AWS_ACCESS_KEY_ID = env('MINIO_ACCESS_KEY')
+AWS_SECRET_ACCESS_KEY = env('MINIO_SECRET_KEY')
+AWS_STORAGE_BUCKET_NAME = env('MINIO_BUCKET_NAME')
+
+AWS_S3_ENDPOINT_URL = env('MINIO_ENDPOINT_URL')
+MINIO_ACCESS_URL = env('MINIO_ENDPOINT_URL')
