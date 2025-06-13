@@ -29,8 +29,8 @@ class UserAdmin(admin.ModelAdmin):
     readonly_fields = ('id', 'date_verified')
     fieldsets = (
         ('Personal Info', {'fields': ('first_name', 'last_name', 'gender')}),
-        ('Contact Info', {'fields': ('email', 'phone_number')}),
-        ('Other Info', {'fields': ('avatar', 'verification_code', 'date_verified')})
+        ('Contact Info', {'fields': ('email', 'phone_number', 'username')}),
+        ('Other Info', {'fields': ('avatar', 'verification_code', 'is_verified', 'date_verified')})
     )
     inlines = [UserGroupInline]
 
