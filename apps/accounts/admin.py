@@ -20,7 +20,7 @@ class UserGroupInline(admin.TabularInline):
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
     list_display = (
-        'id', 'first_name', 'last_name', 'email', 'get_groups', 'get_organization',
+        'id', 'first_name', 'last_name', 'email', 'phone_number', 'get_groups', 'get_organization',
         'date_created', 'is_active', 'is_verified',
     )
     list_display_links = ('id', 'first_name', 'last_name', 'email')
