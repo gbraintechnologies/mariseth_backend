@@ -50,6 +50,7 @@ def send_verification_email(verification_code, template_name, user):
         logger.error(f"Error sending verification email: {str(e)}")
         raise
 
+
 from django.utils import timezone
 
 from apps.credit.models import Credit

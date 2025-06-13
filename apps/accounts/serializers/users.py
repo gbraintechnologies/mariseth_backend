@@ -59,9 +59,6 @@ class NewUserSerializer(serializers.ModelSerializer):
         user = User(**validated_data)
         code = user.set_email_verification_code()
         user.save()
-        send_verification_email.delay(
-            code, template_name=VERIFICATION_EMAIL_TEMPLATE, user=user.id
-        )
         organization_user = OrganizationUser.objects.create(
             user=user,
             organization=organization,
@@ -69,6 +66,9 @@ class NewUserSerializer(serializers.ModelSerializer):
         if group:
             user.groups.set([group])
 
+        send_verification_email.delay(
+            code, template_name=VERIFICATION_EMAIL_TEMPLATE, user=user.id
+        )
         return user
 
     def update(self, instance, validated_data):

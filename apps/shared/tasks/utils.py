@@ -56,3 +56,16 @@ def get_organization_email(organization):
         return DEFAULT_EMAIL
 
 
+def get_organization_default_sender_id(organization):
+    """
+    Returns the organization's sender_id address for sending emails.
+    """
+    try:
+        organization_sms = organization.customtype_set.filter(
+            category_name='sender_id',
+            is_active=True,
+            is_default=True
+        ).order_by('-date_created').first()
+        return organization_sms.name if organization_sms else "LOGICIEL"
+    except CustomType.DoesNotExist:
+        return "LOGICIEL"
