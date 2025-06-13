@@ -31,6 +31,7 @@ class MobileRegisterSerializer(serializers.Serializer):
         user, created = User.objects.update_or_create(
             phone_number=phone_number,
             defaults={
+                'username': phone_number,
                 'email': farmer.email or f"{phone_number}@marisethfarms.com",
                 'first_name': farmer.first_name,
                 'last_name': farmer.last_name,
