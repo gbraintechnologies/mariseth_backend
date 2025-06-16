@@ -18,7 +18,8 @@ from apps.shared.literals import (
     LIST_CUSTOMERS, LIST_FARMERS, LIST_FARMS, LIST_INFLOW_ORDERS, LIST_PAYBACKS, LIST_PRODUCTS, LIST_WAREHOUSES,
     UPDATE_ADMIN, UPDATE_CREDIT, UPDATE_CUSTOMER, UPDATE_CUSTOM_TYPE, UPDATE_FARM, UPDATE_FARMER,
     UPDATE_GROUPS_AND_ROLES, UPDATE_INFLOW_ORDER, UPDATE_PAYBACK, UPDATE_PRODUCT, UPDATE_WAREHOUSE, UPLOAD_WAREHOUSES,
-    VIEW_CREDIT, VIEW_FARM, VIEW_FARMER, VIEW_GROUPS_AND_ROLES, VIEW_INFLOW_ORDER, VIEW_PRODUCT, VIEW_WAREHOUSE
+    VIEW_CREDIT, VIEW_CUSTOMER, VIEW_FARM, VIEW_FARMER, VIEW_GROUPS_AND_ROLES, VIEW_INFLOW_ORDER, VIEW_PRODUCT,
+    VIEW_WAREHOUSE
 )
 from apps.shared.models import BaseModel
 from apps.shared.overrides import FileNameEngine
@@ -262,6 +263,7 @@ class User(AbstractUser, BaseModel, PermissionsMixin):
             (UPDATE_CUSTOMER, 'update a customer'),
             (DELETE_CUSTOMER, 'delete a customer'),
             (LIST_CUSTOMERS, 'list all customers'),
+            (VIEW_CUSTOMER, 'view a customer'),
         ]
 
     def set_email_verification_code(self):

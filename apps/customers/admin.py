@@ -7,9 +7,9 @@ from apps.customers.models import Customer
 class CustomerAdmin(admin.ModelAdmin):
     list_display = (
         'id', 'customer_id', 'name', 'phone_number', 'email',
-        'local', 'company', 'date_created', 'is_active'
+        'location', 'company', 'date_created', 'is_active'
     )
-    list_filter = ('is_active', 'company', 'local', 'date_created')
+    list_filter = ('is_active', 'company', 'location', 'date_created')
     search_fields = ('name', 'phone_number', 'email', 'customer_id')
     readonly_fields = ('customer_id', 'date_created',)
     ordering = ('name',)

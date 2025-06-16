@@ -10,7 +10,7 @@ class CustomerSerializer(serializers.ModelSerializer):
         model = Customer
         fields = (
             'id', 'name', 'phone_number', 'email',
-            'local', 'company', 'comments',
+            'location', 'company', 'comments',
             'date_created',
         )
         read_only_fields = ('id', 'date_created',)
@@ -34,6 +34,6 @@ class FullCustomerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Customer
         fields = (
-            'customer_id', 'name', 'phone_number', 'email',
-            'local', 'company', 'comments', 'date_created', 'created_by'
+            'id', 'customer_id', 'name', 'phone_number', 'email',
+            'location', 'company', 'comments', 'date_created', 'created_by'
         )

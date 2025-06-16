@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from apps.customers.models import Customer
 from apps.customers.serializers import CustomerSerializer, FullCustomerSerializer
 from apps.customers.swagger import add_swagger_to_customer_viewset
-from apps.shared.literals import (CREATE_CUSTOMER, DELETE_CUSTOMER, LIST_CUSTOMERS, UPDATE_CUSTOMER)
+from apps.shared.literals import (CREATE_CUSTOMER, DELETE_CUSTOMER, LIST_CUSTOMERS, UPDATE_CUSTOMER, VIEW_CUSTOMER)
 from apps.shared.utils.permissions import UserPermission
 
 
@@ -23,6 +23,7 @@ class CustomerViewSet(viewsets.GenericViewSet):
             'update': UPDATE_CUSTOMER,
             'destroy': DELETE_CUSTOMER,
             'list': LIST_CUSTOMERS,
+            'retrieve': VIEW_CUSTOMER
         }
         user_permission = permissions.get(self.action, None)
         if user_permission:
@@ -56,6 +57,13 @@ class CustomerViewSet(viewsets.GenericViewSet):
             customer.is_active = False
             customer.save()
             return Response({'message': 'Customer deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+        except Customer.DoesNotExist:
+            return Response({'error': 'Customer not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    def retrieve(self, request, pk=None):
+        try:
+            customer = Customer.objects.get(pk=pk, is_active=True, organization=request.organization)
+            return Response(FullCustomerSerializer(customer).data, status=status.HTTP_200_OK)
         except Customer.DoesNotExist:
             return Response({'error': 'Customer not found'}, status=status.HTTP_404_NOT_FOUND)
 
