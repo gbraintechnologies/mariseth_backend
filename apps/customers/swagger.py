@@ -68,6 +68,23 @@ def add_swagger_to_customer_viewset(viewset_cls):
         security=[{'Bearer': []}]
     )(viewset_cls.destroy)
 
+    viewset_cls.retrieve = swagger_auto_schema(
+        tags=['Customers'],
+        operation_summary="Retrieve a customer",
+        operation_description=(
+            "Fetch the details of a specific customer by their primary key (`id`). "
+            "Only active customers in your organization can be retrieved."
+        ),
+        responses={
+            200: openapi.Response(
+                description="Customer details retrieved successfully",
+                schema=FullCustomerSerializer()
+            ),
+            404: openapi.Response(description="Customer not found")
+        },
+        security=[{'Bearer': []}]
+    )(viewset_cls.retrieve)
+
     # List Customers
     viewset_cls.list = swagger_auto_schema(
         tags=['Customers'],

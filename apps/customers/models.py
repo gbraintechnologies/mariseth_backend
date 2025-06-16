@@ -9,7 +9,7 @@ class Customer(BaseModel):
     name = models.CharField(max_length=255)
     phone_number = models.CharField(max_length=20)
     email = models.EmailField(blank=True, null=True)
-    local = models.CharField(max_length=255, blank=True, null=True)
+    location = models.CharField(max_length=255, blank=True, null=True)
     company = models.CharField(max_length=255, blank=True, null=True)
     comments = models.TextField(blank=True, null=True)
 
