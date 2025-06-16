@@ -1,2 +1,2 @@
-INVALID_LOGIN = {"non_field_errors": "Invalid phone number /password"}
+INVALID_LOGIN = {"non_field_errors": "Invalid email/password"}
 GENERAL_SUCCESS_RESPONSE = {"message": "Operation Successful"}

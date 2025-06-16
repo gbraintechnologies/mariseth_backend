@@ -73,6 +73,7 @@ CREATE_CUSTOMER = 'customer|create_customer'
 UPDATE_CUSTOMER = 'customer|update_customer'
 DELETE_CUSTOMER = 'customer|delete_customer'
 LIST_CUSTOMERS = 'customer|list_customers'
+VIEW_CUSTOMER = 'customer|view_customer'
 
 # custom type
 CREATE_CUSTOM_TYPE = 'shared_custom_types|create_custom_type'
