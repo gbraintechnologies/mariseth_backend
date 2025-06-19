@@ -36,7 +36,7 @@ class Credit(BaseModel):
                                         limit_choices_to={'category_name': 'quantity_metric'})
     notes = models.TextField(blank=True, null=True)
     credit_amount = models.DecimalField(max_digits=10, decimal_places=2)
-    issue_date = models.DateField()
+    issue_date = models.DateField(null=True, blank=True)
     due_date = models.DateField()
     interest_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0, null=True, blank=True,
                                         validators=[MinValueValidator(0)])
@@ -45,6 +45,7 @@ class Credit(BaseModel):
     approval_status = models.CharField(max_length=10, choices=APPROVAL_STATUS_CHOICES, default='pending')
     denial_notes = models.TextField(blank=True, null=True)
     main_crops = models.CharField(max_length=255, blank=True, null=True)
+    self_application = models.BooleanField(default=False)
 
     def __str__(self):
         return f"Credit {self.id} - {self.farmer.first_name} {self.farmer.last_name}"

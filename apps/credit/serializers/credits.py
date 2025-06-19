@@ -1,3 +1,4 @@
+from django.utils import timezone
 from rest_framework import serializers
 
 from apps.accounts.serializers.users import ShortUserSerializer
@@ -113,7 +114,8 @@ class FullCreditSerializer(serializers.ModelSerializer):
             'id', 'farmer', 'input_credits', 'type', 'quantity',
             'quantity_metric', 'credit_amount', 'issue_date', 'due_date',
             'interest_rate', 'payment_status', 'approval_status', 'notes',
-            'created_by', 'outstanding_amount', 'denial_notes', 'logs'
+            'created_by', 'outstanding_amount', 'denial_notes',
+            'self_application', 'logs'
         )
         read_only_fields = fields
 
@@ -160,6 +162,7 @@ class CreditApprovalSerializer(serializers.Serializer):
         old_status = credit.approval_status
 
         credit.approval_status = 'approved' if action == 'approve' else 'denied'
+        credit.issued_date = timezone.now() if action == 'approve' else None
         credit.denial_notes = self.validated_data.get('denial_notes', '')
         credit.payment_status = 'active' if action == 'approve' else 'inactive'
         credit.save()

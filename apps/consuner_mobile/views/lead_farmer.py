@@ -7,10 +7,12 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.consuner_mobile.serializers.lead_farmer import FarmSerializer
+from apps.consuner_mobile.serializers.lead_farmer import FarmSerializer, \
+    MobileAddSmallholderFarmerSerializer
 from apps.consuner_mobile.swagger import add_swagger_to_mobile_lead_farmer_viewset
 from apps.farm.models import Farm, Farmer
-from apps.farm.serializers.farmer import FarmerSerializer
+from apps.farm.serializers.farmer import FarmerSerializer, FullFarmerSerializer
+from apps.shared.utils.decorators import lead_farmer_required
 
 
 @add_swagger_to_mobile_lead_farmer_viewset
@@ -24,6 +26,7 @@ class MobileLeadFarmerViewSet(viewsets.GenericViewSet):
         return self.request.user.farmer
 
     @action(detail=False, methods=['GET'], url_path='farms')
+    @lead_farmer_required
     def get_farms(self, request):
         """
         Get paginated list of farms owned by the lead farmer
@@ -62,6 +65,7 @@ class MobileLeadFarmerViewSet(viewsets.GenericViewSet):
         })
 
     @action(detail=False, methods=['GET'], url_path='smallholders')
+    @lead_farmer_required
     def get_smallholders(self, request):
 
         try:
@@ -101,3 +105,16 @@ class MobileLeadFarmerViewSet(viewsets.GenericViewSet):
                 'has_previous': page_obj.has_previous(),
             }
         })
+
+    @action(detail=False, methods=['POST'], url_path='add-new-farmer')
+    @lead_farmer_required
+    def add_new_farmer(self, request):
+        serializer = MobileAddSmallholderFarmerSerializer(
+            data=request.data,
+            context={'request': request}
+        )
+        if serializer.is_valid():
+            serializer.save(organization=request.organization)
+            return Response(FullFarmerSerializer(serializer.instance).data,
+                            status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

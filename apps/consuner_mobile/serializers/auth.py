@@ -87,7 +87,7 @@ class MobileLoginSerializer(serializers.Serializer):
     def validate(self, attrs):
         user = authenticate(phone_number=attrs['phone_number'], pin=attrs['pin'])
         if user is None or not user.is_active:
-            raise serializers.ValidationError(INVALID_LOGIN)
+            raise serializers.ValidationError("Invalid phone number or pin")
         if not user.organization_users.exists():
             raise serializers.ValidationError("User is not associated with an organization")
         attrs['user'] = user

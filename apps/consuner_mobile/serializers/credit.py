@@ -1,6 +1,8 @@
 from rest_framework import serializers
 
 from apps.credit.models import Credit, CreditPayback
+from apps.credit.utils import generate_credit_id
+from apps.farm.models import Farmer
 
 
 class MobileCreditSerializer(serializers.ModelSerializer):
@@ -68,3 +70,31 @@ class MobileActiveCreditSerializer(serializers.ModelSerializer):
 
     def get_total_paid(self, obj):
         return obj.credit_amount - obj.outstanding_amount
+
+
+class MobileCreditApplicationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Credit
+        fields = (
+            'id', 'farmer', 'input_credits', 'type', 'quantity',
+            'quantity_metric', 'credit_amount', 'issue_date', 'due_date',
+            'interest_rate', 'payment_status', 'approval_status', 'notes'
+        )
+        read_only_fields = ('id', 'farmer', 'approval_status', 'issue_date', 'payment_status', 'approval_status',)
+
+    def validate(self, data):
+        if data.get('due_date') and data.get('issue_date'):
+            if data['due_date'] <= data['issue_date']:
+                raise serializers.ValidationError("Due date must be after issue date")
+        return data
+
+    def create(self, validated_data):
+        request = self.context['request']
+        validated_data['farmer'] = request.user.farmer
+        validated_data['created_by'] = request.user
+        validated_data['organization'] = request.organization
+        validated_data['credit_id'] = generate_credit_id(request.organization.id)
+        validated_data['outstanding_amount'] = validated_data['credit_amount'] * validated_data['interest_rate']
+        validated_data['self_application'] = True
+
+        return super().create(validated_data)
