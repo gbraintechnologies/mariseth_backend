@@ -60,7 +60,7 @@ class InflowOrderSerializer(serializers.ModelSerializer):
         for product_data in products_data:
             total_bag += product_data['quantity']
             total_products_costs += product_data['unit_price'] * product_data['quantity']
-        validated_data["total_product_cost"] = total_products_costs
+        validated_data["total_products_cost"] = total_products_costs
         validated_data["total_cost"] = total_products_costs + additional_cost
         validated_data["total_bags"] = total_bag
         order = InflowOrder.objects.create(**validated_data)
