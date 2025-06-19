@@ -4,7 +4,8 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.consuner_mobile.serializers.credit import MobileActiveCreditSerializer, MobileCreditPaybackSerializer, \
+from apps.consuner_mobile.serializers.credit import MobileActiveCreditSerializer, \
+    MobileCreditApplicationSerializer, MobileCreditPaybackSerializer, \
     MobileCreditSerializer
 from apps.consuner_mobile.swagger import add_swagger_to_mobile_credit_viewset
 from apps.credit.models import Credit, CreditPayback
@@ -100,3 +101,14 @@ class MobileCreditViewSet(viewsets.GenericViewSet):
                 'has_previous': page_obj.has_previous(),
             }
         }, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['POST'], url_path='apply-for-credit')
+    def apply_for_credit(self, request):
+        serializer = MobileCreditApplicationSerializer(
+            data=request.data,
+            context={'request': request}
+        )
+        if serializer.is_valid():
+            credit_app = serializer.save()
+            return Response(MobileCreditSerializer(credit_app).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
