@@ -79,7 +79,7 @@ class FarmAdmin(admin.ModelAdmin):
 class FarmerAdmin(admin.ModelAdmin):
     # inlines = [FarmerChangeLogInline]  # Uncomment when FarmerChangeLog is enabled
     list_display = (
-        'id', 'farmer_id', 'first_name', 'last_name', 'type',
+        'id', 'farmer_id', 'first_name', 'last_name', 'user', 'type',
         'gender', 'farm', 'phone_number', 'is_active'
     )
     search_fields = ('first_name', 'last_name', 'phone_number')
