@@ -147,15 +147,10 @@ class GroupsView(viewsets.GenericViewSet):
         ]
 
     def list(self, request, *args, **kwargs):
-        org_groups = AppGroup.objects.prefetch_related('permissions').filter(
-            is_active=True, organization=request.organization
+        groups = AppGroup.objects.prefetch_related('permissions').filter(
+            Q(is_active=True, organization=request.organization) | Q(is_default=True)
         ).order_by('rank', 'name')
 
-        default_groups = AppGroup.objects.filter(is_default=True)
-        groups = sorted(
-            list(org_groups) + list(default_groups),
-            key=lambda group: group.rank
-        )
         serializer = self.get_serializer(groups, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 

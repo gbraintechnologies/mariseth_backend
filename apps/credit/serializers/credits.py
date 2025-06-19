@@ -44,7 +44,8 @@ class CreditSerializer(serializers.ModelSerializer):
         validated_data['created_by'] = request.user
         validated_data['organization'] = request.organization
         validated_data['credit_id'] = generate_credit_id(request.organization.id)
-        validated_data['outstanding_amount'] = validated_data['credit_amount'] * validated_data['interest_rate']
+        interest_amount = validated_data['credit_amount'] * (validated_data['interest_rate'] / 100)
+        validated_data['outstanding_amount'] = validated_data['credit_amount'] + interest_amount
 
         return super().create(validated_data)
 

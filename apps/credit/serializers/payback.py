@@ -26,6 +26,21 @@ class CreditPaybackSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'outstanding', 'date_paid', 'status']
 
+    def validate_amount(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("Amount must be greater than zero.")
+
+        return value
+
+    def validate_credit(self, value):
+        if self.initial_data['amount'] > value.outstanding_amount:
+            raise serializers.ValidationError("Amount exceeds outstanding amount.")
+        if value.payment_status == 'paid':
+            raise serializers.ValidationError("This credit has already been fully paid.")
+        if value.approval_status != 'approved':
+            raise serializers.ValidationError("This credit has not been approved.")
+        return value
+
     def create(self, validated_data):
         request = self.context['request']
         validated_data['created_by'] = request.user
@@ -38,13 +53,7 @@ class CreditPaybackSerializer(serializers.ModelSerializer):
         old_outstanding = credit.outstanding_amount
 
         with transaction.atomic():
-            # Lock the credit record for update
-            credit = Credit.objects.select_for_update().get(pk=credit.id)
-
-            # Capture outstanding before payment
             outstanding_before = credit.outstanding_amount
-
-            # Calculate new outstanding
             new_outstanding = max(outstanding_before - amount, Decimal('0.00'))
             status = 'paid' if new_outstanding == 0 else 'partial'
 
