@@ -1,16 +1,21 @@
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Q
+from django.utils import timezone
 from rest_framework import status, viewsets
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from django.utils import timezone
 
-from apps.outflow.models import OutflowOrder, OutflowOrderWarehouse, OutflowOrderWarehouseProduct
+from apps.outflow.models import OutflowOrder, OutflowOrderWarehouse
 from apps.outflow.serializers.outflow import (
-    FullOutflowOrderSerializer, OutflowOrderSerializer
+    FullOutflowOrderSerializer, ListOutflowOrderSerializer, OutflowOrderDeliveryInformationSerializer,
+    OutflowOrderPaymentRequestSerializer, OutflowOrderSerializer
 )
 from apps.shared.general_response import GENERAL_SUCCESS_RESPONSE
+from apps.shared.literals import ASSIGN_DELIVERY_INFO, CREATE_OUTFLOW_ORDER, DELETE_OUTFLOW_ORDER, LIST_OUTFLOW_ORDERS, \
+    MARK_OUTFLOW_COMPLETE, MARK_OUTFLOW_DELIVERED, RECORD_OUTFLOW_PAYMENT, UPDATE_OUTFLOW_ORDER, \
+    VIEW_OUTFLOW_ORDER
 from apps.shared.utils.permissions import UserPermission
 
 
@@ -19,15 +24,15 @@ class OutflowOrderViewSet(viewsets.GenericViewSet):
 
     def get_permissions(self):
         permissions = {
-            # 'create': CREATE_OUTFLOW_ORDER,
-            # 'update': UPDATE_OUTFLOW_ORDER,
-            # 'retrieve': VIEW_OUTFLOW_ORDER,
-            # 'list': LIST_OUTFLOW_ORDERS,
-            # 'destroy': DELETE_OUTFLOW_ORDER,
-            # 'assign_delivery_info': ASSIGN_DELIVERY_INFO,
-            # 'mark_delivered': MARK_OUTFLOW_DELIVERED,
-            # 'record_payment': RECORD_OUTFLOW_PAYMENT,
-            # 'mark_complete': MARK_OUTFLOW_COMPLETE,
+            'create': CREATE_OUTFLOW_ORDER,
+            'update': UPDATE_OUTFLOW_ORDER,
+            'retrieve': VIEW_OUTFLOW_ORDER,
+            'list': LIST_OUTFLOW_ORDERS,
+            'destroy': DELETE_OUTFLOW_ORDER,
+            'assign_delivery_info': ASSIGN_DELIVERY_INFO,
+            'mark_delivered': MARK_OUTFLOW_DELIVERED,
+            'record_payment': RECORD_OUTFLOW_PAYMENT,
+            'mark_complete': MARK_OUTFLOW_COMPLETE,
         }
         user_permission = permissions.get(self.action, None)
         if user_permission:
@@ -99,7 +104,7 @@ class OutflowOrderViewSet(viewsets.GenericViewSet):
         page_obj = paginator.get_page(page)
 
         return Response({
-            'results': FullOutflowOrderSerializer(page_obj.object_list, many=True).data,
+            'results': ListOutflowOrderSerializer(page_obj.object_list, many=True).data,
             'pagination': {
                 'total': orders.count(),
                 'page': page_obj.number,
@@ -123,60 +128,82 @@ class OutflowOrderViewSet(viewsets.GenericViewSet):
 
         return Response(GENERAL_SUCCESS_RESPONSE, status=status.HTTP_204_NO_CONTENT)
 
+    @action(detail=True, methods=['POST'], url_path='assign-delivery-info')
+    @transaction.atomic
+    def assign_delivery_info(self, request, pk=None):
+        try:
+            order = OutflowOrder.objects.get(pk=pk, organization=request.organization, is_active=True)
+        except OutflowOrder.DoesNotExist:
+            return Response({'error': 'Order not found'}, status=status.HTTP_404_NOT_FOUND)
 
-    # @action(detail=True, methods=['POST'], url_path='assign-delivery-info')
-    # @transaction.atomic
-    # def assign_delivery_info(self, request, pk=None):
-    #     try:
-    #         order = self.queryset.get(pk=pk, organization=request.organization)
-    #     except OutflowOrder.DoesNotExist:
-    #         return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-    #     s = OutflowOrderDeliveryInfoRequestSerializer(
-    #         data=request.data, context={'order': order}
-    #     )
-    #     s.is_valid(raise_exception=True)
-    #     di = s.save()
-    #     return Response(OutflowOrderDeliveryInfoRequestSerializer(di).data)
-    #
-    # @action(detail=True, methods=['POST'], url_path='mark-delivered')
-    # @transaction.atomic
-    # def mark_delivered(self, request, pk=None):
-    #     try:
-    #         order = self.queryset.get(pk=pk, organization=request.organization)
-    #     except OutflowOrder.DoesNotExist:
-    #         return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-    #     # ensure all warehouses have picked up
-    #     if order.warehouses.exclude(status='order_pickup').exists():
-    #         return Response({'error': 'Not all warehouses have picked up'},
-    #                         status=status.HTTP_400_BAD_REQUEST)
-    #     order.status = OutflowOrder.STATUS_CHOICES[2][0]  # 'delivered'
-    #     order.save()
-    #     # send notifications
-    #     return Response(OutflowOrderResponseSerializer(order).data, status=status.HTTP_200_OK)
-    #
-    # @action(detail=True, methods=['POST'], url_path='record-payment')
-    # @transaction.atomic
-    # def record_payment(self, request, pk=None):
-    #     try:
-    #         order = self.queryset.get(pk=pk, organization=request.organization)
-    #     except OutflowOrder.DoesNotExist:
-    #         return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-    #     s = OutflowOrderPaymentRequestSerializer(
-    #         data=request.data, context={'order': order}
-    #     )
-    #     s.is_valid(raise_exception=True)
-    #     payment = s.save()
-    #     return Response(OutflowOrderPaymentResponseSerializer(payment).data, status=status.HTTP_201_CREATED)
-    #
-    # @action(detail=True, methods=['POST'], url_path='mark-complete')
-    # @transaction.atomic
-    # def mark_complete(self, request, pk=None):
-    #     try:
-    #         order = self.queryset.get(pk=pk, organization=request.organization)
-    #     except OutflowOrder.DoesNotExist:
-    #         return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
-    #     if order.status not in ('full_payment',):
-    #         return Response({'error': 'Order not fully paid'}, status=status.HTTP_400_BAD_REQUEST)
-    #     order.status = OutflowOrder.STATUS_CHOICES[6][0]  # 'complete'
-    #     order.save()
-    #     return Response(OutflowOrderResponseSerializer(order).data, status=status.HTTP_200_OK)
+        serializer = OutflowOrderDeliveryInformationSerializer(
+            data=request.data,
+            many=True,
+            context={'request': request, 'order': order}
+        )
+
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        delivery_info = serializer.save()
+
+        return Response(FullOutflowOrderSerializer(order).data, status=status.HTTP_201_CREATED)  # response_serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['POST'], url_path='mark-delivered')
+    @transaction.atomic
+    def mark_delivered(self, request, pk=None):
+        try:
+            order = OutflowOrder.objects.get(pk=pk, organization=request.organization)
+        except OutflowOrder.DoesNotExist:
+            return Response({'error': 'Outflow order not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        if order.status != 'truck_pickup':
+            return Response(
+                {'error': 'Order can only be marked as delivered after truck pickup'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        old_status = order.status
+        order.status = 'delivered'
+        order.actual_delivery_date = timezone.now().date()
+        order.save()
+        order.log_status_change(old_status, 'delivered', request.user)
+        serializer = FullOutflowOrderSerializer(order, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['POST'], url_path='record-payment')
+    @transaction.atomic
+    def record_payment(self, request, pk=None):
+        try:
+            order = self.queryset.get(pk=pk, organization=request.organization)
+        except OutflowOrder.DoesNotExist:
+            return Response({'error': 'Outflow order not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = OutflowOrderPaymentRequestSerializer(
+            data=request.data,
+            context={'order': order, 'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        response_data = FullOutflowOrderSerializer(order).data
+        return Response(response_data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['POST'], url_path='mark-complete')
+    @transaction.atomic
+    def mark_complete(self, request, pk=None):
+        try:
+            order = self.queryset.get(pk=pk, organization=request.organization)
+        except OutflowOrder.DoesNotExist:
+            return Response({'error': 'Outflow order not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        if order.status != 'full_payment':
+            return Response({'error': 'Order must be fully paid before completion.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        old_status = order.status
+        order.status = 'complete'
+        order.save()
+        order.log_status_change( old_status, 'complete',request.user)
+        serializer = FullOutflowOrderSerializer(order, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+

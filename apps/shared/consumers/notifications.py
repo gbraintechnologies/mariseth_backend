@@ -7,7 +7,7 @@ from apps.accounts.models import User
 
 
 def send_client_notification(
-    message_type: str,
+        message_type: str,
         message: Dict,
         group_names: List[str]
 ):

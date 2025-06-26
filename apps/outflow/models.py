@@ -1,10 +1,12 @@
 from django.db import models
+from django.utils import timezone
 
 from apps.shared.models import BaseModel
 
 
 class OutflowOrder(BaseModel):
     STATUS_CHOICES = (
+        ('pending', 'Pending'),
         ('availability_check', 'Availability Check'),
         ('truck_pickup', 'Truck Pickup'),
         ('delivered', 'Delivered'),
@@ -17,7 +19,7 @@ class OutflowOrder(BaseModel):
 
     organization = models.ForeignKey('organizations.Organization', on_delete=models.CASCADE)
     order_id = models.CharField(max_length=50, unique=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='availability_check')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     customer = models.ForeignKey('customers.Customer', on_delete=models.CASCADE)
     procurement_officer = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True,
                                             related_name='outflow_procurement_orders')
@@ -37,6 +39,87 @@ class OutflowOrder(BaseModel):
     def __str__(self):
         return self.order_id
 
+    def log_status_change(self, old_status, new_status, user=None):
+        """
+        Log status changes for the outflow order
+        """
+        OutflowOrderHistory.objects.create(
+            outflow_order=self,
+            field_name='status',
+            old_value=old_status,
+            new_value=new_status,
+            created_by=user,
+        )
+
+    def log_field_change(self, field_name, old_value, new_value, user=None):
+        """
+        Generic method to log any field change
+        """
+        OutflowOrderHistory.objects.create(
+            outflow_order=self,
+            field_name=field_name,
+            old_value=str(old_value) if old_value is not None else '',
+            new_value=str(new_value) if new_value is not None else '',
+            created_by=user,
+        )
+
+    def mark_as_availability_checked_if_all_verified(self, verified_warehouse=None, user=None):
+        """
+        - Send a notification when a warehouse is verified.
+        - If all warehouses are verified, update status and notify procurement officer.
+        """
+        # if verified_warehouse:
+        #     send_notification(
+        #         recipient=self.procurement_officer,
+        #         message=f"{verified_warehouse.warehouse.name} has completed availability check for order {self.order_id}."
+        #     )
+
+        # Check if all warehouses are now verified
+        if not self.warehouses.exclude(status='verified').exists():
+            old_status = self.status
+            self.status = 'availability_check'
+            self.save()
+
+            # ADD LOGS
+            self.log_status_change(
+                old_status=old_status,
+                new_status='availability_check',
+                user=user,
+            )
+
+            # send_notification(
+            #     recipient=self.procurement_officer,
+            #     message=f"All warehouses have verified availability for order {self.order_id}. Ready for truck pickup."
+            # )
+
+    def update_status_to_truck_pickup_if_ready(self, picked_warehouse=None, user=None):
+        """
+        - Sends notification that a warehouse has been picked up.
+        - If all warehouses are picked up, update status and notify aggregator.
+        """
+        # if picked_warehouse:
+        # send_notification(
+        #     group='aggregators',
+        #     message=f"Truck has picked up items from {picked_warehouse.warehouse.name} for order {self.order_id}"
+        # )
+
+        if not self.warehouses.exclude(status='order_pickup').exists():
+            old_status = self.status
+            self.status = 'truck_pickup'
+            self.save()
+
+            # ADD LOGS
+            self.log_status_change(
+                old_status=old_status,
+                new_status='truck_pickup',
+                user=user,
+            )
+
+            # send_notification(
+            #     group='aggregators',
+            #     message=f"All warehouses have completed pickup for order {self.order_id}. Truck is on the move."
+            # )
+
 
 class OutflowOrderPayments(BaseModel):
     PAYMENT_TYPES_CHOICES = (
@@ -50,12 +133,17 @@ class OutflowOrderPayments(BaseModel):
         ('bank_transfer', 'Bank Transfer')
     )
 
-    payment_date = models.DateTimeField(auto_now_add=True)
+    payment_date = models.DateTimeField(default=timezone.now)
     outflow_order = models.ForeignKey(OutflowOrder, on_delete=models.CASCADE, related_name='payments')
     amount_paid = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     amount_due = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     payment_type = models.CharField(max_length=20, choices=PAYMENT_TYPES_CHOICES, default='full')
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default='cash')
+    paid_to = models.CharField(max_length=255, blank=True, null=True)
+    mobile_money_number = models.CharField(max_length=20, blank=True, null=True)
+    bank_name = models.CharField(max_length=255, blank=True, null=True)
+    bank_account_number = models.CharField(max_length=20, blank=True, null=True)
+    bank_account_name = models.CharField(max_length=255, blank=True, null=True)
     notes = models.TextField(blank=True)
 
     class Meta:
@@ -170,7 +258,9 @@ class OutflowOrderDeliveryInformation(BaseModel):
 class OutflowOrderDeliveryInformationWarehouse(BaseModel):
     outflow_order_delivery_information = models.ForeignKey(OutflowOrderDeliveryInformation, on_delete=models.CASCADE,
                                                            related_name='warehouses')
-    warehouse = models.ForeignKey('warehouse.Warehouse', on_delete=models.CASCADE)
+    warehouse = models.ForeignKey(
+        'warehouse.Warehouse', on_delete=models.CASCADE, related_name='outflow_delivery_warehouse'
+    )
     pick_up = models.BooleanField(default=False)
     pick_up_datetime = models.DateTimeField(null=True, blank=True)
 

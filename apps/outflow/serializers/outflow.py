@@ -8,9 +8,14 @@ from apps.accounts.serializers.users import ShortUserSerializer
 from apps.customers.models import Customer
 from apps.customers.serializers import CustomerSerializer
 from apps.farm.models import Product
-from apps.outflow.models import OutflowOrder, OutflowOrderWarehouse, OutflowOrderWarehouseProduct
+from apps.farm.serializers.products import ShortProductSerializer
+from apps.outflow.models import OutflowOrder, OutflowOrderDeliveryInformation, OutflowOrderDeliveryInformationImage, \
+    OutflowOrderDeliveryInformationWarehouse, OutflowOrderHistory, OutflowOrderPayments, OutflowOrderWarehouse, \
+    OutflowOrderWarehouseProduct
 from apps.outflow.utils import generate_outflow_order_id, generate_serial_number
+from apps.shared.utils.helpers import base64_to_image
 from apps.warehouse.models import Warehouse, WarehouseProduct
+from apps.warehouse.serializers import ShortWarehouseSerializer
 
 User = get_user_model()
 
@@ -88,6 +93,7 @@ class OutflowOrderSerializer(serializers.ModelSerializer):
             product = product_data['product']
             serial_number = generate_serial_number(
                 warehouse.warehouse_id,
+                order.id,
                 product.name,
                 product_data['expected_quantity']
             )
@@ -106,6 +112,7 @@ class OutflowOrderSerializer(serializers.ModelSerializer):
 
         order.total_quantity = total_quantity
         order.total_cost = total_cost
+        order.amount_due = total_cost
         order.save()
         return order
 
@@ -150,6 +157,7 @@ class OutflowOrderSerializer(serializers.ModelSerializer):
                         'cost': cost,
                         'serial_number': generate_serial_number(
                             wh_group.warehouse.warehouse_id,
+                            instance.id,
                             item['product'].name,
                             qty
                         )
@@ -187,23 +195,23 @@ class OutflowOrderSerializer(serializers.ModelSerializer):
 
         instance.total_quantity = total_qty
         instance.total_cost = total_cost
-        instance.amount_due = total_cost - instance.amount_paid
+        instance.amount_due = total_cost
         instance.save()
 
         return instance
 
 
 class OutflowWarehouseProductSerializer(serializers.ModelSerializer):
-    product_id = serializers.IntegerField(source='product.id')
-    product_name = serializers.CharField(source='product.name')
+    product = ShortProductSerializer(read_only=True)
     price_per_unit = serializers.DecimalField(max_digits=10, decimal_places=2)
     cost = serializers.DecimalField(max_digits=10, decimal_places=2)
+    warehouse = ShortWarehouseSerializer(source='outflow_order_warehouse.warehouse', read_only=True)
 
     class Meta:
         model = OutflowOrderWarehouseProduct
         fields = (
-            'id', 'serial_number', 'product_id', 'product_name',
-            'expected_quantity', 'price_per_unit', 'cost', 'status'
+            'id', 'serial_number', 'expected_quantity', 'price_per_unit',
+            'cost', 'status', 'product', 'warehouse'
         )
 
 
@@ -214,17 +222,198 @@ class OutflowOrderWarehouseSerializer(serializers.ModelSerializer):
     )
     total_quantity = serializers.SerializerMethodField()
     total_cost = serializers.SerializerMethodField()
-    name = serializers.CharField(source='warehouse.name')
+    warehouse = ShortWarehouseSerializer()
 
     class Meta:
         model = OutflowOrderWarehouse
-        fields = ('id', 'name', 'products', 'status', 'total_quantity', 'total_cost')
+        fields = ('id', 'warehouse', 'status', 'total_quantity', 'total_cost', 'products',)
 
     def get_total_quantity(self, obj):
         return sum(p.expected_quantity for p in obj.products.filter(is_active=True))
 
     def get_total_cost(self, obj):
         return sum(float(p.cost) for p in obj.products.filter(is_active=True))
+
+
+class OutflowOrderDeliveryInfoResponseSerializer(serializers.ModelSerializer):
+    warehouses = serializers.SerializerMethodField()
+    images = serializers.SerializerMethodField()
+
+    class Meta:
+        model = OutflowOrderDeliveryInformation
+        fields = [
+            'id', 'driver_name', 'driver_phone_number', 'driver_license_number',
+            'truck_license_number', 'destination', 'company', 'escort_required',
+            'escort_details', 'warehouses', 'images'
+        ]
+
+    def get_warehouses(self, obj):
+        warehouse_links = obj.warehouses.filter(is_active=True)
+        return ShortWarehouseSerializer(
+            [link.warehouse for link in warehouse_links],
+            many=True
+        ).data
+
+    def get_images(self, obj):
+        return OutflowOrderDeliveryInfoImageSerializer(
+            obj.images.all(),
+            many=True,
+            context=self.context
+        ).data
+
+
+class OutflowOrderDeliveryInformationSerializer(serializers.ModelSerializer):
+    warehouse_ids = serializers.ListField(
+        child=serializers.PrimaryKeyRelatedField(queryset=Warehouse.objects.filter(is_active=True)),
+        write_only=True
+    )
+    images = serializers.ListField(
+        child=serializers.CharField(),
+        required=False,
+        allow_empty=True
+    )
+    escort_details = serializers.CharField(required=False, allow_blank=True)
+    destination = serializers.CharField(required=True)
+    company = serializers.CharField(required=True)
+
+    class Meta:
+        model = OutflowOrderDeliveryInformation
+        fields = [
+            'driver_name', 'driver_phone_number', 'driver_license_number',
+            'truck_license_number', 'destination', 'company', 'escort_required',
+            'escort_details', 'warehouse_ids', 'images'
+        ]
+
+    def validate(self, attrs):
+        order = self.context.get('order')
+        if order.status != 'availability_check':
+            raise serializers.ValidationError("Delivery info can not be created for this order")
+
+        if attrs.get('escort_required') and not attrs.get('escort_details'):
+            raise serializers.ValidationError("Escort details are required when escort is required")
+
+        warehouse_ids = attrs.get('warehouse_ids', [])
+        for warehouse in warehouse_ids:
+            exists = OutflowOrderWarehouse.objects.filter(outflow_order=order, warehouse=warehouse).exists()
+            if not exists:
+                raise serializers.ValidationError(
+                    f"Warehouse {warehouse.name} does not belong to this order"
+                )
+        return attrs
+
+    @transaction.atomic
+    def create(self, validated_data):
+        # Extract related data
+        warehouse_ids = validated_data.pop('warehouse_ids', [])
+        images = validated_data.pop('images', [])
+
+        # Create delivery info
+        delivery_info = OutflowOrderDeliveryInformation.objects.create(
+            outflow_order=self.context['order'],
+            **validated_data
+        )
+
+        # Create warehouse assignments
+        for warehouse in warehouse_ids:
+            OutflowOrderDeliveryInformationWarehouse.objects.create(
+                outflow_order_delivery_information=delivery_info,
+                warehouse=warehouse
+            )
+
+        # Create images
+        for image in images:
+            OutflowOrderDeliveryInformationImage.objects.create(
+                outflow_order_delivery_information=delivery_info,
+                image=base64_to_image(image)
+            )
+
+        return delivery_info
+
+
+class OutflowOrderDeliveryInfoImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OutflowOrderDeliveryInformationImage
+        fields = ['id', 'image']
+
+
+class OutflowOrderPaymentRequestSerializer(serializers.ModelSerializer):
+    paid_to = serializers.CharField(required=True)
+    mobile_money_number = serializers.CharField(required=False, allow_blank=True)
+    bank_name = serializers.CharField(required=False, allow_blank=True)
+    bank_account_number = serializers.CharField(required=False, allow_blank=True)
+    bank_account_name = serializers.CharField(required=False, allow_blank=True)
+
+    class Meta:
+        model = OutflowOrderPayments
+        fields = (
+            'id', 'amount_paid', 'amount_due',
+            'payment_type', 'payment_method', 'notes',
+            'paid_to', 'payment_date', 'mobile_money_number',
+            'bank_name', 'bank_account_number', 'bank_account_name'
+        )
+
+    def validate(self, attrs):
+        order = self.context['order']
+        amount_paid = attrs.get('amount_paid', 0)
+        if order.amount_due == 0 or order.amount_paid == order.amount_due:
+            raise serializers.ValidationError("Order is already fully paid")
+        if amount_paid > order.amount_due:
+            raise serializers.ValidationError("Amount being paid is more than the outstanding amount")
+        if amount_paid <= 0:
+            raise serializers.ValidationError("Amount must be greater than zero")
+        if amount_paid < order.amount_due and attrs.get('payment_type') == 'full':
+            raise serializers.ValidationError("Amount being paid is less than the outstanding amount it cannot be full")
+
+        method = attrs.get('payment_method')
+
+        if method == 'mobile_money' and not attrs.get('mobile_money_number'):
+            raise serializers.ValidationError({'mobile_money_number': 'Mobile Money number is required.'})
+
+        if method == 'bank_transfer':
+            missing_fields = []
+            if not attrs.get('bank_name'):
+                missing_fields.append('bank_name')
+            if not attrs.get('bank_account_number'):
+                missing_fields.append('bank_account_number')
+            if not attrs.get('bank_account_name'):
+                missing_fields.append('bank_account_name')
+
+            if missing_fields:
+                raise serializers.ValidationError({
+                    field: 'This field is required for bank transfers.'
+                    for field in missing_fields
+                })
+
+        return attrs
+
+    def create(self, validated_data):
+        order = self.context['order']
+        request = self.context['request']
+        validated_data['outflow_order'] = order
+        validated_data['created_by'] = request.user
+        payment = OutflowOrderPayments.objects.create(**validated_data)
+
+        order.amount_paid += payment.amount_paid
+        order.amount_due -= payment.amount_paid
+        payment.amount_due = order.amount_due
+        payment.save()
+        if order.amount_paid >= order.total_cost:
+            order.status = 'full_payment'
+        elif order.amount_paid > 0:
+            order.status = 'partial_payment'
+
+        order.save()
+        return payment
+
+
+class OutflowOrderHistorySerializer(serializers.ModelSerializer):
+    created_by = ShortUserSerializer()
+    class Meta:
+        model = OutflowOrderHistory
+        fields = (
+            'id', 'field_name', 'old_value', 'new_value',
+            'date_created', 'created_by',
+        )
 
 
 class FullOutflowOrderSerializer(serializers.ModelSerializer):
@@ -236,19 +425,25 @@ class FullOutflowOrderSerializer(serializers.ModelSerializer):
     procurement_officer = ShortUserSerializer()
     total_quantity = serializers.IntegerField()
     total_cost = serializers.DecimalField(max_digits=12, decimal_places=2)
+    delivery_information = OutflowOrderDeliveryInfoResponseSerializer(many=True)
+    products = serializers.SerializerMethodField()
+    payments = OutflowOrderPaymentRequestSerializer(many=True)
+    logs = OutflowOrderHistorySerializer(source='history.all', many=True)
 
     class Meta:
         model = OutflowOrder
         fields = (
             'id', 'order_id', 'customer', 'procurement_officer',
             'destination', 'expected_delivery_date', 'status',
-            'total_quantity', 'total_cost', 'warehouses'
+            'total_quantity', 'total_cost', 'amount_paid', 'amount_due',
+            'products', 'warehouses', 'delivery_information', 'payments',
+            'logs'
+
         )
         read_only_fields = fields
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
-
         # Sort warehouses by ID for consistent output
         representation['warehouses'] = sorted(
             representation['warehouses'],
@@ -256,99 +451,31 @@ class FullOutflowOrderSerializer(serializers.ModelSerializer):
         )
         return representation
 
-# class OutflowOrderUpdateRequestSerializer(serializers.ModelSerializer):
-#     # similar to create but partial, allow changing warehouses
-#     class Meta:
-#         model = OutflowOrder
-#         fields = ('destination', 'expected_delivery_date', 'extra_comments')
-#
-#
-# class OutflowOrderDeliveryInfoRequestSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = OutflowOrderDeliveryInformation
-#         exclude = ('outflow_order',)
-#
-#     def validate(self, attrs):
-#         order = self.context['order']
-#         if order.status != OutflowOrder.STATUS_CHOICES[1][0]:  # 'truck_pickup'
-#             raise serializers.ValidationError("Can only assign delivery info at truck_pickup stage.")
-#         return attrs
-#
-#     @transaction.atomic
-#     def create(self, validated_data):
-#         order = self.context['order']
-#         validated_data['outflow_order'] = order
-#         di = super().create(validated_data)
-#         # send_notification(
-#         #     recipients=[m.user for m in order.warehouses.all()],
-#         #     message=f"Delivery info assigned for order {order.outflow_order_id}"
-#         # )
-#         order.history.create(field_name='status', old_value=order.status, new_value=order.status)
-#         return di
-#
-#
-# class OutflowOrderPaymentRequestSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = OutflowOrderPayments
-#         exclude = ('outflow_order', 'payment_date')
-#
-#     def save(self, **kwargs):
-#         order = self.context['order']
-#         payment = super().save(outflow_order=order, **kwargs)
-#         # update order amounts
-#         order.amount_paid += payment.amount_paid
-#         order.amount_due = order.total_cost - order.amount_paid
-#         if order.amount_due <= 0:
-#             order.status = OutflowOrder.STATUS_CHOICES[5][0]  # 'full_payment'
-#         else:
-#             order.status = OutflowOrder.STATUS_CHOICES[4][0]  # 'partial_payment'
-#         order.save()
-#         return payment
-#
-#
-# #
-# # —————————————— RESPONSE SERIALIZERS ——————————————
-# #
-#
-# class OutflowOrderWarehouseProductResponseSerializer(serializers.ModelSerializer):
-#     product = ProductSerializer(read_only=True)
-#
-#     class Meta:
-#         model = OutflowOrderWarehouseProduct
-#         fields = ('id', 'product', 'expected_quantity', 'available_quantity', 'price_per_unit', 'cost', 'status')
-#
-#
-# class OutflowOrderWarehouseResponseSerializer(serializers.ModelSerializer):
-#     warehouse = WarehouseSerializer(read_only=True)
-#     products = OutflowOrderWarehouseProductResponseSerializer(many=True, read_only=True)
-#
-#     class Meta:
-#         model = OutflowOrderWarehouse
-#         fields = ('id', 'warehouse', 'total_quantity', 'total_cost', 'status', 'products')
-#
-#
-# class OutflowOrderDeliveryInfoResponseSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = OutflowOrderDeliveryInformation
-#         exclude = ('outflow_order',)
-#
-#
-# class OutflowOrderPaymentResponseSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = OutflowOrderPayments
-#         exclude = ('outflow_order',)
-#
-#
-# class OutflowOrderResponseSerializer(serializers.ModelSerializer):
-#     warehouses = OutflowOrderWarehouseResponseSerializer(many=True)
-#     delivery_information = OutflowOrderDeliveryInfoResponseSerializer(many=True)
-#     payments = OutflowOrderPaymentResponseSerializer(many=True)
-#
-#     class Meta:
-#         model = OutflowOrder
-#         fields = (
-#             'id', 'outflow_order_id', 'status', 'customer', 'destination',
-#             'expected_delivery_date', 'actual_delivery_date', 'total_quantity',
-#             'total_cost', 'amount_paid', 'amount_due', 'extra_comments',
-#             'warehouses', 'delivery_information', 'payments',
-#         )
+    def get_products(self, obj):
+        all_products = OutflowOrderWarehouseProduct.objects.filter(
+            outflow_order_warehouse__outflow_order=obj,
+            is_active=True
+        )
+        return OutflowWarehouseProductSerializer(all_products, many=True).data
+
+
+class ListOutflowOrderSerializer(serializers.ModelSerializer):
+    customer = CustomerSerializer()
+    total_quantity = serializers.IntegerField()
+    total_cost = serializers.DecimalField(max_digits=12, decimal_places=2)
+    products = serializers.SerializerMethodField()
+
+    class Meta:
+        model = OutflowOrder
+        fields = (
+            'id', 'order_id', 'customer', 'procurement_officer',
+            'destination', 'expected_delivery_date', 'status', 'products',
+            'total_quantity', 'total_cost',
+        )
+
+    def get_products(self, obj):
+        all_products = OutflowOrderWarehouseProduct.objects.filter(
+            outflow_order_warehouse__outflow_order=obj,
+            is_active=True
+        )
+        return OutflowWarehouseProductSerializer(all_products, many=True).data

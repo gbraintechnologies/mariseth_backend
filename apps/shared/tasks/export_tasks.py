@@ -140,24 +140,9 @@ def process_farm_export(filter_params):
         }
         send_client_notification(
             message=message,
-            message_type="farm_export",
+            message_type="export_notification",
             group_names=group_names
         )
-
-        # # Send email
-        # template = get_template('export_complete.html')
-        # context = {
-        #     'user_fullname': user.get_full_name(),
-        #     'file_url': s3_url,
-        #     'export_type': 'Farms Data'
-        # }
-        # email_client.send_email(
-        #     sender=f'{organization.name} <{organization.email}>',
-        #     recipients=[user.email],
-        #     subject='Your Farms Export is Ready',
-        #     body_html=template.render(context),
-        #     body_text=f"Download your export: {s3_url}"
-        # )
 
     except Exception as e:
         sentry_sdk.capture_exception(e)
@@ -252,27 +237,9 @@ def process_product_export(filter_params):
         }
         send_client_notification(
             message=message,
-            message_type="product_export",
+            message_type="export_notification",
             group_names=group_names
         )
-            # logger.error("Failed to upload product export file")
-            # return
-            #
-            # template = get_template('export_complete.html')
-            # context = {
-            #     'user_fullname': user.get_full_name(),
-            #     'file_url': s3_url,
-            #     'export_type': 'Products Data'
-            # }
-            # email_client = SESEmailClient()
-            # email_client.send_email(
-            #     sender=f'{organization.name} <{organization.email}>',
-            #     recipients=[user.email],
-            #     subject='Your Products Export is Ready',
-            #     body_html=template.render(context),
-            #     body_text=f"Download your export: {s3_url}"
-            # )
-
     except Exception as e:
         sentry_sdk.capture_exception(e)
         logger.error(f"Product export failed: {str(e)}")
@@ -363,25 +330,9 @@ def process_farmer_export(filter_params):
         }
         send_client_notification(
             message=message,
-            message_type="farmer_export",
+            message_type="export_notification",
             group_names=group_names
         )
-
-        # # Send email
-        # template = get_template('export_complete.html')
-        # context = {
-        #     'user_fullname': user.get_full_name(),
-        #     'file_url': s3_url,
-        #     'export_type': 'Farmers Data'
-        # }
-        # email_client.send_email(
-        #     sender=f'{organization.name} <{organization.email}>',
-        #     recipients=[user.email],
-        #     subject='Your Farmers Export is Ready',
-        #     body_html=template.render(context),
-        #     body_text=f"Download your export: {s3_url}"
-        # )
-
     except Exception as e:
         sentry_sdk.capture_exception(e)
         logger.error(f"Farmer export failed: {str(e)}")
@@ -446,24 +397,9 @@ def process_credit_export(filter_params):
         }
         send_client_notification(
             message=message,
-            message_type="export_complete",
+            message_type="export_notification",
             group_names=group_names
         )
-
-        # # Send email notification
-        # template = get_template('export_complete.html')
-        # context = {
-        #     'user_fullname': user.get_full_name(),
-        #     'file_url': s3_url,
-        #     'export_type': 'Credits Data'
-        # }
-        # email_client.send_email(
-        #     sender=f'{organization.name} <{organization.email}>',
-        #     recipients=[user.email],
-        #     subject='Your Credits Export is Ready',
-        #     body_html=template.render(context),
-        #     body_text=f"Download your export: {s3_url}"
-        # )
 
     except Exception as e:
         sentry_sdk.capture_exception(e)
@@ -536,7 +472,7 @@ def process_warehouse_export(filter_params):
         }
         send_client_notification(
             message=message,
-            message_type="warehouse_export",
+            message_type="export_notification",
             group_names=group_names
         )
 

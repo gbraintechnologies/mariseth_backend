@@ -24,13 +24,14 @@ def generate_outflow_order_id(organization_id: int) -> str:
     return f"{base_prefix}{max_sequence + 1:02d}"
 
 
-def generate_serial_number(warehouse_id: str, product_name: str, quantity: int) -> str:
+def generate_serial_number(warehouse_id: str, order_id: str, product_name: str, quantity: int) -> str:
     """
     Generate aggregated product serial numbers in the format:
-    {warehouse_id}/{product_initials}/{start_number}-{end_number}
+    order_id/{warehouse_id}/{product_initials}/{start_number}-{end_number}
 
     Args:
         warehouse_id: Farm identifier (string or number)
+        order_id: Order identifier
         product_name: Product name to extract initials from
         quantity: Number of bags/units
 
@@ -45,4 +46,4 @@ def generate_serial_number(warehouse_id: str, product_name: str, quantity: int) 
     start = "001"
     end = f"{int(quantity):03d}"
     range_str = start if quantity == 1 else f"{start}-{end}"
-    return f"{warehouse_part}/{product_initials}/{range_str}"
+    return f"{order_id}/{warehouse_part}/{product_initials}/{range_str}"
