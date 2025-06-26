@@ -20,7 +20,7 @@ def send_verification_email(verification_code, template_name, user):
         domain = get_organization_domain(user)
         context = {
             'user_fullname': user.get_full_name(),
-            'verification_code': verification_code,
+            'verification_code': str(verification_code),
             'user_email': user.email,
             'domain': domain,
         }
