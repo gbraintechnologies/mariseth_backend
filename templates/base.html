@@ -2,146 +2,161 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Mariseth Farms{% endblock %}</title>
+    <title>Mariseth Farms - Inquiry About Orders</title>
     <style>
         body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            line-height: 1.6;
-            color: #333333;
-            margin: 0;
-            padding: 0;
-            background-color: #f5f7fa;
+          margin: 0 auto;
+          padding-left: 12px;
+          padding-right: 12px;
+          max-width: 800px;
+          width: 100%;
+          font-family: Arial, sans-serif;
+          background-color: #f5f5f5;
         }
-        .container {
-            max-width: 600px;
+
+        .email-container {
+            width: 100%;
+            max-width: 860px;
             margin: 0 auto;
-            padding: 20px;
+            background-color: #ffffff;
         }
-        .email-wrapper {
-            background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%);
-            border-radius: 16px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-        }
+
+        /* Header */
         .header {
-            background: linear-gradient(135deg, #0046b5 0%, #00a0e9 100%);
-            padding: 30px 20px;
+            width: 100%;
+            background-color: #ffffff;
             text-align: center;
-            color: white;
         }
-        .header h2 {
-            margin: 10px 0;
-            font-size: 24px;
-            font-weight: 600;
-        }
-        .logo {
-            max-width: 300px;
+
+        .header img {
+            width: 100px;
             height: auto;
         }
+
+        /* Content */
         .content {
-            padding: 40px 30px;
-            background: white;
+            padding: 20px 80px;
+            background-color: #ffffff;
         }
-        .message {
-            font-size: 16px;
-            color: #555;
+        .greeting {
+            font-size: 13px;
+            font-weight: bold;
+            color: #333;
             margin-bottom: 20px;
         }
-        .highlight {
-            color: #009245;
-            font-weight: 600;
-        }
-        .footer {
-            background: #f8f9fa;
-            padding: 20px;
-            text-align: center;
-            font-size: 12px;
-            color: #666666;
-            border-top: 1px solid #eaeaea;
-        }
-        .time-notice {
-            font-size: 14px;
-            color: #666;
-            text-align: center;
-            margin-top: 15px;
-            font-style: italic;
-        }
-        .button {
-            display: inline-block;
-            padding: 12px 24px;
-            background: linear-gradient(135deg, #0046b5 0%, #00a0e9 100%);
-            color: white !important;
-            text-decoration: none;
-            border-radius: 8px;
-            margin: 20px 0;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-        .button:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 70, 181, 0.2);
-        }
-        .alert-box {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border: 2px dashed #009245;
-            border-radius: 12px;
-            padding: 20px;
-            margin: 25px 0;
-            text-align: center;
-        }
-        .verification-box {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border: 2px dashed #009245;
-            border-radius: 12px;
-            padding: 20px;
-            margin: 25px 0;
-            text-align: center;
-        }
-        .verification-code {
-            font-family: 'Courier New', monospace;
-            font-size: 32px;
+        .subject {
+            font-size: 16px;
             font-weight: bold;
-            letter-spacing: 8px;
-            color: #009245;
-            margin: 10px 0;
-            text-shadow: 2px 2px 4px rgba(0, 146, 69, 0.1);
+            color: #333;
+            margin-bottom: 30px;
         }
-        .security-notice {
-            background: #fff3cd;
-            border-left: 4px solid #ffc107;
-            padding: 15px;
-            margin: 20px 0;
-            font-size: 14px;
-            color: #856404;
-            border-radius: 0 8px 8px 0;
+
+        /* Footer */
+        .footer {
+            padding: 30px 40px;
         }
-        {% block extra_styles %}{% endblock %}
+
+        .footer-content {
+            width: 100%;
+            display: table;
+        }
+
+        .footer-logo {
+            display: table-cell;
+            width: 30%;
+            vertical-align: middle;
+            text-align: center;
+        }
+
+        .footer-logo img {
+            width:120px;
+            height: auto;
+        }
+
+        .footer-divider {
+            display: table-cell;
+            width: 4px;
+            vertical-align: middle;
+            padding: 0 20px;
+        }
+
+        .divider-line {
+            width: 4px;
+            height: 150px;
+            background-color: #7cb342;
+        }
+
+        .footer-info {
+            display: table-cell;
+            width: 70%;
+            vertical-align: middle;
+        }
+
+        .company-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #7cb342;
+            margin-bottom: 15px;
+        }
+
+        .contact-item {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        .message {
+            font-size: 12px;
+            color: #333;
+            line-height: 0.2;
+            margin-bottom: 20px;
+            text-align: center;
+        }
     </style>
+
 </head>
 <body>
-    <div class="container">
-        <div class="email-wrapper">
-            <div class="header">
-                <img src="" alt="" class="logo">
-                {% block header %}{% endblock %}
-            </div>
+<div class="email-container">
+    <!-- Header -->
+    <div class="header">
+        <img src="https://marisethfarms.com/wp-content/uploads/2025/01/mariseth-logo.png" alt="Mariseth Farms Logo">
+    </div>
 
-            <div class="content">
-                <div class="message">
-                    Hello <span class="highlight">{{ user_fullname }}</span>,
-                </div>
+    <!-- Content -->
+    <div class="content">
+        <div class="subject">Subject: {% block header %}{% endblock %}</div>
+        <div class="greeting">Hello {{ user_fullname }},</div>
                 {% block content %}{% endblock %}
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <div class="footer-content">
+            <div class="footer-logo">
+                <img src="https://marisethfarms.com/wp-content/uploads/2025/01/mariseth-logo.png"
+                     alt="Mariseth Farms Logo">
             </div>
 
-            <div class="footer">
-                {% block footer %}
+            <div class="footer-divider">
+                <div class="divider-line"></div>
+            </div>
+
+            <div class="footer-info">
+                <div class="company-name">Mariseth Farms</div>
+                <div class="contact-item">📞 +39 380 215 4708</div>
+                <div class="contact-item">✉️ fyi@oratoinstitute.com</div>
+                <div class="contact-item">📍 The Union Building, 51-59 Rose Lane,<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Norwich,
+                    Norfolk, NR1 1BY, United Kingdom
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="message">
+        {% block footer %}
                 <p>This is an automated message sent to {{ user_email }}</p>
                 <p>&copy; {% now "Y" %} Mariseth Farms</p>
                 <p>Please do not reply to this email.</p>
                 {% endblock %}
             </div>
-        </div>
     </div>
 </body>
 </html>
