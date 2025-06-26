@@ -1,9 +1,16 @@
-from rest_framework import serializers
 from django.utils import timezone
+from rest_framework import serializers
+
 from apps.accounts.serializers.users import ShortUserSerializer
 from apps.shared.serializers.regions import DistrictSerializer, ShortRegionSerializer
 from apps.warehouse.models import Warehouse, WarehouseProduct
 from apps.warehouse.utils import generate_warehouse_id
+
+
+class ShortWarehouseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Warehouse
+        fields = ('id', 'warehouse_id', 'name')
 
 
 class WarehouseProductSerializer(serializers.ModelSerializer):

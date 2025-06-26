@@ -1,7 +1,11 @@
+import base64
+import uuid
 from decimal import Decimal, ROUND_HALF_UP
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.files.base import ContentFile
+from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
 
 User = get_user_model()
@@ -41,3 +45,18 @@ def authenticate(phone_number, pin):
     except ObjectDoesNotExist:
         pass
     return None
+
+
+def base64_to_image(image_data):
+    """
+    Decode the base64 image and save it in the TicketImage model.
+
+    Args:
+    image_data (str): The base64 encoded image data.
+    """
+    # Decoding the base64 string
+    format, imgstr = image_data.split(';base64,')
+    ext = format.split('/')[-1]
+    image = ContentFile(base64.b64decode(imgstr), name='temp.' + ext)
+
+    return image

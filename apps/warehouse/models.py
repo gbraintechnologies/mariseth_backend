@@ -75,9 +75,8 @@ class WarehouseProductMovement(BaseModel):
     inflow_order = models.ForeignKey('inflow.InflowOrder', on_delete=models.CASCADE,
                                      null=True, blank=True, related_name='movements'
                                      )
-    # outflow_order = models.ForeignKey('Outflow', on_delete=models.CASCADE,
-    #                                  null=True, blank=True,
-    #                                  related_name='movements')
+    outflow_order = models.ForeignKey('outflow.OutflowOrder', on_delete=models.CASCADE,
+                                      null=True, blank=True, related_name='movements')
     amount = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     buyer = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='purchases', blank=True)
     aggregator = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='aggregations', blank=True)

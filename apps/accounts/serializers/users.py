@@ -18,9 +18,8 @@ class ShortUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'id', 'email', 'first_name', 'username', 'last_name',
-            'gender', 'phone_number', 'avatar', 'date_created',
-            'user_type'
+            'id', 'email', 'first_name', 'last_name',
+            'gender', 'phone_number', 'user_type'
         ]
 
 

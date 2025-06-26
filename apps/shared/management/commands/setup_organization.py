@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-from apps.organizations.models import Branch, Organization, OrganizationUser
+from apps.organizations.models import Organization, OrganizationUser
 
 
 class Command(BaseCommand):
@@ -16,28 +16,16 @@ class Command(BaseCommand):
 
         # Default users data
         default_superusers = [
-            {'email': 'dzifa@premierbank.com', 'first_name': 'Dzifa', 'last_name': 'Premier'},
-            {'email': 'daniel@premierbank.com', 'first_name': 'Daniel', 'last_name': 'Premier'},
-            {'email': 'patrick@premierbank.com', 'first_name': 'Patrick', 'last_name': 'Premier'},
-            {'email': 'obed@premiertechlab.com', 'first_name': 'Obed', 'last_name': 'Premier'},
-            {'email': 'kenneth@premierbank.com', 'first_name': 'Kenneth', 'last_name': 'Premier'},
-            {'email': 'banabas@premierbank.com', 'first_name': 'Banabas', 'last_name': 'Premier'},
-        ]
-
-        # Branch data
-        branches_data = [
-            {
-                'name': 'Premier Headquarters',
-                'location': 'Accra',
-                'address': 'Esiama Western Region'
-            },
+            {'email': 'daniel@email.com', 'first_name': 'Daniel', 'last_name': 'Adu'},
+            {'email': 'victor@email.com', 'first_name': 'Victor', 'last_name': 'Acheampong'},
+            {'email': 'kenneth@email.com', 'first_name': 'Kenneth', 'last_name': 'Owusu'},
         ]
 
         try:
             with transaction.atomic():
                 # Create organization
                 organization, org_created = Organization.objects.get_or_create(
-                    name="Premier Bank",
+                    name="Mariseth Famrs",
                     defaults={
                         'address': 'Accra Ghana',
                     }
@@ -46,32 +34,6 @@ class Command(BaseCommand):
                     self.stdout.write(self.style.SUCCESS(f"Created organization: {organization.name}"))
                 else:
                     self.stdout.write(self.style.WARNING(f"Organization {organization.name} already exists"))
-
-                # Create all branches
-                created_branches = []
-                for branch_data in branches_data:
-                    branch, branch_created = Branch.objects.get_or_create(
-                        name=branch_data['name'],
-                        defaults={
-                            'location': branch_data['location'],
-                            'address': branch_data['address'],
-                            'is_default': True
-                        }
-                    )
-                    created_branches.append(branch)
-
-                    if branch_created:
-                        self.stdout.write(self.style.SUCCESS(f"Created branch: {branch.name}"))
-                    else:
-                        self.stdout.write(self.style.WARNING(f"Branch {branch.name} already exists"))
-
-                    if branch not in organization.branches.all():
-                        organization.branches.add(branch)
-
-                default_branch = next(
-                    (branch for branch in created_branches if branch.name == 'Headquarters'),
-                    created_branches[0]
-                )
 
                 # Create or get users and assign to organization
                 for user_data in default_superusers:
@@ -85,7 +47,7 @@ class Command(BaseCommand):
                             'is_staff': True,
                             'is_active': True,
                             'is_verified': True,
-                            'user_type': 'admin',
+                            'user_type': "admin",
                         }
                     )
 
@@ -98,15 +60,12 @@ class Command(BaseCommand):
                     org_user, org_user_created = OrganizationUser.objects.get_or_create(
                         user=user,
                         organization=organization,
-                        defaults={
-                            'branch': default_branch,
-                        }
                     )
 
                     if org_user_created:
                         self.stdout.write(
                             self.style.SUCCESS(
-                                f"Created organization user: {user.email} - {organization.name} - {default_branch.name}"
+                                f"Created organization user: {user.email} - {organization.name}"
                             )
                         )
                     else:
