@@ -150,7 +150,7 @@ class FarmViewSet(viewsets.GenericViewSet):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         farm.soft_delete(owner=request.user)
-        return Response({'message': 'Farm deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+        return Response({'message': 'Farm deleted successfully'}, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['POST'], url_path='delete-farm-products')
     @transaction.atomic

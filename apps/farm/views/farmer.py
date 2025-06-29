@@ -141,7 +141,7 @@ class FarmerViewSet(viewsets.GenericViewSet):
         try:
             farmer = Farmer.objects.get(pk=pk, is_active=True, organization=request.organization)
             farmer.soft_delete(owner=request.user)
-            return Response(GENERAL_SUCCESS_RESPONSE, status=status.HTTP_204_NO_CONTENT)
+            return Response(GENERAL_SUCCESS_RESPONSE, status=status.HTTP_200_OK)
         except Farmer.DoesNotExist:
             return Response({'error': 'Farmer not found'}, status=status.HTTP_404_NOT_FOUND)
 

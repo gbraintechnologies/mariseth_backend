@@ -155,7 +155,7 @@ class ProductViewSet(viewsets.GenericViewSet):
             product.soft_delete(owner=request.user)
             return Response(
                 {'message': 'Product deleted successfully'},
-                status=status.HTTP_204_NO_CONTENT
+                status=status.HTTP_200_OK
             )
         except Product.DoesNotExist:
             return Response(

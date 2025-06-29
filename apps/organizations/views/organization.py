@@ -48,7 +48,7 @@ class OrganizationViewSet(viewsets.GenericViewSet):
         try:
             organization = Organization.objects.get(pk=pk, is_active=True)
             organization.soft_delete(owner=request.user)
-            return Response(GENERAL_SUCCESS_RESPONSE, status=status.HTTP_204_NO_CONTENT)
+            return Response(GENERAL_SUCCESS_RESPONSE, status=status.HTTP_200_OK)
         except Organization.DoesNotExist:
             return Response({'error': 'Organization not found'}, status=status.HTTP_404_NOT_FOUND)
 

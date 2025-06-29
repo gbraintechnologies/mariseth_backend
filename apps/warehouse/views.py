@@ -128,7 +128,7 @@ class WarehouseViewSet(viewsets.GenericViewSet):
             warehouse = Warehouse.objects.get(pk=pk, is_active=True, organization=request.organization)
             warehouse.soft_delete(owner=request.user)
             warehouse.save()
-            return Response({'message': 'Warehouse deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+            return Response({'message': 'Warehouse deleted successfully'}, status=status.HTTP_200_OK)
         except Warehouse.DoesNotExist:
             return Response({'error': 'Warehouse not found'}, status=status.HTTP_404_NOT_FOUND)
 

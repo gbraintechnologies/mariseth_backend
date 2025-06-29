@@ -1,4 +1,3 @@
-# views.py
 from django.core.paginator import Paginator
 from django.db.models import Q
 from rest_framework import status, viewsets
@@ -11,8 +10,10 @@ from apps.consuner_mobile.serializers.lead_farmer import FarmSerializer, \
     MobileAddSmallholderFarmerSerializer
 from apps.consuner_mobile.swagger import add_swagger_to_mobile_lead_farmer_viewset
 from apps.farm.models import Farm, Farmer
-from apps.farm.serializers.farmer import FarmerSerializer, FullFarmerSerializer
+from apps.farm.serializers.farm import FullFarmSerializer
+from apps.farm.serializers.farmer import FullFarmerSerializer
 from apps.shared.utils.decorators import lead_farmer_required
+from apps.farm.views.farm import FarmViewSet
 
 
 @add_swagger_to_mobile_lead_farmer_viewset
@@ -96,7 +97,7 @@ class MobileLeadFarmerViewSet(viewsets.GenericViewSet):
         page_obj = paginator.get_page(page)
 
         return Response({
-            'results': FarmerSerializer(page_obj.object_list, many=True).data,
+            'results': FullFarmerSerializer(page_obj.object_list, many=True).data,
             'pagination': {
                 'total': smallholders.count(),
                 'page': page_obj.number,
@@ -118,3 +119,18 @@ class MobileLeadFarmerViewSet(viewsets.GenericViewSet):
             return Response(FullFarmerSerializer(serializer.instance).data,
                             status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['POST'], url_path='add-new-farm')
+    @lead_farmer_required
+    def add_new_farm(self, request):
+        request.data['farmer'] = request.user.farmer.id
+        create_farm = FarmViewSet.create(self, request)
+        return create_farm
+
+    @action(detail=False, methods=['POST'], url_path='edit-farm/(?P<farm_id>[^/.]+)')
+    @lead_farmer_required
+    def edit_farm(self, request, farm_id):
+        request.data['farmer'] = request.user.farmer.id
+        update_farm = FarmViewSet.update(self, request, farm_id)
+        return update_farm
+

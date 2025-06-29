@@ -479,7 +479,7 @@ def add_swagger_to_product_viewset(viewset_cls):
         ),
         manual_parameters=[
             openapi.Parameter('query', openapi.IN_QUERY, "Search by name or product_id", type=openapi.TYPE_STRING),
-            openapi.Parameter('type', openapi.IN_QUERY, "Filter by product type (e.g., 'crops', 'livestock')",
+            openapi.Parameter('type', openapi.IN_QUERY, "Filter by product type ('crops', 'livestock')",
                               type=openapi.TYPE_STRING),
             openapi.Parameter('category', openapi.IN_QUERY, "Filter by category ID", type=openapi.TYPE_INTEGER),
             openapi.Parameter('status', openapi.IN_QUERY, "Filter by product status", type=openapi.TYPE_STRING),
