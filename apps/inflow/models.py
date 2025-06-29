@@ -53,7 +53,7 @@ class InflowOrderProduct(BaseModel):
         unique_together = ('order', 'product', 'farm')
 
     def __str__(self):
-        return f"{self.product.name} - {self.farm.name}"
+        return f"{self.id} - {self.product.name} - {self.farm.name}"
 
 
 class InflowMedia(BaseModel):
