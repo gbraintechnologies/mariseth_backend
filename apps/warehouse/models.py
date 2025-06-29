@@ -46,7 +46,8 @@ class WarehouseProduct(BaseModel):
     def add_stock(self, quantity: int):
         """Handle inflow of products"""
         self.quantity = (self.quantity or Decimal(0)) + Decimal(quantity)
-        self.weight = (self.weight or Decimal(0)) + (Decimal(quantity) * Decimal(self.product.weight))
+        product_weight_decimal = Decimal(self.product.weight) if self.product.weight is not None else Decimal(0)
+        self.weight = (self.weight or Decimal(0)) + (Decimal(quantity) * product_weight_decimal)
         self.save()
 
     def remove_stock(self, quantity: int):

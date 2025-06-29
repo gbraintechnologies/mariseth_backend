@@ -88,7 +88,8 @@ class CreditSerializer(serializers.ModelSerializer):
                 field_name=field,
                 old_value=str(old),
                 new_value=str(new),
-                notes=f"{field} changed from {old} to {new}"
+                notes=f"{field} changed from {old} to {new}",
+                created_by=self.context['request'].user
             )
 
         return instance

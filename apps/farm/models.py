@@ -49,7 +49,7 @@ class Farm(BaseModel):
     other_specification = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
-        return self.name
+        return f"{self.id} - {self.name}"
 
 
 # class FarmChangeLog(BaseModel):
@@ -156,7 +156,7 @@ class Product(BaseModel):
     breed = models.CharField(max_length=100, blank=True, null=True)
 
     def __str__(self):
-        return self.name
+        return f"{self.id} - {self.name}"
 
     def add_quantity(self, quantity):
         self.quantity = (self.quantity or Decimal(0)) + Decimal(quantity)
