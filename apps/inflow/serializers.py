@@ -264,7 +264,7 @@ class DeliveryInspectionApprovalSerializer(serializers.Serializer):
             product.save()
 
         except InflowOrderProduct.DoesNotExist:
-            raise ValidationError(f"Product {complaint['product_id']} not found in order")
+            raise ValidationError(f"Product {complaint['order_product_id']} not found in order")
 
     def process_image(self, order, image):
         format, imgstr = image.split(';base64,')

@@ -16,7 +16,7 @@ class Organization(BaseModel):
         verbose_name_plural = "Organizations"
 
     def __str__(self):
-        return self.name
+        return f"{self.id} - {self.name}"
 
 
 class OrganizationUser(BaseModel):
