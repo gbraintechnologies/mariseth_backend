@@ -126,7 +126,7 @@ class OutflowOrderViewSet(viewsets.GenericViewSet):
             for product in warehouse.products.filter(is_active=True):
                 product.soft_delete(owner=request.user)
 
-        return Response(GENERAL_SUCCESS_RESPONSE, status=status.HTTP_204_NO_CONTENT)
+        return Response(GENERAL_SUCCESS_RESPONSE, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['POST'], url_path='assign-delivery-info')
     @transaction.atomic

@@ -56,7 +56,7 @@ class CustomerViewSet(viewsets.GenericViewSet):
             customer = Customer.objects.get(pk=pk, is_active=True, organization=request.organization)
             customer.is_active = False
             customer.save()
-            return Response({'message': 'Customer deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+            return Response({'message': 'Customer deleted successfully'}, status=status.HTTP_200_OK)
         except Customer.DoesNotExist:
             return Response({'error': 'Customer not found'}, status=status.HTTP_404_NOT_FOUND)
 

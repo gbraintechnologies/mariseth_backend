@@ -132,7 +132,7 @@ class CreditViewSet(viewsets.GenericViewSet):
             if not serializer.is_valid():
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             credit.soft_delete(deleted_by=request.user)
-            return Response({'message': 'Credit deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+            return Response({'message': 'Credit deleted successfully'}, status=status.HTTP_200_OK)
         except Credit.DoesNotExist:
             return Response({'error': 'Credit not found'}, status=status.HTTP_404_NOT_FOUND)
 

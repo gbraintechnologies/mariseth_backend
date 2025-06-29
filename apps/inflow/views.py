@@ -119,7 +119,7 @@ class InflowOrderViewSet(viewsets.GenericViewSet):
             if order.status != "delivery_inspection":
                 return Response({'error': 'Order cannot be updated'}, status=status.HTTP_400_BAD_REQUEST)
             order.soft_delete(owner=request.user)
-            return Response({'message': 'Order deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+            return Response({'message': 'Order deleted successfully'}, status=status.HTTP_200_OK)
         except InflowOrder.DoesNotExist:
             return Response({'error': 'Order not found'}, status=status.HTTP_404_NOT_FOUND)
 

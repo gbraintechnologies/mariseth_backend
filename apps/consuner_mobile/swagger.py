@@ -8,6 +8,7 @@ from apps.consuner_mobile.serializers.auth import MobileAccountVerificationSeria
     MobileUserWithTokenAndFarmerSerializer, SetPinSerializer
 from apps.consuner_mobile.serializers.credit import MobileActiveCreditSerializer
 from apps.consuner_mobile.serializers.farm import FarmDetailSerializer
+from apps.farm.serializers.farm import FarmSerializer, FullFarmSerializer
 
 
 def add_swagger_to_mobile_user_auth_viewset(viewset_cls):
@@ -451,6 +452,51 @@ def add_swagger_to_mobile_lead_farmer_viewset(viewset_cls):
         security=[{'Bearer': []}]
     )(viewset_cls.get_smallholders)
 
+    viewset_cls.add_new_farm = swagger_auto_schema(
+        tags=['Mobile/Lead Farmer'],
+        operation_summary="Create a new farm",
+        operation_description=(
+            "Register a new farm under the current organization. "
+            "Returns the complete farm record including generated `farm_id` and associated products."
+        ),
+        request_body=FarmSerializer,
+        responses={
+            201: openapi.Response(
+                description="Farm created successfully",
+                schema=FullFarmSerializer()
+            ),
+            400: openapi.Response(
+                description="Invalid farm data provided",
+                schema=openapi.Schema(type=openapi.TYPE_OBJECT)
+            )
+        },
+        security=[{'Bearer': []}]
+    )(viewset_cls.add_new_farm)
+
+    # Update Farm
+    viewset_cls.edit_farm = swagger_auto_schema(
+        tags=['Mobile/Lead Farmer'],
+        operation_summary="Update an existing farm",
+        operation_description=(
+            "Modify one or more attributes of a farm you own. "
+            "Only active farms in your organization can be updated."
+        ),
+        request_body=FarmSerializer,
+        responses={
+            200: openapi.Response(
+                description="Farm updated successfully",
+                schema=FullFarmSerializer()
+            ),
+            400: openapi.Response(
+                description="Validation errors or forbidden update",
+                schema=openapi.Schema(type=openapi.TYPE_OBJECT)
+            ),
+            403: openapi.Response(description="Attempt to update a farm outside your organization"),
+            404: openapi.Response(description="Farm not found")
+        },
+        security=[{'Bearer': []}]
+    )(viewset_cls.edit_farm)
+
     return viewset_cls
 
 
@@ -476,5 +522,64 @@ def add_swagger_to_mobile_farm_viewset(viewset_cls):
         },
         security=[{'Bearer': []}]
     )(viewset_cls.get_my_farm)
+
+    viewset_cls.get_products = swagger_auto_schema(
+        tags=['Mobile/Farm'],
+        operation_summary="List and filter products",
+        operation_description=(
+            "Retrieve a paginated list of products in your organization. "
+            "Supports filtering by name or type (`query`), `type`, `category`, `status`, `season_status`, "
+            "creation date range, last-updated date range, and initiating an export job (`export=true`)."
+        ),
+        manual_parameters=[
+            openapi.Parameter('query', openapi.IN_QUERY, "Search by name or product_id", type=openapi.TYPE_STRING),
+            openapi.Parameter('type', openapi.IN_QUERY, "Filter by product type ('crops', 'livestock')",
+                              type=openapi.TYPE_STRING),
+            openapi.Parameter('category', openapi.IN_QUERY, "Filter by category ID", type=openapi.TYPE_INTEGER),
+            openapi.Parameter('status', openapi.IN_QUERY, "Filter by product status", type=openapi.TYPE_STRING),
+            openapi.Parameter('season_status', openapi.IN_QUERY, "Filter by season status", type=openapi.TYPE_STRING),
+            openapi.Parameter('date_from', openapi.IN_QUERY, "Filter by creation start date (YYYY-MM-DD)",
+                              type=openapi.TYPE_STRING),
+            openapi.Parameter('date_to', openapi.IN_QUERY, "Filter by creation end date (YYYY-MM-DD)",
+                              type=openapi.TYPE_STRING),
+            openapi.Parameter('last_updated_from', openapi.IN_QUERY, "Filter by last-updated start date (YYYY-MM-DD)",
+                              type=openapi.TYPE_STRING),
+            openapi.Parameter('last_updated_to', openapi.IN_QUERY, "Filter by last-updated end date (YYYY-MM-DD)",
+                              type=openapi.TYPE_STRING),
+            openapi.Parameter('export', openapi.IN_QUERY,
+                              "Set to 'true' to start export background job (requires `type`)",
+                              type=openapi.TYPE_BOOLEAN, default=False),
+            openapi.Parameter('page', openapi.IN_QUERY, "Page number", type=openapi.TYPE_INTEGER, default=1),
+            openapi.Parameter('page_size', openapi.IN_QUERY, "Results per page", type=openapi.TYPE_INTEGER, default=10),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Paginated list of products and optional export job message",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'export_response': openapi.Schema(type=openapi.TYPE_STRING,
+                                                          description="Background export initiation message"),
+                        'results': openapi.Schema(type=openapi.TYPE_ARRAY,
+                                                  items=openapi.Items(type=openapi.TYPE_OBJECT)),
+                        'pagination': openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'total': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'page': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'pages': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'has_next': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                                'has_previous': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                            }
+                        )
+                    }
+                )
+            ),
+            400: openapi.Response(
+                description="Missing required `type` when `export=true` or invalid filter values",
+                schema=openapi.Schema(type=openapi.TYPE_OBJECT)
+            )
+        },
+    )(viewset_cls.get_products)
 
     return viewset_cls
