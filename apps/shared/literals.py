@@ -105,7 +105,7 @@ ASSIGN_DELIVERY_INFO = 'outflow_orders|assign_delivery_info'
 VIEW_OUTFLOW_APPROVAL = 'outflow_approvals|view_outflow_approval'
 VERIFY_OUTFLOW_AVAILABILITY = 'outflow_approvals|verify_outflow_availability'
 MARK_OUTFLOW_ORDER_PICKED = 'outflow_approvals|mark_outflow_order_picked'
-
+LIST_OUTFLOW_APPROVAL = 'outflow_approvals|list_outflow_approvals'
 
 # EVENT TYPES
 CREATE_STRING = 'create'
