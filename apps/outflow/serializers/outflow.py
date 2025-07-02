@@ -67,7 +67,8 @@ class OutflowOrderSerializer(serializers.ModelSerializer):
         fields = (
             'customer', 'procurement_officer', 'destination',
             'expected_delivery_date', 'products', 'total_quantity',
-            'total_cost', 'extra_comments'
+            'total_cost', 'extra_comments', 'additional_costs',
+            'additional_cost_amount',
         )
         read_only_fields = ('total_quantity', 'total_cost', 'order_id')
 
@@ -79,6 +80,7 @@ class OutflowOrderSerializer(serializers.ModelSerializer):
         validated_data["created_by"] = request.user
         validated_data["order_id"] = generate_outflow_order_id(request.organization.id)
         order = OutflowOrder.objects.create(**validated_data)
+        addtional_cost = validated_data.get('additional_cost_amount', 0)
 
         total_quantity = 0
         total_cost = 0
@@ -109,7 +111,7 @@ class OutflowOrderSerializer(serializers.ModelSerializer):
 
             total_quantity += product_data['expected_quantity']
             total_cost += product_data['cost']
-
+        total_cost += addtional_cost
         order.total_quantity = total_quantity
         order.total_cost = total_cost
         order.amount_due = total_cost
@@ -118,13 +120,13 @@ class OutflowOrderSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        # 1) Update scalar fields
+        # Update scalar fields
         for attr in ('destination', 'expected_delivery_date', 'extra_comments'):
             if attr in validated_data:
                 setattr(instance, attr, validated_data[attr])
         instance.save()
 
-        # 2) Sync products if provided
+        #  Sync products if provided
         incoming = validated_data.get('warehouse_products')
         if incoming is not None:
             # Track which warehouse-product combinations to keep (using original warehouse IDs)
@@ -194,7 +196,7 @@ class OutflowOrderSerializer(serializers.ModelSerializer):
                 total_cost += line.cost
 
         instance.total_quantity = total_qty
-        instance.total_cost = total_cost
+        instance.total_cost = total_cost + instance.additional_cost_amount
         instance.amount_due = total_cost
         instance.save()
 
@@ -435,12 +437,10 @@ class FullOutflowOrderSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'order_id', 'customer', 'procurement_officer',
             'destination', 'expected_delivery_date', 'status',
-            'total_quantity', 'total_cost', 'amount_paid', 'amount_due',
-            'products', 'warehouses', 'delivery_information', 'payments',
-            'logs'
-
+            'additional_costs', 'additional_cost_amount', 'total_quantity',
+            'total_cost', 'amount_paid', 'amount_due', 'products', 'warehouses',
+            'delivery_information', 'payments', 'logs'
         )
-        read_only_fields = fields
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
