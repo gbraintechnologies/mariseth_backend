@@ -46,4 +46,4 @@ def generate_serial_number(warehouse_id: str, order_id: str, product_name: str, 
     start = "001"
     end = f"{int(quantity):03d}"
     range_str = start if quantity == 1 else f"{start}-{end}"
-    return f"{order_id}/{warehouse_part}/{product_initials}/{range_str}"
+    return f"{warehouse_part}/{product_initials}/{order_id}/{range_str}"
