@@ -257,3 +257,25 @@ class MarkOrderPickedSerializer(serializers.Serializer):
         order.update_status_to_truck_pickup_if_ready(picked_warehouse=outflow_warehouse, user=request.user)
 
         return order
+
+
+class ListApprovalsOutflowOrderSerializer(serializers.ModelSerializer):
+    customer = CustomerSerializer()
+    total_quantity = serializers.IntegerField()
+    total_cost = serializers.DecimalField(max_digits=12, decimal_places=2)
+    products = serializers.SerializerMethodField()
+
+    class Meta:
+        model = OutflowOrder
+        fields = (
+            'id', 'order_id', 'customer', 'procurement_officer',
+            'destination', 'expected_delivery_date', 'status', 'products',
+            'total_quantity', 'total_cost',
+        )
+
+    def get_products(self, obj):
+        all_products = OutflowOrderWarehouseProduct.objects.filter(
+            outflow_order_warehouse__outflow_order=obj,
+            is_active=True
+        )
+        return OutflowWarehouseProductSerializer(all_products, many=True).data

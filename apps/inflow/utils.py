@@ -5,12 +5,13 @@ from django.db.models import Max
 from .models import InflowOrder
 
 
-def generate_serial_number(farm_id: str, product_name: str, quantity: int) -> str:
+def generate_serial_number(order_id: int,farm_id: str, product_name: str, quantity: int) -> str:
     """
     Generate aggregated product serial numbers in the format:
     {farm_id}/{product_initials}/{start_number}-{end_number}
 
     Args:
+        order_id: Order identifier
         farm_id: Farm identifier (string or number)
         product_name: Product name to extract initials from
         quantity: Number of bags/units
@@ -26,7 +27,7 @@ def generate_serial_number(farm_id: str, product_name: str, quantity: int) -> st
     start = "001"
     end = f"{int(quantity):03d}"
     range_str = start if quantity == 1 else f"{start}-{end}"
-    return f"{farm_part}/{product_initials}/{range_str}"
+    return f"{farm_part}/{product_initials}/{order_id}/{range_str}"
 
 
 def generate_order_id(organization_id: int) -> str:

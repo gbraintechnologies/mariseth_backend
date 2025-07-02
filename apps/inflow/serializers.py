@@ -51,7 +51,7 @@ class InflowOrderSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         request = self.context['request']
         products_data = validated_data.pop('products')
-        additional_cost = validated_data.pop('additional_cost_amount', 0)
+        additional_cost = validated_data.get('additional_cost_amount', 0)
 
         # Generate order ID
         validated_data['order_id'] = generate_order_id(request.organization)
@@ -77,7 +77,7 @@ class InflowOrderSerializer(serializers.ModelSerializer):
 
             product_name = str(product_data['product'].name)
             quantity = product_data['quantity']
-            product_data['serial_number'] = generate_serial_number(farm_id, product_name, quantity)
+            product_data['serial_number'] = generate_serial_number(order.id, farm_id, product_name, quantity)
             product_data['total_cost'] = product_data['unit_price'] * product_data['quantity']
             InflowOrderProduct.objects.create(order=order, **product_data)
 

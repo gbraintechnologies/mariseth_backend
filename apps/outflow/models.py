@@ -31,6 +31,8 @@ class OutflowOrder(BaseModel):
     amount_paid = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     amount_due = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     extra_comments = models.TextField(blank=True)
+    additional_costs = models.TextField(blank=True)
+    additional_cost_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
 
     class Meta:
         verbose_name = 'Outflow Order'
