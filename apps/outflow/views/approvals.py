@@ -8,9 +8,9 @@ from rest_framework.response import Response
 
 from apps.outflow.models import OutflowOrder, OutflowOrderWarehouse
 from apps.outflow.serializers.approvals import ListApprovalsOutflowOrderSerializer, MarkOrderPickedSerializer, \
-    OutflowOrderApprovalSerializer, \
-    WarehouseVerificationSerializer
-from apps.shared.literals import MARK_OUTFLOW_ORDER_PICKED, VERIFY_OUTFLOW_AVAILABILITY, VIEW_OUTFLOW_APPROVAL
+    OutflowOrderApprovalSerializer, WarehouseVerificationSerializer
+from apps.shared.literals import LIST_OUTFLOW_APPROVAL, MARK_OUTFLOW_ORDER_PICKED, VERIFY_OUTFLOW_AVAILABILITY, \
+    VIEW_OUTFLOW_APPROVAL
 from apps.shared.utils.permissions import UserPermission
 
 
@@ -20,6 +20,7 @@ class OutflowApprovalViewSet(viewsets.GenericViewSet):
     def get_permissions(self):
         permissions = {
             'retrieve': VIEW_OUTFLOW_APPROVAL,
+            'list_outflow_orders': LIST_OUTFLOW_APPROVAL,
             'verify_availability': VERIFY_OUTFLOW_AVAILABILITY,
             'mark_order_picked': MARK_OUTFLOW_ORDER_PICKED
         }
