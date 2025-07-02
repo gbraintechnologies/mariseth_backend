@@ -2,6 +2,7 @@ from django.utils import timezone
 from rest_framework import serializers
 
 from apps.accounts.serializers.users import ShortUserSerializer
+from apps.farm.serializers.products import ShortProductSerializer
 from apps.shared.serializers.regions import DistrictSerializer, ShortRegionSerializer
 from apps.warehouse.models import Warehouse, WarehouseProduct
 from apps.warehouse.utils import generate_warehouse_id
@@ -56,6 +57,14 @@ class WarehouseSerializer(serializers.ModelSerializer):
         return instance
 
 
+class FullWarehouseProductSerializer(serializers.ModelSerializer):
+    product = ShortProductSerializer()
+
+    class Meta:
+        model = WarehouseProduct
+        fields = ('product', 'weight', 'quantity')
+
+
 class FullWarehouseSerializer(serializers.ModelSerializer):
     manager = ShortUserSerializer()
     products = serializers.SerializerMethodField()
@@ -71,7 +80,7 @@ class FullWarehouseSerializer(serializers.ModelSerializer):
         )
 
     def get_products(self, obj):
-        return WarehouseProductSerializer(
+        return FullWarehouseProductSerializer(
             obj.product_stocks.filter(is_active=True),
             many=True
         ).data
