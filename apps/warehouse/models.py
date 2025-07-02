@@ -34,8 +34,8 @@ class WarehouseProduct(BaseModel):
                                 related_name='warehouse_stocks')
     warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE,
                                   related_name='product_stocks')
-    weight = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
-    quantity = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    weight = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    quantity = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
     class Meta:
         unique_together = ('product', 'warehouse')
