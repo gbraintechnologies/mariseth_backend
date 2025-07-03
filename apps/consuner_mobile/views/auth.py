@@ -11,6 +11,7 @@ from apps.consuner_mobile.serializers.auth import MobileAccountVerificationSeria
     MobileResetPasswordSerializer, MobileUpdateAccount, MobileUpdatePinSerializer, \
     MobileUserWithTokenAndFarmerSerializer, SetPinSerializer
 from apps.consuner_mobile.swagger import add_swagger_to_mobile_user_auth_viewset
+from apps.farm.serializers.farmer import FarmerSerializer, FullFarmerSerializer
 from apps.shared.general_response import GENERAL_SUCCESS_RESPONSE
 
 User = get_user_model()
@@ -126,4 +127,27 @@ class MobileUserAuthViewSet(viewsets.GenericViewSet):
         if serializer.is_valid():
             serializer.save()
             return Response(GENERAL_SUCCESS_RESPONSE, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['PUT'], url_path='update-my-farmer')
+    @transaction.atomic
+    def update_my_farmer(self, request):
+        farmer = request.user.farmer
+        mutable_data = request.data.copy()
+        for restricted_field in ['type', 'farm', 'lead_farmer', 'phone_number']:
+            mutable_data.pop(restricted_field, None)
+
+        serializer = FarmerSerializer(instance=farmer, data=mutable_data, partial=True, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+
+            user = farmer.user
+            user.first_name = mutable_data.get('first_name', user.first_name)
+            user.last_name = mutable_data.get('last_name', user.last_name)
+            user.gender = mutable_data.get('gender', user.gender)
+            user.email = mutable_data.get('email', user.email)
+            user.save()
+
+            return Response(FullFarmerSerializer(farmer).data, status=status.HTTP_200_OK)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

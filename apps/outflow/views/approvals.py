@@ -17,6 +17,7 @@ from apps.shared.utils.permissions import UserPermission
 
 class OutflowApprovalViewSet(viewsets.GenericViewSet):
     queryset = OutflowOrder.objects.filter(is_active=True)
+    serializer_class = OutflowOrderApprovalSerializer
 
     def get_permissions(self):
         permissions = {
