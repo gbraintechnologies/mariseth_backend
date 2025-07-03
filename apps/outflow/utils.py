@@ -5,7 +5,7 @@ from apps.outflow.models import OutflowOrder
 
 def generate_outflow_order_id(organization_id: int) -> str:
     org_part = f"{organization_id.id:02d}" if hasattr(organization_id, "id") else f"{organization_id:02d}"
-    base_prefix = f"ORD-i{org_part}"
+    base_prefix = f"ORD-o{org_part}"
 
     # Get all matching order_ids to find highest sequence
     existing_ids = OutflowOrder.objects.filter(

@@ -4,10 +4,10 @@ from rest_framework import serializers
 
 from apps.accounts.serializers.users import ShortUserSerializer
 from apps.customers.serializers import CustomerSerializer
+from apps.farm.serializers.products import ShortProductSerializer
 from apps.outflow.models import OutflowOrder, OutflowOrderDeliveryInformationWarehouse, OutflowOrderWarehouse, \
     OutflowOrderWarehouseHistory, OutflowOrderWarehouseImages, OutflowOrderWarehouseProduct
-from apps.outflow.serializers.outflow import OutflowOrderDeliveryInfoResponseSerializer, \
-    OutflowOrderDeliveryInformationSerializer
+from apps.outflow.serializers.outflow import OutflowOrderDeliveryInfoResponseSerializer
 from apps.shared.utils.helpers import base64_to_image
 from apps.warehouse.models import WarehouseProduct
 from apps.warehouse.serializers import ShortWarehouseSerializer
@@ -20,16 +20,15 @@ class OutflowWarehouseImageSerializer(serializers.ModelSerializer):
 
 
 class OutflowWarehouseProductSerializer(serializers.ModelSerializer):
-    product_id = serializers.IntegerField(source='product.id')
-    product_name = serializers.CharField(source='product.name')
+    product = ShortProductSerializer(read_only=True)
     price_per_unit = serializers.DecimalField(max_digits=10, decimal_places=2)
     cost = serializers.DecimalField(max_digits=10, decimal_places=2)
 
     class Meta:
         model = OutflowOrderWarehouseProduct
         fields = (
-            'id', 'serial_number', 'product_id', 'product_name',
-            'expected_quantity', 'price_per_unit', 'cost', 'status'
+            'id', 'serial_number', 'expected_quantity',
+            'price_per_unit', 'cost', 'status', 'product'
         )
 
 
@@ -43,11 +42,12 @@ class OutflowOrderWarehouseSerializer(serializers.ModelSerializer):
     warehouse = ShortWarehouseSerializer()
     images = OutflowWarehouseImageSerializer(many=True, source='images.all', read_only=True)
     delivery_information = serializers.SerializerMethodField()
+
     class Meta:
         model = OutflowOrderWarehouse
         fields = (
-            'id', 'warehouse', 'status', 'total_quantity',
-            'total_cost', 'products', 'images', 'delivery_information'
+            'id', 'status', 'total_quantity', 'total_cost',
+            'warehouse', 'products', 'images', 'delivery_information'
         )
 
     def get_delivery_information(self, obj):
@@ -259,23 +259,56 @@ class MarkOrderPickedSerializer(serializers.Serializer):
         return order
 
 
-class ListApprovalsOutflowOrderSerializer(serializers.ModelSerializer):
-    customer = CustomerSerializer()
-    total_quantity = serializers.IntegerField()
-    total_cost = serializers.DecimalField(max_digits=12, decimal_places=2)
-    products = serializers.SerializerMethodField()
+class ShortOutflowOrderWarehouseSerializer(serializers.ModelSerializer):
+    products = OutflowWarehouseProductSerializer(
+        many=True,
+        source='products.all'
+    )
+    total_quantity = serializers.SerializerMethodField()
+    total_cost = serializers.SerializerMethodField()
+    warehouse = ShortWarehouseSerializer()
 
     class Meta:
-        model = OutflowOrder
+        model = OutflowOrderWarehouse
         fields = (
-            'id', 'order_id', 'customer', 'procurement_officer',
-            'destination', 'expected_delivery_date', 'status', 'products',
-            'total_quantity', 'total_cost',
-        )
+            'id', 'status', 'total_quantity', 'total_cost',
+            'warehouse', 'products')
 
-    def get_products(self, obj):
-        all_products = OutflowOrderWarehouseProduct.objects.filter(
-            outflow_order_warehouse__outflow_order=obj,
-            is_active=True
-        )
-        return OutflowWarehouseProductSerializer(all_products, many=True).data
+    def get_total_quantity(self, obj):
+        return sum(p.expected_quantity for p in obj.products.filter(is_active=True))
+
+    def get_total_cost(self, obj):
+        return sum(float(p.cost) for p in obj.products.filter(is_active=True))
+
+
+class OutflowWarehouseListSerializer(serializers.Serializer):
+    id = serializers.IntegerField(source='outflow_order.id')
+    order_id = serializers.CharField(source='outflow_order.order_id')
+    date_created = serializers.DateTimeField(source='outflow_order.date_created')
+    customer = serializers.CharField(source='outflow_order.customer.name')
+    procurement_officer = serializers.CharField(source='outflow_order.procurement_officer.get_full_name')
+    warehouse = serializers.SerializerMethodField()
+
+    def get_warehouse(self, obj):
+        return ShortOutflowOrderWarehouseSerializer(obj).data
+
+
+class OutflowWarehouseOrderDetailSerializer(serializers.Serializer):
+    id = serializers.IntegerField(source='outflow_order.id')
+    order_id = serializers.CharField(source='outflow_order.order_id')
+    status = serializers.CharField(source='outflow_order.status')
+    destination = serializers.CharField(source='outflow_order.destination')
+    expected_delivery_date = serializers.DateField(source='outflow_order.expected_delivery_date')
+    actual_delivery_date = serializers.DateField(source='outflow_order.actual_delivery_date')
+    date_created = serializers.DateTimeField(source='outflow_order.date_created')
+    total_quantity = serializers.IntegerField(source='outflow_order.total_quantity')
+    additional_cost = serializers.CharField(source='outflow_order.additional_costs')
+    additional_cost_amount = serializers.DecimalField(max_digits=12, decimal_places=2,
+                                                      source='outflow_order.additional_cost_amount')
+    extra_comments = serializers.CharField(source='outflow_order.extra_comments')
+    customer = CustomerSerializer(source='outflow_order.customer')
+    procurement_officer = ShortUserSerializer(source='outflow_order.procurement_officer')
+    warehouse = serializers.SerializerMethodField()
+
+    def get_warehouse(self, obj):
+        return OutflowOrderWarehouseSerializer(obj).data
