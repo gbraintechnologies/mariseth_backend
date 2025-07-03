@@ -7,8 +7,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.outflow.models import OutflowOrder, OutflowOrderWarehouse
-from apps.outflow.serializers.approvals import ListApprovalsOutflowOrderSerializer, MarkOrderPickedSerializer, \
-    OutflowOrderApprovalSerializer, WarehouseVerificationSerializer
+from apps.outflow.serializers.approvals import MarkOrderPickedSerializer, \
+    OutflowOrderApprovalSerializer, OutflowWarehouseListSerializer, OutflowWarehouseOrderDetailSerializer, \
+    WarehouseVerificationSerializer
 from apps.shared.literals import LIST_OUTFLOW_APPROVAL, MARK_OUTFLOW_ORDER_PICKED, VERIFY_OUTFLOW_AVAILABILITY, \
     VIEW_OUTFLOW_APPROVAL
 from apps.shared.utils.permissions import UserPermission
@@ -16,6 +17,7 @@ from apps.shared.utils.permissions import UserPermission
 
 class OutflowApprovalViewSet(viewsets.GenericViewSet):
     queryset = OutflowOrder.objects.filter(is_active=True)
+    serializer_class = OutflowOrderApprovalSerializer
 
     def get_permissions(self):
         permissions = {
@@ -29,51 +31,67 @@ class OutflowApprovalViewSet(viewsets.GenericViewSet):
             return [IsAuthenticated(), UserPermission(user_permission)]
         return [IsAuthenticated()]
 
-    def retrieve(self, request, pk=None):
+    @action(detail=True, methods=['get'], url_path='warehouse/(?P<warehouse_id>[^/.]+)')
+    def retrieve_outflow_order_warehouse(self, request, pk=None, warehouse_id=None):
         """
-            Retrieves a single outflow order for approval, visible to warehouse managers.
-
-            This endpoint allows an authenticated warehouse manager to view the details
-            of a specific outflow order. The order details include information about
-            the customer, procurement officer, destination, expected delivery date,
-            overall status, and aggregated total quantity and cost. Crucially, it
-            also provides a breakdown of products by warehouse, specifically
-            filtering to include only those warehouses managed by the requesting user.
+        Retrieves one OutflowOrderWarehouse for a given OutflowOrder,
+        limited to the logged-in manager’s warehouse.
         """
         try:
-            order = self.queryset.get(pk=pk, organization=request.organization)
+            order = OutflowOrder.objects.select_related('customer', 'procurement_officer').get(
+                pk=pk,
+                organization=request.organization
+            )
         except OutflowOrder.DoesNotExist:
-            return Response({'error': 'Outflow Order Not found'}, status=status.HTTP_404_NOT_FOUND)
-        serializer = OutflowOrderApprovalSerializer(order, context={'request': request})
+            return Response({'error': 'Outflow Order not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            warehouse = OutflowOrderWarehouse.objects.select_related('warehouse').get(
+                pk=warehouse_id,
+                outflow_order=order,
+                warehouse__manager=request.user
+            )
+        except OutflowOrderWarehouse.DoesNotExist:
+            return Response({'error': 'Warehouse Order not found or not assigned to you'},
+                            status=status.HTTP_404_NOT_FOUND)
+
+        serializer = OutflowWarehouseOrderDetailSerializer(warehouse)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['GET'], url_path='list-outflow-orders')
     def list_outflow_orders(self, request):
-        page = request.query_params.get('page', 1)
-        page_size = request.query_params.get('page_size', 10)
+        page = int(request.query_params.get('page', 1))
+        page_size = int(request.query_params.get('page_size', 10))
         status_filter = request.query_params.get('status')
-        export = request.query_params.get('export', 'false').lower()
-        user = request.user
+        completed = request.query_params.get('completed', 'false').lower()
 
-        filter_q = Q(is_active=True, organization=request.organization)
-
+        qs = OutflowOrderWarehouse.objects.select_related(
+            'outflow_order', 'warehouse',
+            'outflow_order__customer',
+            'outflow_order__procurement_officer'
+        ).filter(
+            outflow_order__is_active=True,
+            outflow_order__organization=request.organization,
+            warehouse__manager=request.user
+        )
+        if completed == 'true':
+            qs = qs.filter(Q(status='order_pickup') | Q(status='completed'))
+        else:
+            qs = qs.exclude(Q(status='order_pickup') | Q(status='completed'))
         if status_filter:
-            filter_q &= Q(status=status_filter)
+            qs = qs.filter(status=status_filter)
 
-        filter_q &= Q(warehouses__warehouse__manager=user)
-        orders = OutflowOrder.objects.filter(filter_q).order_by("-date_created")
+        qs = qs.order_by('-outflow_order__date_created')
 
-        if export == 'true':
-            pass
-        # TOD0: ADD AN EXPORT BACKGROUND TASK
-
-        paginator = Paginator(orders, page_size)
+        paginator = Paginator(qs, page_size)
         page_obj = paginator.get_page(page)
 
+        serializer = OutflowWarehouseListSerializer(page_obj.object_list, many=True)
+
         return Response({
-            'results': ListApprovalsOutflowOrderSerializer(page_obj.object_list, many=True).data,
+            'results': serializer.data,
             'pagination': {
-                'total': orders.count(),
+                'total': qs.count(),
                 'page': page_obj.number,
                 'pages': paginator.num_pages,
                 'has_next': page_obj.has_next(),

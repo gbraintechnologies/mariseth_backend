@@ -9,6 +9,7 @@ from apps.consuner_mobile.serializers.auth import MobileAccountVerificationSeria
 from apps.consuner_mobile.serializers.credit import MobileActiveCreditSerializer
 from apps.consuner_mobile.serializers.farm import FarmDetailSerializer
 from apps.farm.serializers.farm import FarmSerializer, FullFarmSerializer
+from apps.farm.serializers.farmer import FullFarmerSerializer
 
 
 def add_swagger_to_mobile_user_auth_viewset(viewset_cls):
@@ -159,6 +160,58 @@ def add_swagger_to_mobile_user_auth_viewset(viewset_cls):
         },
         security=[{'Bearer': []}]
     )(viewset_cls.update_account)
+
+    update_my_farmer_schema = openapi.Schema(
+        tags=['Mobile/Farmer'],
+        operation_summary="Update my farmer",
+        operation_description=(
+            "Update the authenticated user's farmer information such as name, phone number, "
+            "email, avatar, and gender. Partial updates are supported."
+        ),
+        type=openapi.TYPE_OBJECT,
+        required=[],
+        properties={
+            'first_name': openapi.Schema(type=openapi.TYPE_STRING, example="Kwesi"),
+            'last_name': openapi.Schema(type=openapi.TYPE_STRING, example="Mensah"),
+            'other_names': openapi.Schema(type=openapi.TYPE_STRING, example="Kojo"),
+            'gender': openapi.Schema(type=openapi.TYPE_STRING, enum=['m', 'f']),
+            'email': openapi.Schema(type=openapi.TYPE_STRING, format='email', example="kwesi@example.com"),
+            'address': openapi.Schema(type=openapi.TYPE_STRING, example="Kumasi, Ghana"),
+            'village': openapi.Schema(type=openapi.TYPE_STRING, example="Tanoso"),
+            'region': openapi.Schema(type=openapi.TYPE_INTEGER, example=2),
+            'district': openapi.Schema(type=openapi.TYPE_INTEGER, example=5),
+            'country': openapi.Schema(type=openapi.TYPE_STRING, example="Ghana"),
+            'date_of_birth': openapi.Schema(type=openapi.TYPE_STRING, format='date', example="1990-05-15"),
+            'id_type': openapi.Schema(type=openapi.TYPE_STRING, example="Ghana Card"),
+            'id_number': openapi.Schema(type=openapi.TYPE_STRING, example="GHA-123456789"),
+            'leadership_experience': openapi.Schema(type=openapi.TYPE_OBJECT, example={
+                "roles": ["Youth Leader"],
+                "years": 2
+            }),
+            'support_assistance': openapi.Schema(type=openapi.TYPE_OBJECT, example={
+                "inputs": ["fertilizer"],
+                "training": True
+            }),
+        }
+    )
+
+    viewset_cls.update_my_farmer = swagger_auto_schema(
+        tags=['Mobile/Farmer'],
+        operation_summary="Update farmer profile",
+        operation_description=(
+            "Update the authenticated farmer's profile. Cannot update: `type`, `farm`, `lead_farmer`, or `phone_number`. "
+            "Partial updates are supported."
+        ),
+        request_body=update_my_farmer_schema,
+        responses={
+            200: openapi.Response(
+                description="Farmer profile updated successfully",
+                schema=FullFarmerSerializer()
+            ),
+            400: openapi.Response(description="Validation errors")
+        },
+        security=[{'Bearer': []}]
+    )(viewset_cls.update_my_farmer)
 
     # Resend Verification Code
     viewset_cls.resend_verification_code = swagger_auto_schema(

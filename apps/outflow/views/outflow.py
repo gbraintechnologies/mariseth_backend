@@ -21,6 +21,7 @@ from apps.shared.utils.permissions import UserPermission
 
 class OutflowOrderViewSet(viewsets.GenericViewSet):
     queryset = OutflowOrder.objects.filter(is_active=True)
+    serializer_class = OutflowOrderSerializer
 
     def get_permissions(self):
         permissions = {
@@ -74,31 +75,28 @@ class OutflowOrderViewSet(viewsets.GenericViewSet):
         page = request.query_params.get('page', 1)
         page_size = request.query_params.get('page_size', 10)
         status_filter = request.query_params.get('status')
-        # warehouse = request.query_params.get('warehouse')
-        # date_from = request.query_params.get('date_from')
-        # date_to = request.query_params.get('date_to')
-        # query = request.query_params.get('query')
+        query = request.query_params.get('query')
+        completed = request.query_params.get('completed', 'false').lower()
         export = request.query_params.get('export', 'false').lower()
 
         filter_q = Q(is_active=True, organization=request.organization)
-
+        if completed == 'true':
+            filter_q &= Q(status='complete')
+        else:
+            filter_q &= ~Q(status='complete')
         if status_filter:
             filter_q &= Q(status=status_filter)
-        # if warehouse:
-        #     filter_q &= Q(destination_warehouse=warehouse)
-        # if date_from and date_to:
-        #     filter_q &= Q(order_creation_date__range=[date_from, date_to])
-        # if query:
-        #     filter_q &= (
-        #             Q(order_id__icontains=query) |
-        #             Q(comments__icontains=query)
-        #     )
-
-        if export == 'true':
-            pass
-        # TOD0: ADD AN EXPORT BACKGROUND TASK
+        if query:
+            filter_q &= (
+                    Q(order_id__icontains=query) |
+                    Q(destination__name__icontains=query)
+            )
 
         orders = OutflowOrder.objects.filter(filter_q).order_by("-date_created")
+
+        # Export placeholder
+        if export == 'true':
+            pass  # TODO: ADD AN EXPORT BACKGROUND TASK
 
         paginator = Paginator(orders, page_size)
         page_obj = paginator.get_page(page)
