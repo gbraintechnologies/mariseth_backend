@@ -76,10 +76,14 @@ class InflowOrderViewSet(viewsets.GenericViewSet):
         date_from = request.query_params.get('date_from')
         date_to = request.query_params.get('date_to')
         query = request.query_params.get('query')
-        export = request.query_params.get('export', 'false').lower()
+        completed = request.query_params.get('completed', 'false').lower()
 
         filter_q = Q(is_active=True, organization=request.organization)
 
+        if completed == 'true':
+            filter_q &= Q(status='approved')
+        else:
+            filter_q &= ~Q(status='approved')
         if status_filter:
             filter_q &= Q(status=status_filter)
         if warehouse:
@@ -91,10 +95,6 @@ class InflowOrderViewSet(viewsets.GenericViewSet):
                     Q(order_id__icontains=query) |
                     Q(comments__icontains=query)
             )
-
-        if export == 'true':
-            pass
-        # TOD0: ADD AN EXPORT BACKGROUND TASK
 
         orders = InflowOrder.objects.filter(filter_q).order_by("-order_creation_date")
 
