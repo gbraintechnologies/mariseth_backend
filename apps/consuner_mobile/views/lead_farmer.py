@@ -18,6 +18,8 @@ from apps.farm.views.farm import FarmViewSet
 
 @add_swagger_to_mobile_lead_farmer_viewset
 class MobileLeadFarmerViewSet(viewsets.GenericViewSet):
+    queryset = Farmer.objects.none()
+    serializer_class = FullFarmerSerializer
     permission_classes = [IsAuthenticated]
 
     def get_lead_farmer(self):

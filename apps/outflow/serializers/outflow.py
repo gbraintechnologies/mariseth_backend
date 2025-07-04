@@ -11,7 +11,7 @@ from apps.farm.models import Product
 from apps.farm.serializers.products import ShortProductSerializer
 from apps.outflow.models import OutflowOrder, OutflowOrderDeliveryInformation, OutflowOrderDeliveryInformationImage, \
     OutflowOrderDeliveryInformationWarehouse, OutflowOrderHistory, OutflowOrderPayments, OutflowOrderWarehouse, \
-    OutflowOrderWarehouseProduct
+    OutflowOrderWarehouseImages, OutflowOrderWarehouseProduct
 from apps.outflow.utils import generate_outflow_order_id, generate_serial_number
 from apps.shared.utils.helpers import base64_to_image
 from apps.warehouse.models import Warehouse, WarehouseProduct
@@ -212,9 +212,15 @@ class OutflowWarehouseProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = OutflowOrderWarehouseProduct
         fields = (
-            'id', 'serial_number', 'expected_quantity', 'price_per_unit',
-            'cost', 'status', 'product', 'warehouse'
+            'id', 'serial_number', 'available_quantity', 'expected_quantity', 'price_per_unit',
+            'cost', 'status', 'product', 'warehouse', 'reason', 'comments'
         )
+
+
+class OutflowWarehouseImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OutflowOrderWarehouseImages
+        fields = ('id', 'image', 'date_created')
 
 
 class OutflowOrderWarehouseSerializer(serializers.ModelSerializer):
@@ -225,10 +231,14 @@ class OutflowOrderWarehouseSerializer(serializers.ModelSerializer):
     total_quantity = serializers.SerializerMethodField()
     total_cost = serializers.SerializerMethodField()
     warehouse = ShortWarehouseSerializer()
+    images = OutflowWarehouseImageSerializer(many=True, source='images.all', read_only=True)
 
     class Meta:
         model = OutflowOrderWarehouse
-        fields = ('id', 'warehouse', 'status', 'total_quantity', 'total_cost', 'products',)
+        fields = (
+            'id', 'warehouse', 'status', 'total_quantity',
+            'total_cost', 'products', 'images'
+        )
 
     def get_total_quantity(self, obj):
         return sum(p.expected_quantity for p in obj.products.filter(is_active=True))
@@ -410,6 +420,7 @@ class OutflowOrderPaymentRequestSerializer(serializers.ModelSerializer):
 
 class OutflowOrderHistorySerializer(serializers.ModelSerializer):
     created_by = ShortUserSerializer()
+
     class Meta:
         model = OutflowOrderHistory
         fields = (

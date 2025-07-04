@@ -151,3 +151,7 @@ class MobileUserAuthViewSet(viewsets.GenericViewSet):
             return Response(FullFarmerSerializer(farmer).data, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['GET'], url_path='me')
+    def me(self, request):
+        return Response(MobileUserWithTokenAndFarmerSerializer(request.user).data, status=status.HTTP_200_OK)
