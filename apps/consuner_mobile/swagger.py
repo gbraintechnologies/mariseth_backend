@@ -285,6 +285,20 @@ def add_swagger_to_mobile_user_auth_viewset(viewset_cls):
         }
     )(viewset_cls.reset_password)
 
+    viewset_cls.me = swagger_auto_schema(
+        tags=["Mobile/Auth"],
+        operation_summary="Get current user & farmer profile",
+        operation_description="Returns the authenticated user's profile along with linked farmer information.",
+        responses={
+            200: openapi.Response(
+                description="User and farmer profile returned successfully",
+                schema=MobileUserWithTokenAndFarmerSerializer()
+            ),
+            401: openapi.Response(description="Unauthorized")
+        },
+        security=[{'Bearer': []}]
+    )(viewset_cls.me)
+
     return viewset_cls
 
 

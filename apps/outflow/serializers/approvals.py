@@ -27,8 +27,9 @@ class OutflowWarehouseProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = OutflowOrderWarehouseProduct
         fields = (
-            'id', 'serial_number', 'expected_quantity',
-            'price_per_unit', 'cost', 'status', 'product'
+            'id', 'serial_number', 'available_quantity',
+            'expected_quantity', 'price_per_unit', 'cost',
+            'status', 'product', 'reason', 'comments'
         )
 
 

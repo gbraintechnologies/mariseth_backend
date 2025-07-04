@@ -82,7 +82,7 @@ class SetPinSerializer(serializers.Serializer):
 
 class MobileLoginSerializer(serializers.Serializer):
     phone_number = serializers.CharField(max_length=20, validators=[validate_only_digits])
-    pin = serializers.CharField(max_length=3, min_length=4, write_only=True)
+    pin = serializers.CharField(min_length=4, max_length=4, write_only=True, validators=[validate_only_digits])
 
     def validate(self, attrs):
         user = authenticate(phone_number=attrs['phone_number'], pin=attrs['pin'])
