@@ -1,6 +1,8 @@
+import base64
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
+from django.core.files.base import ContentFile
 from django.db import transaction
 from rest_framework import serializers
 
@@ -11,7 +13,7 @@ from apps.farm.models import Product
 from apps.farm.serializers.products import ShortProductSerializer
 from apps.outflow.models import OutflowOrder, OutflowOrderDeliveryInformation, OutflowOrderDeliveryInformationImage, \
     OutflowOrderDeliveryInformationWarehouse, OutflowOrderHistory, OutflowOrderPayments, OutflowOrderWarehouse, \
-    OutflowOrderWarehouseImages, OutflowOrderWarehouseProduct
+    OutflowOrderWarehouseImages, OutflowOrderWarehouseProduct, OutflowRecipientComplaint, OutflowRecipientComplaintImage
 from apps.outflow.utils import generate_outflow_order_id, generate_serial_number
 from apps.shared.utils.helpers import base64_to_image
 from apps.warehouse.models import Warehouse, WarehouseProduct
@@ -429,6 +431,86 @@ class OutflowOrderHistorySerializer(serializers.ModelSerializer):
         )
 
 
+class OutflowRecipientComplaintSerializer(serializers.Serializer):
+    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all())
+    expected_quantity = serializers.IntegerField(min_value=0)
+    problematic_quantity = serializers.IntegerField(min_value=1)
+    reason = serializers.CharField(max_length=255)
+    comments = serializers.CharField(allow_blank=True, required=False)
+
+    def validate(self, data):
+        if data['problematic_quantity'] > data['expected_quantity']:
+            raise serializers.ValidationError("Problematic quantity cannot exceed expected quantity.")
+        return data
+
+
+class MarkCompleteSerializer(serializers.Serializer):
+    complaints = OutflowRecipientComplaintSerializer(many=True, required=False)
+    images = serializers.ListField(
+        child=serializers.CharField(), required=False, allow_empty=True
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.order = kwargs.pop('order', None)
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+
+    def validate_images(self, image_list):
+        validated = []
+        for idx, image_str in enumerate(image_list):
+            try:
+                format, imgstr = image_str.split(';base64,')
+                ext = format.split('/')[-1]
+                decoded_file = base64.b64decode(imgstr)
+                file_name = f"complaint_{self.order.id}_{idx}.{ext}"
+                validated.append(ContentFile(decoded_file, name=file_name))
+            except Exception:
+                raise serializers.ValidationError(f"Invalid base64 image at index {idx}")
+        return validated
+
+    def save(self):
+        complaints = self.validated_data.get('complaints', [])
+        images = self.validated_data.get('images', [])
+
+        # Save complaints
+        for complaint in complaints:
+            OutflowRecipientComplaint.objects.create(
+                outflow_order=self.order,
+                product=complaint['product'],
+                expected_quantity=complaint['expected_quantity'],
+                problematic_quantity=complaint['problematic_quantity'],
+                reason=complaint['reason'],
+                comments=complaint.get('comments', '')
+            )
+
+        # Save images
+        for image_file in images:
+            OutflowRecipientComplaintImage.objects.create(
+                outflow_order=self.order,
+                image=image_file
+            )
+
+        # Mark order complete
+        old_status = self.order.status
+        self.order.status = 'complete'
+        self.order.save()
+        self.order.log_status_change(old_status, 'complete', self.user)
+
+        return self.order
+
+
+class GetOutflowRecipientComplaintSerializer(serializers.ModelSerializer):
+    product = ShortProductSerializer()
+
+    class Meta:
+        model = OutflowRecipientComplaint
+        fields = (
+            'id', 'product', 'expected_quantity',
+            'problematic_quantity', 'reason', 'comments'
+        )
+
+
+
 class FullOutflowOrderSerializer(serializers.ModelSerializer):
     warehouses = OutflowOrderWarehouseSerializer(
         many=True,
@@ -442,6 +524,7 @@ class FullOutflowOrderSerializer(serializers.ModelSerializer):
     products = serializers.SerializerMethodField()
     payments = OutflowOrderPaymentRequestSerializer(many=True)
     logs = OutflowOrderHistorySerializer(source='history.all', many=True)
+    recipient_complaints = serializers.SerializerMethodField()
 
     class Meta:
         model = OutflowOrder
@@ -450,7 +533,7 @@ class FullOutflowOrderSerializer(serializers.ModelSerializer):
             'destination', 'expected_delivery_date', 'status',
             'additional_costs', 'additional_cost_amount', 'total_quantity',
             'total_cost', 'amount_paid', 'amount_due', 'products', 'warehouses',
-            'delivery_information', 'payments', 'logs'
+            'delivery_information', 'payments', 'logs', 'recipient_complaints'
         )
 
     def to_representation(self, instance):
@@ -468,6 +551,30 @@ class FullOutflowOrderSerializer(serializers.ModelSerializer):
             is_active=True
         )
         return OutflowWarehouseProductSerializer(all_products, many=True).data
+
+    def get_recipient_complaints(self, obj):
+        request = self.context.get('request')
+
+        # Complaints
+        complaints_qs = obj.customer_complaints.all()
+        complaints_data = GetOutflowRecipientComplaintSerializer(
+            complaints_qs, many=True, context={'request': request}
+        ).data
+
+        # Images: just return the accessible URL
+        image_qs = obj.complaint_images.all()
+        image_urls = []
+        for image in image_qs:
+            if image.image:
+                if request:
+                    image_urls.append(request.build_absolute_uri(image.image.url))
+                else:
+                    image_urls.append(image.image.url)
+
+        return {
+            'complaints': complaints_data,
+            'images': image_urls
+        }
 
 
 class ListOutflowOrderSerializer(serializers.ModelSerializer):

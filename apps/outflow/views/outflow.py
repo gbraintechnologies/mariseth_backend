@@ -9,7 +9,8 @@ from rest_framework.response import Response
 
 from apps.outflow.models import OutflowOrder, OutflowOrderWarehouse
 from apps.outflow.serializers.outflow import (
-    FullOutflowOrderSerializer, ListOutflowOrderSerializer, OutflowOrderDeliveryInformationSerializer,
+    FullOutflowOrderSerializer, ListOutflowOrderSerializer, MarkCompleteSerializer,
+    OutflowOrderDeliveryInformationSerializer,
     OutflowOrderPaymentRequestSerializer, OutflowOrderSerializer
 )
 from apps.shared.general_response import GENERAL_SUCCESS_RESPONSE
@@ -197,11 +198,13 @@ class OutflowOrderViewSet(viewsets.GenericViewSet):
         if order.status != 'full_payment':
             return Response({'error': 'Order must be fully paid before completion.'},
                             status=status.HTTP_400_BAD_REQUEST)
-        old_status = order.status
-        order.status = 'complete'
-        order.save()
-        order.log_status_change( old_status, 'complete',request.user)
-        serializer = FullOutflowOrderSerializer(order, context={'request': request})
-        return Response(serializer.data, status=status.HTTP_200_OK)
+
+        serializer = MarkCompleteSerializer(data=request.data, order=order, user=request.user)
+        serializer.is_valid(raise_exception=True)
+        order = serializer.save()
+
+        full_serializer = FullOutflowOrderSerializer(order, context={'request': request})
+        return Response(full_serializer.data, status=status.HTTP_200_OK)
+
 
 
