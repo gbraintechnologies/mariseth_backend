@@ -57,7 +57,7 @@ class MobileLeadFarmerViewSet(viewsets.GenericViewSet):
         page_obj = paginator.get_page(page)
 
         return Response({
-            'results': FarmSerializer(page_obj.object_list, many=True).data,
+            'results': FullFarmSerializer(page_obj.object_list, many=True).data,
             'pagination': {
                 'total': farms.count(),
                 'page': page_obj.number,
