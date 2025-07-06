@@ -54,16 +54,14 @@ class OutflowOrderWarehouseSerializer(serializers.ModelSerializer):
     def get_delivery_information(self, obj):
         if not obj:
             return None
-        try:
-            link = OutflowOrderDeliveryInformationWarehouse.objects.select_related(
-                'outflow_order_delivery_information'
-            ).get(
-                outflow_order_delivery_information__outflow_order=obj.outflow_order,
-                warehouse=obj.warehouse
-            )
-            return OutflowOrderDeliveryInfoResponseSerializer(link.outflow_order_delivery_information).data
-        except OutflowOrderDeliveryInformationWarehouse.DoesNotExist:
-            return None
+        links = OutflowOrderDeliveryInformationWarehouse.objects.select_related(
+            'outflow_order_delivery_information'
+        ).filter(
+            outflow_order_delivery_information__outflow_order=obj.outflow_order,
+            warehouse=obj.warehouse
+        )
+        delivery_infos = [link.outflow_order_delivery_information for link in links]
+        return OutflowOrderDeliveryInfoResponseSerializer(delivery_infos, many=True).data
 
     def get_total_quantity(self, obj):
         return sum(p.expected_quantity for p in obj.products.filter(is_active=True))
