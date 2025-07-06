@@ -69,4 +69,5 @@ class MobileAddSmallholderFarmerSerializer(serializers.ModelSerializer):
         validated_data['created_by'] = request.user
         validated_data['organization'] = request.organization
         validated_data['farmer_id'] = generate_farmer_id(request.organization.id)
+        validated_data['lead_farmer'] = request.user.farmer
         return super().create(validated_data)
