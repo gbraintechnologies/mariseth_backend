@@ -274,3 +274,23 @@ class OutflowOrderDeliveryInformationImage(BaseModel):
 
     class Meta:
         verbose_name = 'Outflow Order Delivery Information '
+
+
+class OutflowRecipientComplaint(BaseModel):
+    outflow_order = models.ForeignKey(OutflowOrder, on_delete=models.CASCADE, related_name='customer_complaints')
+    product = models.ForeignKey('farm.Product', on_delete=models.CASCADE)
+    expected_quantity = models.IntegerField(default=0)
+    problematic_quantity = models.IntegerField(default=0)
+    reason = models.CharField(max_length=255)
+    comments = models.TextField(blank=True, null=True)
+
+    class Meta:
+        verbose_name = 'Outflow Recipient Complaint'
+
+
+class OutflowRecipientComplaintImage(BaseModel):
+    outflow_order = models.ForeignKey(OutflowOrder, on_delete=models.CASCADE, related_name='complaint_images')
+    image = models.ImageField(upload_to='outflow/complaints/')
+
+    class Meta:
+        verbose_name = 'Outflow Recipient Complaint Image'
