@@ -230,28 +230,35 @@ class MarkOrderPickedSerializer(serializers.Serializer):
         if outflow_warehouse.status == "order_pickup":
             raise serializers.ValidationError("Warehouse has already been marked as picked up.")
 
-        try:
-            delivery_link = OutflowOrderDeliveryInformationWarehouse.objects.get(
-                outflow_order_delivery_information__outflow_order=order,
-                warehouse=outflow_warehouse.warehouse
-            )
-            delivery_link.pick_up = validated_data.get("pick_up", True)
-            delivery_link.pick_up_datetime = validated_data.get("pick_up_datetime") or timezone.now()
-            delivery_link.save()
-            old_warehouse_status = outflow_warehouse.status
-            outflow_warehouse.status = "order_pickup"
-            outflow_warehouse.save()
-            if old_warehouse_status != outflow_warehouse.status:
-                OutflowOrderWarehouseHistory.objects.create(
-                    outflow_order_warehouse=outflow_warehouse,
-                    field='status',
-                    old_value=old_warehouse_status,
-                    new_value=outflow_warehouse.status,
-                    created_by=request.user
-                )
+        # Get ALL delivery links for this warehouse-order combination
+        delivery_links = OutflowOrderDeliveryInformationWarehouse.objects.filter(
+            outflow_order_delivery_information__outflow_order=order,
+            warehouse=outflow_warehouse.warehouse
+        )
 
-        except OutflowOrderDeliveryInformationWarehouse.DoesNotExist:
+        if not delivery_links.exists():
             raise serializers.ValidationError("Delivery Information not found for this warehouse.")
+
+        # Update all found delivery links
+        for link in delivery_links:
+            link.pick_up = validated_data.get("pick_up", True)
+            link.pick_up_datetime = validated_data.get("pick_up_datetime") or timezone.now()
+            link.save()
+
+        # Update warehouse status only once
+        old_warehouse_status = outflow_warehouse.status
+        outflow_warehouse.status = "order_pickup"
+        outflow_warehouse.save()
+
+        # Create history only if status actually changed
+        if old_warehouse_status != outflow_warehouse.status:
+            OutflowOrderWarehouseHistory.objects.create(
+                outflow_order_warehouse=outflow_warehouse,
+                field='status',
+                old_value=old_warehouse_status,
+                new_value=outflow_warehouse.status,
+                created_by=request.user
+            )
 
         order.update_status_to_truck_pickup_if_ready(picked_warehouse=outflow_warehouse, user=request.user)
 
