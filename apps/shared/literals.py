@@ -37,6 +37,7 @@ VIEW_FARMER = 'farmer|view_farmer'
 LIST_FARMERS = 'farmer|list_farmers'
 UPLOAD_FARMERS = 'farmer|upload_farmers'
 GET_SMALLHOLDERS_BY_LEAD = 'farmer|get_smallholders_by_lead'
+GET_FARMER_CREDIT_HISTORY = 'farmer|get_farmer_credit_history'
 
 # Farmer
 CREATE_PRODUCT = 'product|create_product'

@@ -103,7 +103,7 @@ class Farmer(BaseModel):
     support_assistance = models.JSONField(null=True, blank=True)
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name}"
+        return f"{self.id} - {self.first_name} {self.last_name}"
 
 
 # class FarmerChangeLog(BaseModel):
