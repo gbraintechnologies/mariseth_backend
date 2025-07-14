@@ -11,6 +11,7 @@ from apps.farm.serializers.products import ShortProductSerializer
 from apps.outflow.models import OutflowOrder, OutflowOrderDeliveryInformationWarehouse, OutflowOrderWarehouse, \
     OutflowOrderWarehouseHistory, OutflowOrderWarehouseImages, OutflowOrderWarehouseProduct
 from apps.outflow.serializers.outflow import OutflowOrderDeliveryInfoResponseSerializer
+from apps.outflow.utils import create_warehouse_history, track_product_changes
 from apps.shared.utils.helpers import base64_to_image
 from apps.warehouse.models import WarehouseProduct, WarehouseProductMovement
 from apps.warehouse.serializers import ShortWarehouseSerializer
@@ -149,6 +150,13 @@ class WarehouseVerificationSerializer(serializers.ModelSerializer):
                     except WarehouseProduct.DoesNotExist:
                         actual_stock = 0
 
+                    old_data = {
+                        'status': product.status,
+                        'available_quantity': product.available_quantity,
+                        'reason': product.reason,
+                        'comments': product.comments
+                    }
+
                     # Auto-verify: Set available_quantity to actual stock
                     product.available_quantity = actual_stock
                     product.reason = None
@@ -161,6 +169,19 @@ class WarehouseVerificationSerializer(serializers.ModelSerializer):
                         product.status = 'not_enough_stock'
                         all_verified = False
 
+                    track_product_changes(
+                        product=product,
+                        old_data=old_data,
+                        new_data={
+                            'status': product.status,
+                            'available_quantity': product.available_quantity,
+                            'reason': product.reason,
+                            'comments': product.comments
+                        },
+                        instance=instance,
+                        request=request
+                    )
+
                     product.save()
 
             # Case 2: Product data sent (Manual verification with complaints/adjustments)
@@ -172,7 +193,12 @@ class WarehouseVerificationSerializer(serializers.ModelSerializer):
                         raise serializers.ValidationError(
                             f"Product with ID {product_data['id']} not found in this warehouse order."
                         )
-
+                    old_data = {
+                        'status': product.status,
+                        'available_quantity': product.available_quantity,
+                        'reason': product.reason,
+                        'comments': product.comments
+                    }
                     # Update product fields from the payload
                     for attr, value in product_data.items():
                         if hasattr(product, attr) and attr != 'id':
@@ -185,18 +211,30 @@ class WarehouseVerificationSerializer(serializers.ModelSerializer):
                         product.status = 'not_enough_stock'
                         all_verified = False
 
+                    track_product_changes(
+                        product=product,
+                        old_data=old_data,
+                        new_data={
+                            'status': product.status,
+                            'available_quantity': product.available_quantity,
+                            'reason': product.reason,
+                            'comments': product.comments
+                        },
+                        instance=instance,
+                        request=request
+                    )
                     product.save()
 
             # Update warehouse order status
             instance.status = 'verified' if all_verified else 'not_enough_stock'
             instance.save()
             if old_warehouse_status != instance.status:
-                OutflowOrderWarehouseHistory.objects.create(
-                    outflow_order_warehouse=instance,
+                create_warehouse_history(
+                    instance=instance,
                     field='status',
                     old_value=old_warehouse_status,
                     new_value=instance.status,
-                    created_by=request.user
+                    user=request.user
                 )
 
             # Save images if provided
@@ -284,34 +322,45 @@ class MarkOrderPickedSerializer(serializers.Serializer):
         if not delivery_links.exists():
             raise serializers.ValidationError("Delivery Information not found for this warehouse.")
 
-        # Update all found delivery links
-        for link in delivery_links:
-            link.pick_up = validated_data.get("pick_up", True)
-            link.pick_up_datetime = validated_data.get("pick_up_datetime") or timezone.now()
-            link.save()
+        with transaction.atomic():
+            # Update all found delivery links
+            for link in delivery_links:
+                link.pick_up = validated_data.get("pick_up", True)
+                link.pick_up_datetime = validated_data.get("pick_up_datetime") or timezone.now()
+                link.save()
 
-        # Update warehouse status only once
-        old_warehouse_status = outflow_warehouse.status
-        outflow_warehouse.status = "order_pickup"
-        outflow_warehouse.save()
+            # Update warehouse status only once
+            old_warehouse_status = outflow_warehouse.status
+            outflow_warehouse.status = "order_pickup"
+            outflow_warehouse.save()
 
-        # Create history only if status actually changed
-        if old_warehouse_status != outflow_warehouse.status:
-            OutflowOrderWarehouseHistory.objects.create(
-                outflow_order_warehouse=outflow_warehouse,
-                field='status',
-                old_value=old_warehouse_status,
-                new_value=outflow_warehouse.status,
-                created_by=request.user
+            # Create history only if status actually changed
+            if old_warehouse_status != outflow_warehouse.status:
+                create_warehouse_history(
+                    instance=outflow_warehouse,
+                    field='status',
+                    old_value=old_warehouse_status,
+                    new_value=outflow_warehouse.status,
+                    user=request.user
+                )
+
+            for product in outflow_warehouse.products.filter(status='verified'):
+                create_warehouse_history(
+                    instance=outflow_warehouse,
+                    field='product_stock_adjustment',
+                    old_value=f"{product.product.name} x {product.expected_quantity}",
+                    new_value="Deducted from inventory",
+                    user=request.user,
+                    product=product
+                )
+            # ─── stock leaves the warehouse now ───
+            self.update_warehouse_stocks_outflow(order, outflow_warehouse)
+
+            # — finally update overall order status if all warehouses are picked up —
+            order.update_status_to_truck_pickup_if_ready(
+                picked_warehouse=outflow_warehouse,
+                user=request.user
             )
-        # ─── stock leaves the warehouse now ───
-        self.update_warehouse_stocks_outflow(order, outflow_warehouse)
-
-        # — finally update overall order status if all warehouses are picked up —
-        order.update_status_to_truck_pickup_if_ready(
-            picked_warehouse=outflow_warehouse,
-            user=request.user
-        )
 
         return order
 

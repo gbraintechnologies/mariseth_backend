@@ -234,6 +234,10 @@ class OutflowOrderWarehouseHistory(BaseModel):
     )
     outflow_order_warehouse = models.ForeignKey(OutflowOrderWarehouse, on_delete=models.CASCADE,
                                                 related_name='history')
+    product = models.ForeignKey(
+        OutflowOrderWarehouseProduct, null=True, blank=True, on_delete=models.CASCADE,
+        related_name='history_entries'
+    )
     field = models.CharField(max_length=100)
     old_value = models.CharField(max_length=255, blank=True)
     new_value = models.CharField(max_length=255, blank=True)
