@@ -69,7 +69,6 @@ class FullWarehouseProductSerializer(serializers.ModelSerializer):
 
 class FullWarehouseSerializer(serializers.ModelSerializer):
     manager = ShortUserSerializer()
-    products = serializers.SerializerMethodField()
     region = ShortRegionSerializer()
     district = DistrictSerializer()
 
