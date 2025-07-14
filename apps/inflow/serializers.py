@@ -16,6 +16,12 @@ from apps.inflow.utils import generate_order_id, generate_serial_number
 from apps.warehouse.models import Warehouse, WarehouseProduct, WarehouseProductMovement
 
 
+class ShortInflowOrderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InflowOrder
+        fields = ('id', 'order_id', 'total_cost', 'status')
+
+
 class InflowOrderProductSerializer(serializers.ModelSerializer):
     problematic_quantity = serializers.CharField(required=False, allow_null=True)
     reason = serializers.CharField(required=False, allow_null=True)
@@ -323,6 +329,7 @@ class OrderApprovalSerializer(serializers.Serializer):
                 warehouse_product=warehouse_product,
                 product=order_product.product,
                 quantity=order_product.quantity,
+                weight=order_product.product.weight * order_product.quantity,
                 movement_type="inflow",
                 amount=Decimal(order_product.total_cost),
                 aggregator=order.aggregator,

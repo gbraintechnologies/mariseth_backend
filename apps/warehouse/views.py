@@ -1,18 +1,19 @@
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Sum
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.farm.models import Farm
-from apps.shared.literals import CREATE_WAREHOUSE, DELETE_WAREHOUSE, LIST_WAREHOUSES, UPDATE_WAREHOUSE, \
-    UPLOAD_WAREHOUSES, VIEW_WAREHOUSE
+from apps.farm.models import Farm, Product
+from apps.shared.literals import CREATE_WAREHOUSE, DELETE_WAREHOUSE, GET_PRODUCT_WAREHOUSE_MOVEMENT, \
+    GET_WAREHOUSE_INVENTORY, LIST_WAREHOUSES, UPDATE_WAREHOUSE, UPLOAD_WAREHOUSES, VIEW_WAREHOUSE
 from apps.shared.tasks.export_tasks import process_warehouse_export
 from apps.shared.utils.permissions import UserPermission
-from apps.warehouse.models import Warehouse
-from apps.warehouse.serializers import (FullWarehouseSerializer, WarehouseSerializer)
+from apps.warehouse.models import Warehouse, WarehouseProduct, WarehouseProductMovement
+from apps.warehouse.serializers import (FullWarehouseProductSerializer, FullWarehouseSerializer,
+                                        WarehouseProductMovementSerializer, WarehouseSerializer)
 from apps.warehouse.swagger import add_swagger_to_warehouse_viewset
 
 
@@ -28,7 +29,9 @@ class WarehouseViewSet(viewsets.GenericViewSet):
             'retrieve': VIEW_WAREHOUSE,
             'list': LIST_WAREHOUSES,
             'destroy': DELETE_WAREHOUSE,
-            'upload_warehouses': UPLOAD_WAREHOUSES
+            'upload_warehouses': UPLOAD_WAREHOUSES,
+            'get_warehouse_inventory': GET_WAREHOUSE_INVENTORY,
+            'get_product_warehouse_movement': GET_PRODUCT_WAREHOUSE_MOVEMENT
         }
         user_permission = permissions.get(self.action, None)
         if user_permission:
@@ -135,3 +138,65 @@ class WarehouseViewSet(viewsets.GenericViewSet):
     @action(detail=False, methods=['POST'], url_path='upload-warehouse')
     def upload_warehouses(self, request):
         pass
+
+    @action(detail=True, methods=['GET'], url_path='products')
+    def get_warehouse_inventory(self, request, pk=None):
+        page = request.query_params.get('page', 1)
+        page_size = request.query_params.get('page_size', 10)
+        try:
+            warehouse = Warehouse.objects.get(pk=pk, is_active=True, organization=request.organization)
+        except Warehouse.DoesNotExist:
+            return Response({'error': 'Warehouse not found'}, status=status.HTTP_404_NOT_FOUND)
+        warehouse_products = WarehouseProduct.objects.filter(warehouse=warehouse).order_by('-date_created')
+        paginator = Paginator(warehouse_products, page_size)
+        page_obj = paginator.get_page(page)
+
+        return Response({
+            'results': FullWarehouseProductSerializer(page_obj.object_list, many=True).data,
+            'pagination': {
+                'total': warehouse_products.count(),
+                'page': page_obj.number,
+                'pages': paginator.num_pages,
+                'has_next': page_obj.has_next(),
+                'has_previous': page_obj.has_previous(),
+            }
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['GET'], url_path='product/(?P<product_id>[^/.]+)')
+    def get_product_warehouse_movement(self, request, pk=None, product_id=None):
+        page = request.query_params.get('page', 1)
+        page_size = request.query_params.get('page_size', 10)
+        order_type = request.query_params.get('order_type', 'inflow')
+        try:
+            warehouse = Warehouse.objects.get(pk=pk, is_active=True, organization=request.organization)
+            product = Product.objects.get(pk=product_id, is_active=True, organization=request.organization)
+        except Warehouse.DoesNotExist:
+            return Response({'error': 'Warehouse not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Product.DoesNotExist:
+            return Response({'error': 'Product not found'}, status=status.HTTP_404_NOT_FOUND)
+        warehouse_movements = WarehouseProductMovement.objects.filter(
+            warehouse=warehouse,
+            product=product,
+            movement_type=order_type
+        )
+
+        paginator = Paginator(warehouse_movements, page_size)
+        page_obj = paginator.get_page(page)
+        results = WarehouseProductMovementSerializer(
+            page_obj.object_list, many=True, context={'order_type': order_type}
+        ).data
+
+        return Response({
+            'totals': {
+                'total_quantity': warehouse_movements.aggregate(Sum('quantity'))['quantity__sum'],
+                'total_weight': warehouse_movements.aggregate(Sum('weight'))['weight__sum'],
+            },
+            'results': results,
+            'pagination': {
+                'total': warehouse_movements.count(),
+                'page': page_obj.number,
+                'pages': paginator.num_pages,
+                'has_next': page_obj.has_next(),
+                'has_previous': page_obj.has_previous(),
+            }
+        }, status=status.HTTP_200_OK)

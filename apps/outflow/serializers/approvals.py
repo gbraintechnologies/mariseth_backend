@@ -1,3 +1,6 @@
+from decimal import Decimal
+
+import sentry_sdk
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers
@@ -9,7 +12,7 @@ from apps.outflow.models import OutflowOrder, OutflowOrderDeliveryInformationWar
     OutflowOrderWarehouseHistory, OutflowOrderWarehouseImages, OutflowOrderWarehouseProduct
 from apps.outflow.serializers.outflow import OutflowOrderDeliveryInfoResponseSerializer
 from apps.shared.utils.helpers import base64_to_image
-from apps.warehouse.models import WarehouseProduct
+from apps.warehouse.models import WarehouseProduct, WarehouseProductMovement
 from apps.warehouse.serializers import ShortWarehouseSerializer
 
 
@@ -220,6 +223,48 @@ class MarkOrderPickedSerializer(serializers.Serializer):
             data["pick_up_datetime"] = timezone.now()
         return data
 
+    def update_warehouse_stocks_outflow(self, order, outflow_warehouse):
+        """
+        Reduce stock and create movement records for the specific warehouse
+        when goods leave (order_pickup).
+        """
+        with transaction.atomic():
+            for warehouse_product_order in outflow_warehouse.products.filter(status='verified'):
+                try:
+                    warehouse_product = WarehouseProduct.objects.get(
+                        product=warehouse_product_order.product,
+                        warehouse=outflow_warehouse.warehouse,
+                        organization=order.organization
+                    )
+                    # 1) remove stock
+                    warehouse_product.remove_stock(warehouse_product_order.expected_quantity)
+                    # 2) record movement
+                    warehouse_product_movement = WarehouseProductMovement.objects.create(
+                        warehouse=outflow_warehouse.warehouse,
+                        warehouse_product=warehouse_product,
+                        product=warehouse_product_order.product,
+                        quantity=Decimal(warehouse_product_order.expected_quantity),
+                        weight=warehouse_product_order.product.weight * warehouse_product_order.expected_quantity,
+                        movement_type="outflow",
+                        amount=warehouse_product_order.cost,
+                        buyer=order.customer,
+                        procurement_officer=order.procurement_officer,
+                        record_date=timezone.now().date(),
+                        outflow_order=order,
+                    )
+                    # 3) update global product quantity
+                    warehouse_product_order.product.remove_quantity(
+                        warehouse_product_order.expected_quantity
+                    )
+
+                except WarehouseProduct.DoesNotExist:
+                    print(
+                        f"Product {warehouse_product_order.product.name} not found in warehouse {outflow_warehouse.warehouse.name} -  {outflow_warehouse.warehouse.warehouse_id}")
+                    continue
+                except Exception as e:
+                    sentry_sdk.capture_exception(e)
+                    continue
+
     def update(self, order, validated_data):
         request = self.context["request"]
         outflow_warehouse = self.context["outflow_warehouse"]
@@ -259,8 +304,14 @@ class MarkOrderPickedSerializer(serializers.Serializer):
                 new_value=outflow_warehouse.status,
                 created_by=request.user
             )
+        # ─── stock leaves the warehouse now ───
+        self.update_warehouse_stocks_outflow(order, outflow_warehouse)
 
-        order.update_status_to_truck_pickup_if_ready(picked_warehouse=outflow_warehouse, user=request.user)
+        # — finally update overall order status if all warehouses are picked up —
+        order.update_status_to_truck_pickup_if_ready(
+            picked_warehouse=outflow_warehouse,
+            user=request.user
+        )
 
         return order
 

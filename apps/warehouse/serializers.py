@@ -2,9 +2,11 @@ from django.utils import timezone
 from rest_framework import serializers
 
 from apps.accounts.serializers.users import ShortUserSerializer
-from apps.farm.serializers.products import ShortProductSerializer
+from apps.farm.serializers.products import FullProductSerializer
+from apps.inflow.serializers import ShortInflowOrderSerializer
+from apps.outflow.models import OutflowOrder
 from apps.shared.serializers.regions import DistrictSerializer, ShortRegionSerializer
-from apps.warehouse.models import Warehouse, WarehouseProduct
+from apps.warehouse.models import Warehouse, WarehouseProduct, WarehouseProductMovement
 from apps.warehouse.utils import generate_warehouse_id
 
 
@@ -58,7 +60,7 @@ class WarehouseSerializer(serializers.ModelSerializer):
 
 
 class FullWarehouseProductSerializer(serializers.ModelSerializer):
-    product = ShortProductSerializer()
+    product = FullProductSerializer()
 
     class Meta:
         model = WarehouseProduct
@@ -76,14 +78,8 @@ class FullWarehouseSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'warehouse_id', 'name', 'region',
             'district', 'capacity', 'manager', 'date_created',
-            'date_modified', 'products'
+            'date_modified'
         )
-
-    def get_products(self, obj):
-        return FullWarehouseProductSerializer(
-            obj.product_stocks.filter(is_active=True),
-            many=True
-        ).data
 
 
 class WarehouseExportSerializer(serializers.ModelSerializer):
@@ -91,7 +87,6 @@ class WarehouseExportSerializer(serializers.ModelSerializer):
     products = serializers.SerializerMethodField()
     date_created = serializers.DateTimeField(format="%d-%m-%Y %H:%M:%S", read_only=True, allow_null=True)
     date_modified = serializers.DateTimeField(format="%d-%m-%Y %H:%M:%S", read_only=True, allow_null=True)
-
 
     class Meta:
         model = Warehouse
@@ -109,4 +104,32 @@ class WarehouseExportSerializer(serializers.ModelSerializer):
     def get_products(self, obj):
         product_names = obj.product_stocks.filter(is_active=True).values_list('product__name', flat=True)
         return ", ".join(product_names)
+
+
+class ShortOutflowOrderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OutflowOrder
+        fields = ('id', 'order_id', 'total_cost', 'status')
+
+
+class WarehouseProductMovementSerializer(serializers.ModelSerializer):
+    inflow_order = ShortInflowOrderSerializer(read_only=True)
+    outflow_order = ShortOutflowOrderSerializer(read_only=True)
+
+    class Meta:
+        model = WarehouseProductMovement
+        fields = (
+            'date_created', 'weight', 'quantity', 'amount',
+            'procurement_officer', 'inflow_order', 'outflow_order',
+        )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        order_type = self.context.get('order_type')
+
+        # Include only relevant order field
+        if order_type == 'inflow':
+            self.fields.pop('outflow_order')
+        elif order_type == 'outflow':
+            self.fields.pop('inflow_order')
 

@@ -54,7 +54,7 @@ class FarmProductChangeLogInline(admin.TabularInline):
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     inlines = [ProductChangeLogInline]
-    list_display = ('id', 'product_id', 'name', 'category', 'type', 'status', 'season_status', 'is_active')
+    list_display = ('id', 'product_id', 'name', 'category', 'type', 'quantity', 'weight', 'status', 'season_status', 'is_active')
     search_fields = ('name', 'description')
     list_filter = ('type', 'status', 'season_status')
 

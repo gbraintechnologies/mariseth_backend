@@ -510,7 +510,6 @@ class GetOutflowRecipientComplaintSerializer(serializers.ModelSerializer):
         )
 
 
-
 class FullOutflowOrderSerializer(serializers.ModelSerializer):
     warehouses = OutflowOrderWarehouseSerializer(
         many=True,

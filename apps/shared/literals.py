@@ -68,6 +68,8 @@ DELETE_WAREHOUSE = 'warehouse|delete_warehouse'
 VIEW_WAREHOUSE = 'warehouse|view_warehouse'
 LIST_WAREHOUSES = 'warehouse|list_warehouses'
 UPLOAD_WAREHOUSES = 'warehouse|upload_warehouses'
+GET_WAREHOUSE_INVENTORY = 'warehouse|get_warehouse_inventory'
+GET_PRODUCT_WAREHOUSE_MOVEMENT = 'warehouse|get_product_warehouse_movement'
 
 # Customers
 CREATE_CUSTOMER = 'customer|create_customer'
