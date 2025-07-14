@@ -2,6 +2,7 @@ from django.utils import timezone
 from rest_framework import serializers
 
 from apps.accounts.serializers.users import ShortUserSerializer
+from apps.customers.serializers import ShortCustomerSerializer
 from apps.farm.serializers.products import FullProductSerializer
 from apps.inflow.serializers import ShortInflowOrderSerializer
 from apps.outflow.models import OutflowOrder
@@ -114,12 +115,17 @@ class ShortOutflowOrderSerializer(serializers.ModelSerializer):
 class WarehouseProductMovementSerializer(serializers.ModelSerializer):
     inflow_order = ShortInflowOrderSerializer(read_only=True)
     outflow_order = ShortOutflowOrderSerializer(read_only=True)
+    warehouse = ShortWarehouseSerializer(read_only=True)
+    buyer = ShortCustomerSerializer(read_only=True)
+    procurement_officer = ShortUserSerializer(read_only=True)
+    aggregator = ShortUserSerializer(read_only=True)
 
     class Meta:
         model = WarehouseProductMovement
         fields = (
             'date_created', 'weight', 'quantity', 'amount',
-            'procurement_officer', 'inflow_order', 'outflow_order',
+            'aggregator', 'procurement_officer', 'buyer',
+            'warehouse', 'inflow_order', 'outflow_order',
         )
 
     def __init__(self, *args, **kwargs):

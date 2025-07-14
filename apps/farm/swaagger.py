@@ -541,6 +541,60 @@ def add_swagger_to_product_viewset(viewset_cls):
         security=[{'Bearer': []}]
     )(viewset_cls.destroy)
 
+    viewset_cls.get_product_movement = swagger_auto_schema(
+        tags=['Products'],
+        operation_summary="Get product movement records",
+        operation_description=(
+            "Retrieve a paginated list of product movement records (inflow or outflow) for a specific product. "
+            "Used for the product detail page.\n\n"
+            "Supports filtering by movement type (`order_type`) and pagination. "
+            "Returns movement records, aggregate totals, and pagination metadata."
+        ),
+        manual_parameters=[
+            openapi.Parameter('order_type', openapi.IN_QUERY, "Filter by movement type ('inflow' or 'outflow')",
+                              type=openapi.TYPE_STRING, default='inflow'),
+            openapi.Parameter('page', openapi.IN_QUERY, "Page number", type=openapi.TYPE_INTEGER, default=1),
+            openapi.Parameter('page_size', openapi.IN_QUERY, "Results per page", type=openapi.TYPE_INTEGER, default=10),
+            openapi.Parameter('id', openapi.IN_PATH, "Product ID", type=openapi.TYPE_INTEGER),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Paginated list of movement records with total quantity and weight",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'totals': openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'total_quantity': openapi.Schema(type=openapi.TYPE_NUMBER,
+                                                                 description="Sum of all movement quantities"),
+                                'total_weight': openapi.Schema(type=openapi.TYPE_NUMBER,
+                                                               description="Sum of all movement weights"),
+                            }
+                        ),
+                        'results': openapi.Schema(type=openapi.TYPE_ARRAY,
+                                                  items=openapi.Items(type=openapi.TYPE_OBJECT)),
+                        'pagination': openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'total': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'page': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'pages': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'has_next': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                                'has_previous': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                            }
+                        )
+                    }
+                )
+            ),
+            404: openapi.Response(
+                description="Product not found",
+                schema=openapi.Schema(type=openapi.TYPE_OBJECT)
+            )
+        },
+        security=[{'Bearer': []}]
+    )(viewset_cls.get_product_movement)
+
     # Bulk Upload Products
     # viewset_cls.upload_products = swagger_auto_schema(
     #     tags=['Products'],

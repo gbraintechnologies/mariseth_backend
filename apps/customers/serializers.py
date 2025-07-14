@@ -5,6 +5,12 @@ from .utils import generate_customer_id
 from ..accounts.serializers.users import ShortUserSerializer
 
 
+class ShortCustomerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Customer
+        fields = ('id', 'customer_id', 'name', 'phone_number', 'email')
+
+
 class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Customer
