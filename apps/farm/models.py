@@ -103,7 +103,7 @@ class Farmer(BaseModel):
     support_assistance = models.JSONField(null=True, blank=True)
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name}"
+        return f"{self.id} - {self.first_name} {self.last_name}"
 
 
 # class FarmerChangeLog(BaseModel):
@@ -141,10 +141,11 @@ class Product(BaseModel):
     category = models.ForeignKey(CustomType, on_delete=models.SET_NULL, null=True, blank=True,
                                  related_name='product_categories', )
     last_updated = models.DateField(auto_now=True)
-    weight = models.FloatField(null=True, blank=True)
+    weight = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)  # weight of one product
     weight_metric = models.ForeignKey(CustomType, on_delete=models.SET_NULL, null=True, blank=True,
                                       related_name='product_weight_metrics')
-    quantity = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    quantity = models.DecimalField(max_digits=10, decimal_places=2, null=True,
+                                   blank=True)  # total quantity in all warehouses
     quantity_metric = models.ForeignKey(CustomType, on_delete=models.SET_NULL, null=True, blank=True,
                                         related_name='product_quantity_metrics', )
     type = models.CharField(max_length=20, choices=PRODUCT_TYPE_CHOICES)
@@ -161,6 +162,14 @@ class Product(BaseModel):
     def add_quantity(self, quantity):
         self.quantity = (self.quantity or Decimal(0)) + Decimal(quantity)
         self.save()
+
+    def remove_quantity(self, quantity):
+        quantity = Decimal(quantity)
+        if self.quantity >= quantity:
+            self.quantity -= quantity
+            self.save()
+        else:
+            raise ValueError("Insufficient global stock")
 
 
 class ProductChangeLog(BaseModel):

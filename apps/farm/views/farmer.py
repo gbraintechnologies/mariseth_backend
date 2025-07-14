@@ -6,12 +6,15 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from apps.credit.models import Credit
+from apps.credit.serializers.credits import FullCreditSerializer
 from apps.farm.models import Farm, Farmer
 from apps.farm.serializers.farm import FarmSerializer
 from apps.farm.serializers.farmer import FarmerSerializer, FullFarmerSerializer
 from apps.farm.swaagger import add_swagger_to_farmer_viewset
 from apps.shared.general_response import GENERAL_SUCCESS_RESPONSE
-from apps.shared.literals import CREATE_FARMER, DELETE_FARMER, GET_SMALLHOLDERS_BY_LEAD, LIST_FARMERS, UPDATE_FARMER, \
+from apps.shared.literals import CREATE_FARMER, DELETE_FARMER, GET_FARMER_CREDIT_HISTORY, GET_SMALLHOLDERS_BY_LEAD, \
+    LIST_FARMERS, UPDATE_FARMER, \
     UPLOAD_FARMERS, VIEW_FARMER
 from apps.shared.tasks.export_tasks import process_farmer_export
 from apps.shared.utils.permissions import UserPermission
@@ -30,7 +33,8 @@ class FarmerViewSet(viewsets.GenericViewSet):
             'list': LIST_FARMERS,
             'destroy': DELETE_FARMER,
             'get_smallholders_by_lead': GET_SMALLHOLDERS_BY_LEAD,
-            'upload_farmers': UPLOAD_FARMERS
+            'upload_farmers': UPLOAD_FARMERS,
+            'get_farmer_credit_history': GET_FARMER_CREDIT_HISTORY
         }
         user_permission = permissions.get(self.action, None)
         if user_permission:
@@ -180,6 +184,25 @@ class FarmerViewSet(viewsets.GenericViewSet):
             'results': results,
             'pagination': {
                 'total': farmers.count(),
+                'page': page_obj.number,
+                'pages': paginator.num_pages,
+                'has_next': page_obj.has_next(),
+                'has_previous': page_obj.has_previous(),
+            }
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['GET'], url_path='credit-history')
+    def get_farmer_credit_history(self, request, pk):
+        page = request.query_params.get('page', 1)
+        page_size = request.query_params.get('page_size', 10)
+        credit_history = Credit.objects.filter(farmer__id=pk, is_active=True).order_by('-date_created')
+        paginator = Paginator(credit_history, page_size)
+        page_obj = paginator.get_page(page)
+        results = FullCreditSerializer(instance=page_obj.object_list, many=True).data
+        return Response({
+            'results': results,
+            'pagination': {
+                'total': credit_history.count(),
                 'page': page_obj.number,
                 'pages': paginator.num_pages,
                 'has_next': page_obj.has_next(),

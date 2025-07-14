@@ -3,6 +3,7 @@ from decimal import Decimal
 from django.contrib.auth import get_user_model
 from django.db import models
 
+from apps.customers.models import Customer
 from apps.shared.models import BaseModel
 
 # Create your models here.
@@ -52,26 +53,32 @@ class WarehouseProduct(BaseModel):
 
     def remove_stock(self, quantity: int):
         """Handle outflow of products"""
+        print(f"Trying to remove {quantity} from WarehouseProduct {self.product.name} with quantity {self.quantity}")
+
         if self.quantity >= quantity:
+            print("Sufficient stock. Proceeding...")
             self.quantity -= Decimal(quantity)
             self.weight = (self.weight or Decimal(0)) - (Decimal(quantity) * Decimal(self.product.weight))
             self.save()
+            print("Stock updated successfully.")
         else:
+            print(f"Insufficient stock for this operation: have {self.quantity}, need {quantity}")
             raise ValueError("Insufficient stock for this operation")
 
 
 class WarehouseProductMovement(BaseModel):
     MOVEMENT_CHOICES = [
-        ('INFLOW', 'Inflow'),
-        ('OUTFLOW', 'Outflow'),
+        ('inflow', 'Inflow'),
+        ('outflow', 'Outflow'),
     ]
     warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE, related_name='warehouse_movements')
     warehouse_product = models.ForeignKey(WarehouseProduct, on_delete=models.CASCADE,
                                           related_name='warehouse_movements')
     product = models.ForeignKey('farm.Product', on_delete=models.CASCADE, related_name='warehouse_movements')
     movement_type = models.CharField(max_length=7, choices=MOVEMENT_CHOICES)
-    quantity = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
-    weight = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    quantity = models.DecimalField(max_digits=10, decimal_places=2, blank=True,
+                                   null=True)  # total quantity for the order
+    weight = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)  # total weight for the order
     record_date = models.DateField(null=True, blank=True)
     inflow_order = models.ForeignKey('inflow.InflowOrder', on_delete=models.CASCADE,
                                      null=True, blank=True, related_name='movements'
@@ -79,7 +86,7 @@ class WarehouseProductMovement(BaseModel):
     outflow_order = models.ForeignKey('outflow.OutflowOrder', on_delete=models.CASCADE,
                                       null=True, blank=True, related_name='movements')
     amount = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
-    buyer = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='purchases', blank=True)
+    buyer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True, related_name='purchases', blank=True)
     aggregator = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='aggregations', blank=True)
     procurement_officer = models.ForeignKey(User, on_delete=models.SET_NULL, null=True,
                                             related_name='procurement_activities')

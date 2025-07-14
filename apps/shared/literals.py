@@ -37,6 +37,7 @@ VIEW_FARMER = 'farmer|view_farmer'
 LIST_FARMERS = 'farmer|list_farmers'
 UPLOAD_FARMERS = 'farmer|upload_farmers'
 GET_SMALLHOLDERS_BY_LEAD = 'farmer|get_smallholders_by_lead'
+GET_FARMER_CREDIT_HISTORY = 'farmer|get_farmer_credit_history'
 
 # Farmer
 CREATE_PRODUCT = 'product|create_product'
@@ -67,6 +68,8 @@ DELETE_WAREHOUSE = 'warehouse|delete_warehouse'
 VIEW_WAREHOUSE = 'warehouse|view_warehouse'
 LIST_WAREHOUSES = 'warehouse|list_warehouses'
 UPLOAD_WAREHOUSES = 'warehouse|upload_warehouses'
+GET_WAREHOUSE_INVENTORY = 'warehouse|get_warehouse_inventory'
+GET_PRODUCT_WAREHOUSE_MOVEMENT = 'warehouse|get_product_warehouse_movement'
 
 # Customers
 CREATE_CUSTOMER = 'customer|create_customer'
