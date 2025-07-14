@@ -12,7 +12,7 @@ from apps.shared.serializers.custom_types import CustomTypeSerializer
 class ShortProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
-        fields = ('id', 'name', 'type', 'status')
+        fields = ('id', 'name', 'type', 'status', 'color')
         read_only_fields = ('id',)
 
 
@@ -28,7 +28,8 @@ class ProductSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'name', 'category', 'weight', 'weight_metric',
             'quantity', 'quantity_metric', 'type', 'season_status',
-            'status', 'season_start', 'season_end', 'description', 'breed'
+            'status', 'season_start', 'season_end', 'description',
+            'breed', 'color',
         )
         read_only_fields = ('id',)
 
@@ -74,8 +75,8 @@ class FullProductSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'product_id', 'name', 'category', 'weight', 'weight_metric',
             'quantity', 'quantity_metric', 'type', 'season_status', 'status',
-            'season_start', 'season_end', 'description', 'breed', 'created_by',
-            'date_created', 'last_updated'
+            'season_start', 'season_end', 'description', 'breed', 'color',
+            'created_by', 'date_created', 'last_updated'
         )
         read_only_fields = ('id', 'created_by', 'date_created', 'last_updated')
 

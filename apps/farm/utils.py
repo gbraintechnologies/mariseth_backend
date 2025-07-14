@@ -1,5 +1,3 @@
-import re
-
 from django.db.models import Max
 
 from apps.farm.models import Farm, Farmer, Product
@@ -48,14 +46,24 @@ def generate_product_id(org_id, product_type):
              L-0200001 for org_id=2's first livestock
     """
     prefix = 'C' if product_type == 'crop' else 'L'
-    last_id = Product.objects.filter(
-        organization_id=org_id,
-        type=product_type
-    ).aggregate(
-        max_id=Max('product_id')
-    )['max_id'] or f"{prefix}-{int(org_id):02}00000"
 
-    sequence_match = re.search(r'\d+$', last_id)
-    sequence = int(sequence_match.group()) + 1 if sequence_match else 1
+    # get the last-created product for this org/type
+    last_obj = (
+        Product.objects
+        .filter(organization_id=org_id, type=product_type)
+        .order_by('date_created')
+        .last()
+    )
+    if last_obj and '-' in last_obj.product_id:
+        tail = last_obj.product_id.split('-', 1)[1]
+        seq = int(tail) + 1
+        width = len(tail)
+    else:
+        # first-ever: ORGID (2 digits) + three zeros → then +1
+        org_part = f"{int(org_id):02}"
+        default_numeric = org_part + "0" * 3
+        width = len(default_numeric)
+        seq = int(default_numeric) + 1
 
-    return f"{prefix}-{int(org_id):02}{sequence:05d}"
+    return f"{prefix}-{seq:0{width}d}"
+
