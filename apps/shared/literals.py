@@ -46,6 +46,7 @@ DELETE_PRODUCT = 'product|delete_product'
 VIEW_PRODUCT = 'product|view_product'
 LIST_PRODUCTS = 'product|list_products'
 UPLOAD_PRODUCTS = 'product|upload_products'
+GET_PRODUCT_MOVEMENT = 'product|get_product_movement'
 
 # Credits
 CREATE_CREDIT = 'credit|create_credit'

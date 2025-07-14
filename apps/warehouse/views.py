@@ -20,7 +20,7 @@ from apps.warehouse.swagger import add_swagger_to_warehouse_viewset
 @add_swagger_to_warehouse_viewset
 class WarehouseViewSet(viewsets.GenericViewSet):
     serializer_class = WarehouseSerializer
-    queryset = Farm.objects.filter(is_active=True)
+    queryset = Warehouse.objects.filter(is_active=True)
 
     def get_permissions(self):
         permissions = {

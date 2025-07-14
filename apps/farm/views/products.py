@@ -1,6 +1,6 @@
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Sum
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -11,17 +11,19 @@ from apps.farm.serializers.farm import FarmSerializer
 from apps.farm.serializers.products import FullProductSerializer, ProductSerializer
 from apps.farm.swaagger import add_swagger_to_product_viewset
 from apps.shared.literals import (
-    CREATE_PRODUCT, DELETE_PRODUCT, LIST_PRODUCTS, UPDATE_PRODUCT,
+    CREATE_PRODUCT, DELETE_PRODUCT, GET_PRODUCT_MOVEMENT, LIST_PRODUCTS, UPDATE_PRODUCT,
     UPLOAD_PRODUCTS, VIEW_PRODUCT
 )
 from apps.shared.tasks.export_tasks import process_product_export
 from apps.shared.utils.permissions import UserPermission
+from apps.warehouse.models import WarehouseProductMovement
+from apps.warehouse.serializers import WarehouseProductMovementSerializer
 
 
 @add_swagger_to_product_viewset
 class ProductViewSet(viewsets.GenericViewSet):
     serializer_class = FarmSerializer
-    queryset = Farm.objects.filter(is_active=True)
+    queryset = Product.objects.filter(is_active=True)
 
     def get_permissions(self):
         permissions = {
@@ -30,7 +32,8 @@ class ProductViewSet(viewsets.GenericViewSet):
             'retrieve': VIEW_PRODUCT,
             'list': LIST_PRODUCTS,
             'destroy': DELETE_PRODUCT,
-            'upload_products': UPLOAD_PRODUCTS
+            'upload_products': UPLOAD_PRODUCTS,
+            'get_product_movement': GET_PRODUCT_MOVEMENT
         }
         user_permission = permissions.get(self.action, None)
         if user_permission:
@@ -162,6 +165,41 @@ class ProductViewSet(viewsets.GenericViewSet):
                 {'error': 'Product not found'},
                 status=status.HTTP_404_NOT_FOUND
             )
+
+    @action(detail=True, methods=['GET'], url_path='movement')
+    def get_product_movement(self, request, pk=None):
+        page = request.query_params.get('page', 1)
+        page_size = request.query_params.get('page_size', 10)
+        order_type = request.query_params.get('order_type', 'inflow')
+        try:
+            product = Product.objects.get(pk=pk, is_active=True, organization=request.organization)
+        except Product.DoesNotExist:
+            return Response({'error': 'Product not found'}, status=status.HTTP_404_NOT_FOUND)
+        warehouse_movements = WarehouseProductMovement.objects.filter(
+            product=product,
+            movement_type=order_type
+        )
+
+        paginator = Paginator(warehouse_movements, page_size)
+        page_obj = paginator.get_page(page)
+        results = WarehouseProductMovementSerializer(
+            page_obj.object_list, many=True, context={'order_type': order_type}
+        ).data
+
+        return Response({
+            'totals': {
+                'total_quantity': warehouse_movements.aggregate(Sum('quantity'))['quantity__sum'],
+                'total_weight': warehouse_movements.aggregate(Sum('weight'))['weight__sum'],
+            },
+            'results': results,
+            'pagination': {
+                'total': warehouse_movements.count(),
+                'page': page_obj.number,
+                'pages': paginator.num_pages,
+                'has_next': page_obj.has_next(),
+                'has_previous': page_obj.has_previous(),
+            }
+        }, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['POST'], url_path='upload-product')
     @transaction.atomic

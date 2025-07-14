@@ -167,4 +167,97 @@ def add_swagger_to_warehouse_viewset(viewset_cls):
         security=[{'Bearer': []}]
     )(viewset_cls.upload_warehouses)
 
+    viewset_cls.get_warehouse_inventory = swagger_auto_schema(
+        tags=['Warehouses'],
+        operation_summary="Get inventory for a specific warehouse",
+        operation_description=(
+            "Retrieve a paginated list of all products available in a specific warehouse. "
+            "This endpoint powers the warehouse inventory view.\n\n"
+            "Provide the warehouse ID in the URL path."
+        ),
+        manual_parameters=[
+            openapi.Parameter('page', openapi.IN_QUERY, "Page number", type=openapi.TYPE_INTEGER, default=1),
+            openapi.Parameter('page_size', openapi.IN_QUERY, "Items per page", type=openapi.TYPE_INTEGER, default=10),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Paginated list of products in the warehouse",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'results': openapi.Schema(type=openapi.TYPE_ARRAY,
+                                                  items=openapi.Items(type=openapi.TYPE_OBJECT)),
+                        'pagination': openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'total': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'page': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'pages': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'has_next': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                                'has_previous': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                            }
+                        )
+                    }
+                )
+            ),
+            404: openapi.Response(
+                description="Warehouse not found",
+                schema=openapi.Schema(type=openapi.TYPE_OBJECT)
+            )
+        },
+        security=[{'Bearer': []}]
+    )(viewset_cls.get_warehouse_inventory)
+
+    viewset_cls.get_product_warehouse_movement = swagger_auto_schema(
+        tags=['Warehouses'],
+        operation_summary="Get product movement in warehouse",
+        operation_description=(
+            "Retrieve a paginated list of inflow or outflow movement records for a specific product "
+            "within a given warehouse. This is used when viewing a product inside a warehouse's inventory.\n\n"
+            "Provide the warehouse ID and product ID in the URL path. Use `order_type` to switch between inflow/outflow."
+        ),
+        manual_parameters=[
+            openapi.Parameter('order_type', openapi.IN_QUERY, "Filter by movement type ('inflow' or 'outflow')",
+                              type=openapi.TYPE_STRING, default='inflow'),
+            openapi.Parameter('page', openapi.IN_QUERY, "Page number", type=openapi.TYPE_INTEGER, default=1),
+            openapi.Parameter('page_size', openapi.IN_QUERY, "Items per page", type=openapi.TYPE_INTEGER, default=10),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Movement records for the specified product in the warehouse",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'totals': openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'total_quantity': openapi.Schema(type=openapi.TYPE_NUMBER,
+                                                                 description="Sum of movement quantities"),
+                                'total_weight': openapi.Schema(type=openapi.TYPE_NUMBER,
+                                                               description="Sum of movement weights"),
+                            }
+                        ),
+                        'results': openapi.Schema(type=openapi.TYPE_ARRAY,
+                                                  items=openapi.Items(type=openapi.TYPE_OBJECT)),
+                        'pagination': openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'total': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'page': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'pages': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'has_next': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                                'has_previous': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                            }
+                        )
+                    }
+                )
+            ),
+            404: openapi.Response(
+                description="Warehouse or Product not found",
+                schema=openapi.Schema(type=openapi.TYPE_OBJECT)
+            )
+        },
+        security=[{'Bearer': []}]
+    )(viewset_cls.get_product_warehouse_movement)
+
     return viewset_cls
