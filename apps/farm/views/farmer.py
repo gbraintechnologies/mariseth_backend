@@ -9,12 +9,12 @@ from rest_framework.response import Response
 from apps.credit.models import Credit
 from apps.credit.serializers.credits import FullCreditSerializer
 from apps.farm.models import Farm, Farmer
-from apps.farm.serializers.farm import FarmSerializer
+from apps.farm.serializers.farm import FarmSerializer, FullFarmSerializer
 from apps.farm.serializers.farmer import FarmerSerializer, FullFarmerSerializer
 from apps.farm.swaagger import add_swagger_to_farmer_viewset
 from apps.shared.general_response import GENERAL_SUCCESS_RESPONSE
 from apps.shared.literals import CREATE_FARMER, DELETE_FARMER, GET_FARMER_CREDIT_HISTORY, GET_SMALLHOLDERS_BY_LEAD, \
-    LIST_FARMERS, UPDATE_FARMER, \
+    LIST_FARMERS, LIST_FARMS, UPDATE_FARMER, \
     UPLOAD_FARMERS, VIEW_FARMER
 from apps.shared.tasks.export_tasks import process_farmer_export
 from apps.shared.utils.permissions import UserPermission
@@ -34,7 +34,8 @@ class FarmerViewSet(viewsets.GenericViewSet):
             'destroy': DELETE_FARMER,
             'get_smallholders_by_lead': GET_SMALLHOLDERS_BY_LEAD,
             'upload_farmers': UPLOAD_FARMERS,
-            'get_farmer_credit_history': GET_FARMER_CREDIT_HISTORY
+            'get_farmer_credit_history': GET_FARMER_CREDIT_HISTORY,
+            'get_farmer_farms': LIST_FARMS
         }
         user_permission = permissions.get(self.action, None)
         if user_permission:
@@ -195,7 +196,11 @@ class FarmerViewSet(viewsets.GenericViewSet):
     def get_farmer_credit_history(self, request, pk):
         page = request.query_params.get('page', 1)
         page_size = request.query_params.get('page_size', 10)
-        credit_history = Credit.objects.filter(farmer__id=pk, is_active=True).order_by('-date_created')
+        try:
+            farmer = Farmer.objects.get(pk=pk, is_active=True, organization=request.organization)
+        except Farmer.DoesNotExist:
+            return Response({'error': 'Farmer not found'}, status=status.HTTP_404_NOT_FOUND)
+        credit_history = Credit.objects.filter(farmer=farmer, is_active=True).order_by('-date_created')
         paginator = Paginator(credit_history, page_size)
         page_obj = paginator.get_page(page)
         results = FullCreditSerializer(instance=page_obj.object_list, many=True).data
@@ -209,3 +214,40 @@ class FarmerViewSet(viewsets.GenericViewSet):
                 'has_previous': page_obj.has_previous(),
             }
         }, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['GET'], url_path='farms')
+    def get_farmer_farms(self, request, pk=None):
+        """
+        Get paginated list of farms owned by the lead farmer
+        """
+        page = request.query_params.get('page', 1)
+        page_size = request.query_params.get('page_size', 10)
+        query = request.query_params.get('query')
+        try:
+            farmer = Farmer.objects.get(pk=pk, is_active=True, organization=request.organization)
+        except Farmer.DoesNotExist:
+            return Response({'error': 'Farmer not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        filter_q = Q(farmer=farmer, is_active=True)
+
+        if query:
+            filter_q &= (
+                    Q(name__icontains=query) |
+                    Q(farm_id__icontains=query) |
+                    Q(location__icontains=query)
+            )
+
+        farms = Farm.objects.filter(filter_q).order_by('-date_created')
+        paginator = Paginator(farms, page_size)
+        page_obj = paginator.get_page(page)
+
+        return Response({
+            'results': FullFarmSerializer(page_obj.object_list, many=True).data,
+            'pagination': {
+                'total': farms.count(),
+                'page': page_obj.number,
+                'pages': paginator.num_pages,
+                'has_next': page_obj.has_next(),
+                'has_previous': page_obj.has_previous(),
+            }
+        })
