@@ -12,9 +12,9 @@ User = get_user_model()
 
 
 @shared_task
-def send_verification_email(verification_code, template_name, user):
+def send_verification_email(verification_code, template_name, user_id):
     try:
-        user = User.objects.get(pk=user)
+        user = User.objects.get(pk=user_id)
         organization_user = OrganizationUser.objects.get(user=user)
 
         domain = get_organization_domain(user)

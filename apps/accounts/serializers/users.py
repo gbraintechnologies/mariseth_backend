@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
-
+from django.db import transaction
 from apps.accounts.models import AppGroup, AppPermission
 from apps.organizations.models import Organization, OrganizationUser
 from apps.organizations.serializers.organization import ShortOrganizationSerializer
@@ -65,8 +65,10 @@ class NewUserSerializer(serializers.ModelSerializer):
         if group:
             user.groups.set([group])
 
-        send_verification_email.delay(
-            code, template_name=VERIFICATION_EMAIL_TEMPLATE, user=user.id
+        transaction.on_commit(
+            lambda: send_verification_email.delay(
+                code, template_name=VERIFICATION_EMAIL_TEMPLATE, user_id=user.id
+            )
         )
         return user
 
