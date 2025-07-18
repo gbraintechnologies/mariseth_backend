@@ -323,13 +323,14 @@ class OrderApprovalSerializer(serializers.Serializer):
                 defaults={'quantity': 0, 'weight': 0}
             )
             warehouse_product.add_stock(order_product.quantity)
-
+            product_weight = order_product.product.weight or Decimal('0.0')
+            weight = product_weight * order_product.quantity
             warehouse_product_movement = WarehouseProductMovement.objects.create(
                 warehouse=order.destination_warehouse,
                 warehouse_product=warehouse_product,
                 product=order_product.product,
                 quantity=order_product.quantity,
-                weight=order_product.product.weight * order_product.quantity,
+                weight=weight,
                 movement_type="inflow",
                 amount=Decimal(order_product.total_cost),
                 aggregator=order.aggregator,
