@@ -6,7 +6,6 @@ from django.contrib.auth import get_user_model
 from sentry_sdk.integrations.celery import CeleryIntegration
 
 from apps.organizations.models import OrganizationUser
-from apps.shared.literals import DEFAULT_EMAIL
 from apps.shared.models import CustomType
 
 User = get_user_model()
@@ -51,9 +50,9 @@ def get_organization_email(organization):
             is_active=True,
             is_default=True
         ).order_by('-date_created').first()
-        return organization_email.name if organization_email else DEFAULT_EMAIL
+        return organization_email.name if organization_email else "alerts@youstart.com.gh"
     except CustomType.DoesNotExist:
-        return DEFAULT_EMAIL
+        return "alerts@youstart.com.gh"
 
 
 def get_organization_default_sender_id(organization):
