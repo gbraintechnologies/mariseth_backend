@@ -8,7 +8,6 @@ NEW_PASSWORD = 'new_password'
 OLD_PASSWORD = 'old_password'
 VERIFICATION_EMAIL_TEMPLATE = 'verification_email.html'
 FORGOTTEN_PASSWORD_EMAIL_TEMPLATE = 'forgotten_password_email.html'
-DEFAULT_EMAIL = 'no-reply@mariseth360.com'
 
 VIEW_GROUPS_AND_ROLES = 'account_management|list_groups_and_roles'
 CREATE_GROUPS_AND_ROLES = 'account_management|create_group_and_assign_roles'
