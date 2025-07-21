@@ -2,6 +2,7 @@ from django.contrib.auth import authenticate, get_user_model
 from rest_framework import serializers
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.db import transaction
 
 from apps.accounts.serializers.users import GroupSerializer
 from apps.organizations.models import OrganizationUser
@@ -104,8 +105,10 @@ class ResendVerificationCodeSerializer(serializers.Serializer):
             code = user.set_email_verification_code()
             template_name = VERIFICATION_EMAIL_TEMPLATE
             user.save()
-            send_verification_email.delay(
-                 code, template_name=template_name, user=user.id
+            transaction.on_commit(
+                lambda: send_verification_email.delay(
+                    code, template_name=template_name, user_id=user.id
+                )
             )
 
         except User.DoesNotExist:
@@ -152,10 +155,12 @@ class ForgotPasswordSerializer(serializers.Serializer):
             code = user.set_email_verification_code()
             template_name = FORGOTTEN_PASSWORD_EMAIL_TEMPLATE
             user.save()
-            send_verification_email.delay(
-                code, template_name=template_name, user=user.id
-            )
 
+            transaction.on_commit(
+                lambda: send_verification_email.delay(
+                    code, template_name=template_name, user_id=user.id
+                )
+            )
         except User.DoesNotExist:
             raise serializers.ValidationError(
                 'User with this email does not exist')
