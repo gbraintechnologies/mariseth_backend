@@ -61,7 +61,9 @@ class WarehouseViewSet(viewsets.GenericViewSet):
 
     def retrieve(self, request, pk=None):
         try:
-            warehouse = Warehouse.objects.get(pk=pk, is_active=True, organization=request.organization)
+            warehouse = Warehouse.objects.prefetch_related('product_stocks').get(
+                pk=pk, is_active=True, organization=request.organization
+            )
             return Response(FullWarehouseSerializer(warehouse).data, status=status.HTTP_200_OK)
         except Warehouse.DoesNotExist:
             return Response({'error': 'Warehouse not found'}, status=status.HTTP_404_NOT_FOUND)
