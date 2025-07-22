@@ -3,7 +3,7 @@ from rest_framework import serializers
 
 from apps.accounts.serializers.users import ShortUserSerializer
 from apps.customers.serializers import ShortCustomerSerializer
-from apps.farm.serializers.products import FullProductSerializer
+from apps.farm.serializers.products import FullProductSerializer, ShortProductSerializer
 from apps.inflow.serializers import ShortInflowOrderSerializer
 from apps.outflow.models import OutflowOrder
 from apps.shared.serializers.regions import DistrictSerializer, ShortRegionSerializer
@@ -68,17 +68,26 @@ class FullWarehouseProductSerializer(serializers.ModelSerializer):
         fields = ('product', 'weight', 'quantity')
 
 
+class ProductWarehouseSerializer(serializers.ModelSerializer):
+    product = ShortProductSerializer()
+
+    class Meta:
+        model = WarehouseProduct
+        fields = ('product', 'weight', 'quantity')
+
+
 class FullWarehouseSerializer(serializers.ModelSerializer):
     manager = ShortUserSerializer()
     region = ShortRegionSerializer()
     district = DistrictSerializer()
+    products = ProductWarehouseSerializer(source='product_stocks', many=True)
 
     class Meta:
         model = Warehouse
         fields = (
             'id', 'warehouse_id', 'name', 'region',
             'district', 'capacity', 'manager', 'date_created',
-            'date_modified'
+            'date_modified', 'products'
         )
 
 
