@@ -10,7 +10,8 @@ from django.db.models import Q
 from django.utils import timezone
 
 from apps.shared.literals import (
-    ADD_ADMIN, APPROVE_INFLOW_DELIVERY_INSPECTION, APPROVE_INFLOW_ORDER, APPROVE_OR_DENY_CREDIT, ASSIGN_DELIVERY_INFO,
+    ADD_ADMIN, ADD_REMOVE_WAREHOUSE_MANAGER, APPROVE_INFLOW_DELIVERY_INSPECTION, APPROVE_INFLOW_ORDER,
+    APPROVE_OR_DENY_CREDIT, ASSIGN_DELIVERY_INFO,
     CREATE_CREDIT, CREATE_CUSTOMER, CREATE_CUSTOM_TYPE, CREATE_FARM, CREATE_FARMER, CREATE_GROUPS_AND_ROLES,
     CREATE_INFLOW_ORDER, CREATE_OR_UPDATE_SETTINGS, CREATE_OUTFLOW_ORDER, CREATE_PAYBACK, CREATE_PRODUCT,
     CREATE_WAREHOUSE, DELETE_ADMIN, DELETE_CREDIT, DELETE_CUSTOMER, DELETE_CUSTOM_TYPE, DELETE_FARM, DELETE_FARMER,
@@ -19,7 +20,7 @@ from apps.shared.literals import (
     GET_SMALLHOLDERS_BY_LEAD,
     GET_WAREHOUSE_INVENTORY, LIST_ADMINS,
     LIST_CREDITS, LIST_CUSTOMERS,
-    LIST_FARMERS, LIST_FARMS,
+    LIST_EXPENSES, LIST_FARMERS, LIST_FARMS,
     LIST_INFLOW_ORDERS, LIST_OUTFLOW_APPROVAL, LIST_OUTFLOW_ORDERS, LIST_PAYBACKS, LIST_PRODUCTS, LIST_WAREHOUSES,
     MARK_OUTFLOW_COMPLETE, MARK_OUTFLOW_DELIVERED, MARK_OUTFLOW_ORDER_PICKED, RECORD_OUTFLOW_PAYMENT, UPDATE_ADMIN,
     UPDATE_CREDIT, UPDATE_CUSTOMER, UPDATE_CUSTOM_TYPE, UPDATE_FARM, UPDATE_FARMER, UPDATE_GROUPS_AND_ROLES,
@@ -258,6 +259,7 @@ class User(AbstractUser, BaseModel, PermissionsMixin):
             (UPLOAD_WAREHOUSES, 'upload warehouses'),
             (GET_WAREHOUSE_INVENTORY, 'get warehouse inventory'),
             (GET_PRODUCT_WAREHOUSE_MOVEMENT, 'get warehouse product movement'),
+            (ADD_REMOVE_WAREHOUSE_MANAGER, 'add or remove warehouse manager from warehouse'),
 
             # inflow
             (CREATE_INFLOW_ORDER, 'create an inflow order'),
@@ -289,6 +291,9 @@ class User(AbstractUser, BaseModel, PermissionsMixin):
             (VERIFY_OUTFLOW_AVAILABILITY, 'verify outflow availability'),
             (MARK_OUTFLOW_ORDER_PICKED, 'mark an outflow order as picked'),
             (LIST_OUTFLOW_APPROVAL, 'list all outflow approvals'),
+
+            # accounts
+            (LIST_EXPENSES, 'list all expenses'),
         ]
 
     def set_email_verification_code(self):

@@ -596,3 +596,11 @@ class ListOutflowOrderSerializer(serializers.ModelSerializer):
             is_active=True
         )
         return OutflowWarehouseProductSerializer(all_products, many=True).data
+
+
+class ShortOutflowOrderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OutflowOrder
+        fields = ('id', 'order_id', 'total_cost', 'status')
+
+

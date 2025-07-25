@@ -49,6 +49,12 @@ class InflowOrderViewSet(viewsets.GenericViewSet):
     def update(self, request, pk=None):
         try:
             order = InflowOrder.objects.get(pk=pk, is_active=True, organization=request.organization)
+            # Check if the requesting user is a manager of the destination warehouse
+            if request.user not in order.destination_warehouse.managers.all():
+                return Response(
+                    {'error': 'You do not have permission to update this inflow order.'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
             if order.status != "delivery_inspection":
                 return Response({'error': 'Order cannot be updated'}, status=status.HTTP_400_BAD_REQUEST)
             serializer = self.get_serializer(
@@ -64,6 +70,12 @@ class InflowOrderViewSet(viewsets.GenericViewSet):
     def retrieve(self, request, pk=None):
         try:
             order = InflowOrder.objects.get(pk=pk, is_active=True, organization=request.organization)
+            # Check if the requesting user is a manager of the destination warehouse
+            if request.user not in order.destination_warehouse.managers.all():
+                return Response(
+                    {'error': 'You do not have permission to view this inflow order.'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
             return Response(FullInflowOrderSerializer(order).data, status=status.HTTP_200_OK)
         except InflowOrder.DoesNotExist:
             return Response({'error': 'Order not found'}, status=status.HTTP_404_NOT_FOUND)
@@ -79,6 +91,10 @@ class InflowOrderViewSet(viewsets.GenericViewSet):
         completed = request.query_params.get('completed', 'false').lower()
 
         filter_q = Q(is_active=True, organization=request.organization)
+
+        # Filter by warehouses managed by the current user
+        user_managed_warehouses = request.user.managed_warehouses.all()
+        filter_q &= Q(destination_warehouse__in=user_managed_warehouses)
 
         if completed == 'true':
             filter_q &= Q(status='approved')
@@ -116,6 +132,12 @@ class InflowOrderViewSet(viewsets.GenericViewSet):
     def destroy(self, request, pk=None):
         try:
             order = InflowOrder.objects.get(pk=pk, is_active=True, organization=request.organization)
+            # Check if the requesting user is a manager of the destination warehouse
+            if request.user not in order.destination_warehouse.managers.all():
+                return Response(
+                    {'error': 'You do not have permission to delete this inflow order.'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
             if order.status != "delivery_inspection":
                 return Response({'error': 'Order cannot be updated'}, status=status.HTTP_400_BAD_REQUEST)
             order.soft_delete(owner=request.user)
@@ -130,6 +152,14 @@ class InflowOrderViewSet(viewsets.GenericViewSet):
             order = InflowOrder.objects.get(
                 pk=pk, is_active=True, organization=request.organization, status='delivery_inspection'
             )
+            # Check if the requesting user is a manager of the destination warehouse
+            # This ensures that only authorized warehouse managers can approve delivery inspections.
+            if request.user not in order.destination_warehouse.managers.all():
+                return Response(
+                    {'error': 'You do not have permission to approve delivery inspections for this warehouse.'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
             serializer = DeliveryInspectionApprovalSerializer(
                 instance=order, data=request.data, context={'request': request}
             )
@@ -148,6 +178,14 @@ class InflowOrderViewSet(viewsets.GenericViewSet):
             order = InflowOrder.objects.get(
                 pk=pk, is_active=True, organization=request.organization, status='order_approval'
             )
+            # Check if the requesting user is a manager of the destination warehouse
+            # This ensures that only authorized warehouse managers can approve orders.
+            if request.user not in order.destination_warehouse.managers.all():
+                return Response(
+                    {'error': 'You do not have permission to approve orders for this warehouse.'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
             serializer = OrderApprovalSerializer(
                 instance=order, data=request.data, context={'request': request}
             )

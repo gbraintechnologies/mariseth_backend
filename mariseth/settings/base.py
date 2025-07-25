@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'apps.warehouse.apps.WarehouseConfig',
     'apps.inflow.apps.InflowConfig',
     'apps.outflow.apps.OutflowConfig',
+    'apps.accounting.apps.AccountingConfig',
 ]
 
 MIDDLEWARE = [

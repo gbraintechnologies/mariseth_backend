@@ -20,9 +20,7 @@ class Warehouse(BaseModel):
     region = models.ForeignKey('shared.Region', on_delete=models.SET_NULL, null=True, blank=True)
     district = models.ForeignKey('shared.District', on_delete=models.SET_NULL, null=True, blank=True)
     capacity = models.CharField(max_length=50)
-    manager = models.ForeignKey(User, on_delete=models.SET_NULL,
-                                null=True, blank=True,
-                                related_name='managed_warehouses')
+    managers = models.ManyToManyField(User, blank=True, related_name='managed_warehouses')
 
     def __str__(self):
         return f"{self.name} ({self.warehouse_id})"

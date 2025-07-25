@@ -13,7 +13,7 @@ from apps.outflow.models import OutflowOrder, OutflowOrderDeliveryInformationWar
 from apps.outflow.serializers.outflow import OutflowOrderDeliveryInfoResponseSerializer
 from apps.outflow.utils import create_warehouse_history, track_product_changes
 from apps.shared.utils.helpers import base64_to_image
-from apps.warehouse.models import WarehouseProduct, WarehouseProductMovement
+from apps.warehouse.models import Warehouse, WarehouseProduct, WarehouseProductMovement
 from apps.warehouse.serializers import ShortWarehouseSerializer
 
 
@@ -92,11 +92,13 @@ class OutflowOrderApprovalSerializer(serializers.ModelSerializer):
 
     def get_warehouses(self, obj):
         request = self.context.get('request')
-        # Only include warehouses in this order that are managed by the user
-        managed = obj.warehouses.select_related('warehouse').filter(
-            warehouse__manager=request.user
-        )
-        return OutflowOrderWarehouseSerializer(managed, many=True).data
+        if not request or not request.user.is_authenticated:
+            return []
+        # Get warehouses managed by the current user
+        user_managed_warehouses = Warehouse.objects.filter(managers=request.user)
+        # Filter OutflowOrderWarehouse objects based on these managed warehouses
+        managed_outflow_warehouses = obj.warehouses.filter(warehouse__in=user_managed_warehouses)
+        return OutflowOrderWarehouseSerializer(managed_outflow_warehouses, many=True).data
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
@@ -139,6 +141,7 @@ class WarehouseVerificationSerializer(serializers.ModelSerializer):
 
             # Case 1: No product data sent (Auto-verification scenario)
             if not products_data:
+                print("Case 1")
                 for product in instance.products.all():
                     # Get actual stock from warehouse
                     try:
@@ -186,6 +189,7 @@ class WarehouseVerificationSerializer(serializers.ModelSerializer):
 
             # Case 2: Product data sent (Manual verification with complaints/adjustments)
             else:
+                print("Case 2")
                 for product_data in products_data:
                     try:
                         product = instance.products.get(id=product_data['id'])

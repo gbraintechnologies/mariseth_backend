@@ -70,6 +70,7 @@ LIST_WAREHOUSES = 'warehouse|list_warehouses'
 UPLOAD_WAREHOUSES = 'warehouse|upload_warehouses'
 GET_WAREHOUSE_INVENTORY = 'warehouse|get_warehouse_inventory'
 GET_PRODUCT_WAREHOUSE_MOVEMENT = 'warehouse|get_product_warehouse_movement'
+ADD_REMOVE_WAREHOUSE_MANAGER = 'warehouse|add_remove_warehouse_manager'
 
 # Customers
 CREATE_CUSTOMER = 'customer|create_customer'
@@ -109,6 +110,9 @@ VIEW_OUTFLOW_APPROVAL = 'outflow_approvals|view_outflow_approval'
 VERIFY_OUTFLOW_AVAILABILITY = 'outflow_approvals|verify_outflow_availability'
 MARK_OUTFLOW_ORDER_PICKED = 'outflow_approvals|mark_outflow_order_picked'
 LIST_OUTFLOW_APPROVAL = 'outflow_approvals|list_outflow_approvals'
+
+# ACCOUNTING
+LIST_EXPENSES = 'accounting|list_expenses'
 
 # EVENT TYPES
 CREATE_STRING = 'create'
