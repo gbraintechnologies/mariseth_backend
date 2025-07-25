@@ -20,7 +20,7 @@ from apps.shared.literals import (
     GET_SMALLHOLDERS_BY_LEAD,
     GET_WAREHOUSE_INVENTORY, LIST_ADMINS,
     LIST_CREDITS, LIST_CUSTOMERS,
-    LIST_FARMERS, LIST_FARMS,
+    LIST_EXPENSES, LIST_FARMERS, LIST_FARMS,
     LIST_INFLOW_ORDERS, LIST_OUTFLOW_APPROVAL, LIST_OUTFLOW_ORDERS, LIST_PAYBACKS, LIST_PRODUCTS, LIST_WAREHOUSES,
     MARK_OUTFLOW_COMPLETE, MARK_OUTFLOW_DELIVERED, MARK_OUTFLOW_ORDER_PICKED, RECORD_OUTFLOW_PAYMENT, UPDATE_ADMIN,
     UPDATE_CREDIT, UPDATE_CUSTOMER, UPDATE_CUSTOM_TYPE, UPDATE_FARM, UPDATE_FARMER, UPDATE_GROUPS_AND_ROLES,
@@ -291,6 +291,9 @@ class User(AbstractUser, BaseModel, PermissionsMixin):
             (VERIFY_OUTFLOW_AVAILABILITY, 'verify outflow availability'),
             (MARK_OUTFLOW_ORDER_PICKED, 'mark an outflow order as picked'),
             (LIST_OUTFLOW_APPROVAL, 'list all outflow approvals'),
+
+            # accounts
+            (LIST_EXPENSES, 'list all expenses'),
         ]
 
     def set_email_verification_code(self):
