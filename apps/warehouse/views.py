@@ -7,13 +7,16 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from apps.farm.models import Farm, Product
-from apps.shared.literals import CREATE_WAREHOUSE, DELETE_WAREHOUSE, GET_PRODUCT_WAREHOUSE_MOVEMENT, \
-    GET_WAREHOUSE_INVENTORY, LIST_WAREHOUSES, UPDATE_WAREHOUSE, UPLOAD_WAREHOUSES, VIEW_WAREHOUSE
+from django.contrib.auth import get_user_model
+from apps.shared.literals import CREATE_WAREHOUSE, DELETE_WAREHOUSE, GET_PRODUCT_WAREHOUSE_MOVEMENT,     GET_WAREHOUSE_INVENTORY, LIST_WAREHOUSES, UPDATE_WAREHOUSE, UPLOAD_WAREHOUSES, VIEW_WAREHOUSE,     ADD_REMOVE_WAREHOUSE_MANAGER
+
+User = get_user_model()
 from apps.shared.tasks.export_tasks import process_warehouse_export
 from apps.shared.utils.permissions import UserPermission
 from apps.warehouse.models import Warehouse, WarehouseProduct, WarehouseProductMovement
 from apps.warehouse.serializers import (FullWarehouseProductSerializer, FullWarehouseSerializer,
-                                        WarehouseProductMovementSerializer, WarehouseSerializer)
+                                        ManageManagerSerializer, WarehouseProductMovementSerializer,
+                                        WarehouseSerializer)
 from apps.warehouse.swagger import add_swagger_to_warehouse_viewset
 
 
@@ -31,7 +34,8 @@ class WarehouseViewSet(viewsets.GenericViewSet):
             'destroy': DELETE_WAREHOUSE,
             'upload_warehouses': UPLOAD_WAREHOUSES,
             'get_warehouse_inventory': GET_WAREHOUSE_INVENTORY,
-            'get_product_warehouse_movement': GET_PRODUCT_WAREHOUSE_MOVEMENT
+            'get_product_warehouse_movement': GET_PRODUCT_WAREHOUSE_MOVEMENT,
+            'manage_managers': ADD_REMOVE_WAREHOUSE_MANAGER
         }
         user_permission = permissions.get(self.action, None)
         if user_permission:
@@ -95,7 +99,9 @@ class WarehouseViewSet(viewsets.GenericViewSet):
                     Q(name__icontains=query) |
                     Q(warehouse_id__icontains=query)
             )
-        warehouses = Warehouse.objects.select_related('manager').filter(filter_q).order_by('date_created')
+        # Changed from select_related('manager') to prefetch_related('managers')
+        # to correctly fetch the ManyToMany relationship for managers.
+        warehouses = Warehouse.objects.prefetch_related('managers').filter(filter_q).order_by('date_created')
 
         # Handle export
         export_response = None
@@ -126,6 +132,24 @@ class WarehouseViewSet(viewsets.GenericViewSet):
                 'has_previous': page_obj.has_previous(),
             }
         }, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['POST'], url_path='add-remove-managers')
+    @transaction.atomic
+    def add_remove_managers(self, request, pk=None):
+        """
+        Add or remove a manager from a warehouse.
+        """
+        try:
+            warehouse = Warehouse.objects.get(pk=pk, is_active=True, organization=request.organization)
+        except Warehouse.DoesNotExist:
+            return Response({'error': 'Warehouse not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = ManageManagerSerializer(data=request.data,warehouse=warehouse,organization=request.organization)
+        serializer.is_valid(raise_exception=True)
+        updated_warehouse = serializer.save()
+        if getattr(serializer, 'updated', False):
+            return Response(FullWarehouseSerializer(updated_warehouse).data, status=status.HTTP_200_OK)
+        return Response({'message': serializer.message}, status=status.HTTP_200_OK)
 
     def destroy(self, request, pk=None):
         # TODO: ASK FURTHER IMFO ON WHAT HAPPENDS TO OTHER STUFF WHEN A WAREHOUSE IS DELETED

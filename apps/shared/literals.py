@@ -70,6 +70,7 @@ LIST_WAREHOUSES = 'warehouse|list_warehouses'
 UPLOAD_WAREHOUSES = 'warehouse|upload_warehouses'
 GET_WAREHOUSE_INVENTORY = 'warehouse|get_warehouse_inventory'
 GET_PRODUCT_WAREHOUSE_MOVEMENT = 'warehouse|get_product_warehouse_movement'
+ADD_REMOVE_WAREHOUSE_MANAGER = 'warehouse|add_remove_warehouse_manager'
 
 # Customers
 CREATE_CUSTOMER = 'customer|create_customer'

@@ -21,10 +21,10 @@ class OutflowApprovalViewSet(viewsets.GenericViewSet):
 
     def get_permissions(self):
         permissions = {
-            'retrieve': VIEW_OUTFLOW_APPROVAL,
-            'list_outflow_orders': LIST_OUTFLOW_APPROVAL,
-            'verify_availability': VERIFY_OUTFLOW_AVAILABILITY,
-            'mark_order_picked': MARK_OUTFLOW_ORDER_PICKED
+            # 'retrieve': VIEW_OUTFLOW_APPROVAL,
+            # 'list_outflow_orders': LIST_OUTFLOW_APPROVAL,
+            # 'verify_availability': VERIFY_OUTFLOW_AVAILABILITY,
+            # 'mark_order_picked': MARK_OUTFLOW_ORDER_PICKED
         }
         user_permission = permissions.get(self.action, None)
         if user_permission:
@@ -49,7 +49,7 @@ class OutflowApprovalViewSet(viewsets.GenericViewSet):
             warehouse = OutflowOrderWarehouse.objects.select_related('warehouse').get(
                 pk=warehouse_id,
                 outflow_order=order,
-                warehouse__manager=request.user
+                warehouse__managers__in=[request.user]
             )
         except OutflowOrderWarehouse.DoesNotExist:
             return Response({'error': 'Warehouse Order not found or not assigned to you'},
@@ -72,7 +72,7 @@ class OutflowApprovalViewSet(viewsets.GenericViewSet):
         ).filter(
             outflow_order__is_active=True,
             outflow_order__organization=request.organization,
-            warehouse__manager=request.user
+            warehouse__managers__in=[request.user]
         )
         if completed == 'true':
             qs = qs.filter(Q(status='order_pickup') | Q(status='completed'))
@@ -104,8 +104,16 @@ class OutflowApprovalViewSet(viewsets.GenericViewSet):
     def verify_warehouse_stock(self, request, pk=None, warehouse_id=None):
         try:
             order = self.queryset.get(pk=pk, organization=request.organization)
-            warehouse = order.warehouses.get(id=warehouse_id, is_active=True)
-            if warehouse.status == 'verified':
+            warehouse_order = order.warehouses.get(id=warehouse_id, is_active=True)
+            # Check if the requesting user is a manager of the associated warehouse
+            # This ensures that only authorized warehouse managers can verify stock for their assigned warehouses.
+            if not warehouse_order.warehouse.managers.filter(pk=request.user.pk).exists():
+                return Response(
+                    {'error': 'You do not have permission to verify stock for this warehouse.'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            if warehouse_order.status == 'verified':
                 return Response({'error': 'This warehouse has already been verified'},
                                 status=status.HTTP_400_BAD_REQUEST)
         except (OutflowOrder.DoesNotExist, OutflowOrderWarehouse.DoesNotExist):
@@ -114,7 +122,7 @@ class OutflowApprovalViewSet(viewsets.GenericViewSet):
             return Response({'error': 'Outflow Order Warehouse cannot be found'}, status=status.HTTP_404_NOT_FOUND)
 
         serializer = WarehouseVerificationSerializer(
-            warehouse,
+            warehouse_order,
             data=request.data,
             context={'request': request}
         )
@@ -123,6 +131,7 @@ class OutflowApprovalViewSet(viewsets.GenericViewSet):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         updated_order = serializer.save()
+
         order_serializer = OutflowOrderApprovalSerializer(updated_order, context={'request': request})
         return Response(order_serializer.data, status=status.HTTP_200_OK)
 
@@ -132,6 +141,13 @@ class OutflowApprovalViewSet(viewsets.GenericViewSet):
         try:
             order = OutflowOrder.objects.get(pk=pk, organization=request.organization)
             outflow_warehouse = order.warehouses.get(id=warehouse_id, is_active=True)
+            # Check if the requesting user is a manager of the associated warehouse
+            # This ensures that only authorized warehouse managers can mark orders as picked for their assigned warehouses.
+            if not outflow_warehouse.warehouse.managers.filter(pk=request.user.pk).exists():
+                return Response(
+                    {'error': 'You do not have permission to mark orders as picked for this warehouse.'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
         except OutflowOrder.DoesNotExist:
             return Response({'error': 'Outflow order not found.'}, status=status.HTTP_404_NOT_FOUND)
         except OutflowOrderWarehouse.DoesNotExist:

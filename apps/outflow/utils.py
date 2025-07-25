@@ -65,9 +65,6 @@ def track_product_changes(product, old_data, new_data, instance, request):
     for field in tracked_fields:
         old_val = old_data.get(field)
         new_val = new_data.get(field)
-
-        print(f"{field}: Old value: {old_val}, New value: {new_val}")
-
         # Only track if value actually changed
         if old_val != new_val:
             create_warehouse_history(
