@@ -1,4 +1,5 @@
 from django.core.paginator import Paginator
+from django.db.models import Q, Sum
 from rest_framework import status, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -26,16 +27,19 @@ class ExpenseViewSet(viewsets.GenericViewSet):
         page = request.query_params.get('page', 1)
         page_size = request.query_params.get('page_size', 10)
         order_type = request.query_params.get('order_type')
-
-        expenses = self.get_queryset()
+        filter_q = Q(is_active=True)
 
         if order_type:
-            expenses = expenses.filter(order_type=order_type)
+            filter_q = Q(order_type=order_type)
+
+        expenses = Expense.objects.filter(filter_q).order_by('-date_created')
+        total_expenses = expenses.aggregate(total_sum=Sum('amount'))
 
         paginator = Paginator(expenses, page_size)
         page_obj = paginator.get_page(page)
 
         return Response({
+            'total_expenses': total_expenses,
             'results': ExpenseSerializer(page_obj.object_list, many=True).data,
             'pagination': {
                 'total': expenses.count(),

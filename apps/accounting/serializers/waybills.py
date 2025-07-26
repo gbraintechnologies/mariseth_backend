@@ -30,5 +30,5 @@ class OutflowOrderListRetrieveSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'order_id', 'waybill_id', 'customer', 'procurement_officer',
             'status', 'total_cost', 'expected_delivery_date', 'total_quantity',
-            'destination'
+            'destination', 'date_created',
         )
