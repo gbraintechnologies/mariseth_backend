@@ -113,6 +113,9 @@ LIST_OUTFLOW_APPROVAL = 'outflow_approvals|list_outflow_approvals'
 
 # ACCOUNTING
 LIST_EXPENSES = 'accounting|list_expenses'
+LIST_WAYBILLS = 'accounting|list_waybills'
+VIEW_WAYBILL = 'accounting|view_waybill'
+DOWNLOAD_WAYBILL = 'accounting|download_waybill'
 
 # EVENT TYPES
 CREATE_STRING = 'create'

@@ -1,4 +1,5 @@
 import re
+from datetime import datetime
 
 from apps.outflow.models import OutflowOrder, OutflowOrderWarehouseHistory
 
@@ -75,3 +76,11 @@ def track_product_changes(product, old_data, new_data, instance, request):
                 user=request.user,
                 product=product
             )
+
+
+def generate_outflow_waybill_id(order_pk: int) -> str:
+    """
+    Generate waybill ID for OutflowOrder in format: WO-year-00{order_pk}
+    """
+    current_year = datetime.now().year
+    return f"WO-{current_year}-00{order_pk}"

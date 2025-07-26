@@ -32,6 +32,7 @@ class InflowOrder(BaseModel):
     total_cost = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     total_products_cost = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     comments = models.TextField(blank=True)
+    waybill_id = models.CharField(max_length=50, unique=True, blank=True, null=True)
 
     def __str__(self):
         return f"{self.order_id} - {self.get_status_display()}"
