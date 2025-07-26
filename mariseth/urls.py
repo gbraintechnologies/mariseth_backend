@@ -17,6 +17,7 @@ urlpatterns = [
     # path('api/v1/admin/mobile', include('apps.admin_mobile.urls')),
     path('api/v1/', include('apps.outflow.urls')),
     path('api/v1/', include('apps.accounting.urls')),
+    path('api/v1/', include('apps.hr.urls')),
 ]
 
 if settings.ENVIRONMENT in ['local', 'staging']:

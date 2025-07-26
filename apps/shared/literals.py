@@ -126,3 +126,27 @@ UPDATE_FIELD_STRING = 'update_field'
 DELETE_STRING = 'delete'
 INCREASE_QUANTITY_STRING = 'increase_quantity'
 DECREASE_QUANTITY_STRING = 'decrease_quantity'
+
+# HR
+LIST_DEPARTMENTS = "hr|list_departments"
+CREATE_DEPARTMENT = "hr|create_department"
+VIEW_DEPARTMENT = "hr|view_department"
+UPDATE_DEPARTMENT = "hr|update_department"
+DELETE_DEPARTMENT = "hr|delete_department"
+
+LIST_JOB_TITLES = "hr|list_job_titles"
+CREATE_JOB_TITLE = "hr|create_job_title"
+VIEW_JOB_TITLE = "hr|view_job_title"
+UPDATE_JOB_TITLE = "hr|update_job_title"
+DELETE_JOB_TITLE = "hr|delete_job_title"
+
+# Employee
+CREATE_EMPLOYEE = 'employee|create_employee'
+UPDATE_EMPLOYEE = 'employee|update_employee'
+DELETE_EMPLOYEE = 'employee|delete_employee'
+VIEW_EMPLOYEE = 'employee|view_employee'
+LIST_EMPLOYEES = 'employee|list_employees'
+ADD_EMPLOYEE_QUALIFICATION = 'employee|add_employee_qualification'
+REMOVE_EMPLOYEE_QUALIFICATION = 'employee|remove_employee_qualification'
+ADD_EMPLOYEE_DISCIPLINARY_ACTION = 'employee|add_employee_disciplinary_action'
+LIST_EMPLOYEE_DISCIPLINARY_ACTIONS = 'employee|list_employee_disciplinary_actions'
