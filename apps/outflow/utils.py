@@ -84,3 +84,11 @@ def generate_outflow_waybill_id(order_pk: int) -> str:
     """
     current_year = datetime.now().year
     return f"WO-{current_year}-00{order_pk}"
+
+
+def generate_invoice_id(payment_pk: int) -> str:
+    """
+    Generate invoice ID for OutflowOrder in format: INV-2023-00{payment_pk}
+    """
+    current_year = datetime.now().year
+    return f"INV-{current_year}-00{payment_pk}"

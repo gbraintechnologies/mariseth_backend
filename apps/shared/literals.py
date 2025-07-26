@@ -116,6 +116,9 @@ LIST_EXPENSES = 'accounting|list_expenses'
 LIST_WAYBILLS = 'accounting|list_waybills'
 VIEW_WAYBILL = 'accounting|view_waybill'
 DOWNLOAD_WAYBILL = 'accounting|download_waybill'
+LIST_INVOICES = 'accounting|list_invoices'
+VIEW_INVOICE = 'accounting|view_invoice'
+DOWNLOAD_INVOICE = 'accounting|download_invoice'
 
 # EVENT TYPES
 CREATE_STRING = 'create'
