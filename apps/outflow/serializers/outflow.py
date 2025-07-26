@@ -14,7 +14,7 @@ from apps.farm.serializers.products import ShortProductSerializer
 from apps.outflow.models import OutflowOrder, OutflowOrderDeliveryInformation, OutflowOrderDeliveryInformationImage, \
     OutflowOrderDeliveryInformationWarehouse, OutflowOrderHistory, OutflowOrderPayments, OutflowOrderWarehouse, \
     OutflowOrderWarehouseImages, OutflowOrderWarehouseProduct, OutflowRecipientComplaint, OutflowRecipientComplaintImage
-from apps.outflow.utils import generate_outflow_order_id, generate_serial_number
+from apps.outflow.utils import generate_outflow_order_id, generate_outflow_waybill_id, generate_serial_number
 from apps.shared.utils.helpers import base64_to_image
 from apps.warehouse.models import Warehouse, WarehouseProduct
 from apps.warehouse.serializers import ShortWarehouseSerializer
@@ -82,6 +82,8 @@ class OutflowOrderSerializer(serializers.ModelSerializer):
         validated_data["created_by"] = request.user
         validated_data["order_id"] = generate_outflow_order_id(request.organization.id)
         order = OutflowOrder.objects.create(**validated_data)
+        order.waybill_id = generate_outflow_waybill_id(order.pk)
+        order.save(update_fields=['waybill_id'])
         addtional_cost = validated_data.get('additional_cost_amount', 0)
 
         total_quantity = 0
@@ -532,7 +534,8 @@ class FullOutflowOrderSerializer(serializers.ModelSerializer):
             'destination', 'expected_delivery_date', 'status',
             'additional_costs', 'additional_cost_amount', 'total_quantity',
             'total_cost', 'amount_paid', 'amount_due', 'products', 'warehouses',
-            'delivery_information', 'payments', 'logs', 'recipient_complaints'
+            'delivery_information', 'payments', 'logs', 'recipient_complaints',
+            'waybill_id'
         )
 
     def to_representation(self, instance):

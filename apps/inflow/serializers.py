@@ -12,8 +12,9 @@ from apps.farm.models import FarmProduct
 from apps.farm.serializers.farm import ShortFarmSerializer
 from apps.farm.serializers.products import ShortProductSerializer
 from apps.inflow.models import InflowMedia, InflowOrder, InflowOrderHistory, InflowOrderProduct
-from apps.inflow.utils import generate_order_id, generate_serial_number
+from apps.inflow.utils import generate_inflow_waybill_id, generate_order_id, generate_serial_number
 from apps.warehouse.models import Warehouse, WarehouseProduct, WarehouseProductMovement
+from apps.shared.serializers.warehouse import ShortWarehouseSerializer
 
 
 class ShortInflowOrderSerializer(serializers.ModelSerializer):
@@ -61,15 +62,9 @@ class InflowOrderSerializer(serializers.ModelSerializer):
 
         # Generate order ID
         validated_data['order_id'] = generate_order_id(request.organization)
-        total_products_costs = 0
-        total_bag = 0
-        for product_data in products_data:
-            total_bag += product_data['quantity']
-            total_products_costs += product_data['unit_price'] * product_data['quantity']
-        validated_data["total_products_cost"] = total_products_costs
-        validated_data["total_cost"] = total_products_costs + additional_cost
-        validated_data["total_bags"] = total_bag
         order = InflowOrder.objects.create(**validated_data)
+        order.waybill_id = generate_inflow_waybill_id(order.pk)
+        order.save(update_fields=['waybill_id'])
 
         for product_data in products_data:
             farm_id = product_data['farm'].farm_id
@@ -188,9 +183,8 @@ class InflowOrderProductAggregateSerializer(serializers.ModelSerializer):
 class FullInflowOrderSerializer(serializers.ModelSerializer):
     aggregator = ShortUserSerializer()
     procurement_officer = ShortUserSerializer()
-    destination_warehouse = serializers.StringRelatedField()
+    destination_warehouse = serializers.SerializerMethodField()
     products = serializers.SerializerMethodField()
-
     media_files = serializers.SerializerMethodField()
     history = InflowOrderHistorySerializer(many=True)
 
@@ -202,7 +196,7 @@ class FullInflowOrderSerializer(serializers.ModelSerializer):
             'expected_delivery_date', 'actual_delivery_date',
             'status', 'total_bags', 'additional_costs', 'total_products_cost',
             'additional_cost_amount', 'total_cost', 'comments', 'products',
-            'media_files', 'history'
+            'media_files', 'history', 'waybill_id'
         )
         read_only_fields = ('id', 'order_id', 'total_cost', 'status', 'total_products_cost')
 
@@ -217,6 +211,14 @@ class FullInflowOrderSerializer(serializers.ModelSerializer):
             obj.media_files.filter(is_active=True),
             many=True
         ).data
+
+    def get_destination_warehouse(self, obj):
+        if obj.destination_warehouse:
+            return {
+                "id": obj.destination_warehouse.id,
+                "warehouse_id": obj.destination_warehouse.warehouse_id,
+                "name": obj.destination_warehouse.name
+            }
 
 
 class DeliveryInspectionApprovalSerializer(serializers.Serializer):

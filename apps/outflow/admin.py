@@ -42,7 +42,7 @@ class OutflowOrderAdmin(admin.ModelAdmin):
         OutflowOrderWarehouseInline,
         OutflowOrderDeliveryInformationInline,
     ]
-    list_display = ('id','order_id', 'status', 'customer', 'total_quantity', 'total_cost')
+    list_display = ('id', 'order_id', 'waybill_id', 'status', 'customer', 'total_quantity', 'total_cost')
     list_filter = ('status', 'customer')
 
 

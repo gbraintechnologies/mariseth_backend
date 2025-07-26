@@ -1,9 +1,9 @@
 import re
+from datetime import datetime
 
 from django.db.models import Max
 
 from .models import InflowOrder
-
 
 def generate_serial_number(order_id: int,farm_id: str, product_name: str, quantity: int) -> str:
     """
@@ -50,3 +50,11 @@ def generate_order_id(organization_id: int) -> str:
         sequence = 1
 
     return f"ORD-i{org_part}{sequence:02d}"
+
+
+def generate_inflow_waybill_id(order_pk: int) -> str:
+    """
+    Generate waybill ID for InflowOrder in format: WI-year-00{order_pk}
+    """
+    current_year = datetime.now().year
+    return f"WI-{current_year}-00{order_pk}"

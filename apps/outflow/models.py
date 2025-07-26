@@ -33,6 +33,7 @@ class OutflowOrder(BaseModel):
     extra_comments = models.TextField(blank=True)
     additional_costs = models.TextField(blank=True)
     additional_cost_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    waybill_id = models.CharField(max_length=50, unique=True, blank=True, null=True)
 
     class Meta:
         verbose_name = 'Outflow Order'
