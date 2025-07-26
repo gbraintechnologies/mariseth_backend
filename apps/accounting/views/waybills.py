@@ -33,10 +33,10 @@ class WaybillViewSet(viewsets.ViewSet):
         order_type = request.query_params.get('order_type', 'inflow')
 
         if order_type == 'inflow':
-            queryset = InflowOrder.objects.filter(is_active=True)
+            queryset = InflowOrder.objects.filter(is_active=True).order_by('-date_created')
             serializer_class = InflowOrderListRetrieveSerializer
         elif order_type == 'outflow':
-            queryset = OutflowOrder.objects.filter(is_active=True)
+            queryset = OutflowOrder.objects.filter(is_active=True).order_by('-date_created')
             serializer_class = OutflowOrderListRetrieveSerializer
         else:
             return Response({'error': 'order_type parameter is required (inflow or outflow).'},
