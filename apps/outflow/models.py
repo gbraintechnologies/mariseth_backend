@@ -147,6 +147,7 @@ class OutflowOrderPayments(BaseModel):
     bank_name = models.CharField(max_length=255, blank=True, null=True)
     bank_account_number = models.CharField(max_length=20, blank=True, null=True)
     bank_account_name = models.CharField(max_length=255, blank=True, null=True)
+    invoice_id = models.CharField(max_length=50, unique=True, blank=True, null=True)
     notes = models.TextField(blank=True)
 
     class Meta:

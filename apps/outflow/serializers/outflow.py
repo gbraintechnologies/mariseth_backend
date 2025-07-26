@@ -14,7 +14,8 @@ from apps.farm.serializers.products import ShortProductSerializer
 from apps.outflow.models import OutflowOrder, OutflowOrderDeliveryInformation, OutflowOrderDeliveryInformationImage, \
     OutflowOrderDeliveryInformationWarehouse, OutflowOrderHistory, OutflowOrderPayments, OutflowOrderWarehouse, \
     OutflowOrderWarehouseImages, OutflowOrderWarehouseProduct, OutflowRecipientComplaint, OutflowRecipientComplaintImage
-from apps.outflow.utils import generate_outflow_order_id, generate_outflow_waybill_id, generate_serial_number
+from apps.outflow.utils import generate_invoice_id, generate_outflow_order_id, generate_outflow_waybill_id, \
+    generate_serial_number
 from apps.shared.utils.helpers import base64_to_image
 from apps.warehouse.models import Warehouse, WarehouseProduct
 from apps.warehouse.serializers import ShortWarehouseSerializer
@@ -362,7 +363,7 @@ class OutflowOrderPaymentRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = OutflowOrderPayments
         fields = (
-            'id', 'amount_paid', 'amount_due',
+            'id', 'invoice_id', 'amount_paid', 'amount_due',
             'payment_type', 'payment_method', 'notes',
             'paid_to', 'payment_date', 'mobile_money_number',
             'bank_name', 'bank_account_number', 'bank_account_name'
@@ -412,6 +413,7 @@ class OutflowOrderPaymentRequestSerializer(serializers.ModelSerializer):
         order.amount_paid += payment.amount_paid
         order.amount_due -= payment.amount_paid
         payment.amount_due = order.amount_due
+        payment.invoice_id = generate_invoice_id(payment.pk)
         payment.save()
         if order.amount_paid >= order.total_cost:
             order.status = 'full_payment'
