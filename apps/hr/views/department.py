@@ -7,6 +7,8 @@ from rest_framework.response import Response
 
 from apps.hr.models import Department
 from apps.hr.serializers.department import DepartmentSerializer, FullDepartmentSerializer
+from apps.shared.literals import CREATE_DEPARTMENT, DELETE_DEPARTMENT, LIST_DEPARTMENTS, UPDATE_DEPARTMENT, \
+    VIEW_DEPARTMENT
 from apps.shared.utils.permissions import UserPermission
 
 
@@ -16,11 +18,11 @@ class DepartmentViewSet(viewsets.GenericViewSet):
 
     def get_permissions(self):
         permissions = {
-            # 'create': CREATE_DEPARTMENT,
-            # 'update': UPDATE_DEPARTMENT,
-            # 'retrieve': VIEW_DEPARTMENT,
-            # 'list': LIST_DEPARTMENTS,
-            # 'destroy': DELETE_DEPARTMENT,
+            'create': CREATE_DEPARTMENT,
+            'update': UPDATE_DEPARTMENT,
+            'retrieve': VIEW_DEPARTMENT,
+            'list': LIST_DEPARTMENTS,
+            'destroy': DELETE_DEPARTMENT,
         }
         user_permission = permissions.get(self.action, None)
         if user_permission:
