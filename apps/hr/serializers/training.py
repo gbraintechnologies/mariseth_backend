@@ -122,4 +122,12 @@ class FullTrainingSerializer(TrainingBaseSerializer):
         return f"{present_count}/{obj.attendee_count}"
 
 
+class ListTrainingAttendeeSerializer(serializers.ModelSerializer):
+    training = TrainingSerializer(read_only=True)
 
+    class Meta:
+        model = TrainingAttendee
+        fields = (
+            'id', 'training',  'status',
+            'marked_at', 'created_by', 'date_created'
+        )

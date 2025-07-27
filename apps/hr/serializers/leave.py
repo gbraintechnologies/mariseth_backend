@@ -197,3 +197,16 @@ class FullLeaveRequestSerializer(serializers.ModelSerializer):
             'annual_leave_remaining', 'sick_leave_remaining', 'date_created',
             'action_taken_by', 'action_taken_on'
         )
+
+
+class ListEmployeeLeaveRequestSerializer(serializers.ModelSerializer):
+    leave_type = LeaveTypeSerializer(read_only=True)
+    action_taken_by = ShortUserSerializer(read_only=True)
+
+    class Meta:
+        model = LeaveRequest
+        fields = (
+            'id', 'leave_id', 'leave_type', 'start_date',
+            'end_date', 'reason', 'status', 'date_created',
+            'action_taken_on', 'action_taken_by',
+        )

@@ -6,13 +6,16 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.hr.models import Employee, EmployeeQualification
+from apps.hr.models import Employee, EmployeeQualification, LeaveRequest, TrainingAttendee
 from apps.hr.serializers.employee import DisciplinaryActionSerializer, EmployeeSerializer, FullEmployeeSerializer, \
     ListEmployeeSerializer, QualificationSerializer
+from apps.hr.serializers.leave import ListEmployeeLeaveRequestSerializer
+from apps.hr.serializers.training import ListTrainingAttendeeSerializer
 from apps.shared.general_response import GENERAL_SUCCESS_RESPONSE
 from apps.shared.literals import (ADD_EMPLOYEE_DISCIPLINARY_ACTION, ADD_EMPLOYEE_QUALIFICATION, CREATE_EMPLOYEE,
                                   DELETE_EMPLOYEE, LIST_EMPLOYEES, LIST_EMPLOYEE_DISCIPLINARY_ACTIONS,
-                                  REMOVE_EMPLOYEE_QUALIFICATION, UPDATE_EMPLOYEE, VIEW_EMPLOYEE)
+                                  LIST_LEAVE_REQUESTS, LIST_TRAININGS, REMOVE_EMPLOYEE_QUALIFICATION, UPDATE_EMPLOYEE,
+                                  VIEW_EMPLOYEE)
 from apps.shared.utils.permissions import UserPermission
 
 
@@ -31,6 +34,8 @@ class EmployeeViewSet(viewsets.GenericViewSet):
             'remove_qualification': REMOVE_EMPLOYEE_QUALIFICATION,
             'disciplinary_action': ADD_EMPLOYEE_DISCIPLINARY_ACTION,
             'disciplinary_actions': LIST_EMPLOYEE_DISCIPLINARY_ACTIONS,
+            'get_employee_trainings': LIST_TRAININGS,
+            'get_employee_leave_requests': LIST_LEAVE_REQUESTS
         }
         user_permission = permissions.get(self.action, None)
         if user_permission:
@@ -92,7 +97,7 @@ class EmployeeViewSet(viewsets.GenericViewSet):
         if gender:
             filter_q &= Q(gender=gender)
 
-        employees = self.filter_queryset(self.get_queryset().filter(filter_q).order_by('-date_created'))
+        employees = Employee.objects.filter(filter_q).order_by('-date_created')
 
         paginator = Paginator(employees, page_size)
         page_obj = paginator.get_page(page)
@@ -168,3 +173,51 @@ class EmployeeViewSet(viewsets.GenericViewSet):
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Employee.DoesNotExist:
             return Response({'error': 'Employee not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    @action(detail=True, methods=['GET'], url_path='trainings')
+    def get_employee_trainings(self, request, pk=None):
+        page = request.query_params.get('page', 1)
+        page_size = request.query_params.get('page_size', 10)
+
+        filter_q = Q(employee__id=pk, is_active=True)
+        training = TrainingAttendee.objects.filter(filter_q).order_by('-date_created')
+
+        paginator = Paginator(training, page_size)
+        page_obj = paginator.get_page(page)
+
+        results = ListTrainingAttendeeSerializer(instance=page_obj.object_list, many=True).data
+
+        return Response({
+            'results': results,
+            'pagination': {
+                'total': training.count(),
+                'page': page_obj.number,
+                'pages': paginator.num_pages,
+                'has_next': page_obj.has_next(),
+                'has_previous': page_obj.has_previous(),
+            }
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['GET'], url_path='leave-requests')
+    def get_employee_leave_requests(self, request, pk=None):
+        page = request.query_params.get('page', 1)
+        page_size = request.query_params.get('page_size', 10)
+
+        filter_q = Q(employee__id=pk, is_active=True, organization=request.organization)
+        leave = LeaveRequest.objects.filter(filter_q).order_by('-date_created')
+
+        paginator = Paginator(leave, page_size)
+        page_obj = paginator.get_page(page)
+
+        results = ListEmployeeLeaveRequestSerializer(instance=page_obj.object_list, many=True).data
+
+        return Response({
+            'results': results,
+            'pagination': {
+                'total': leave.count(),
+                'page': page_obj.number,
+                'pages': paginator.num_pages,
+                'has_next': page_obj.has_next(),
+                'has_previous': page_obj.has_previous(),
+            }
+        }, status=status.HTTP_200_OK)
