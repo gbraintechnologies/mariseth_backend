@@ -29,8 +29,13 @@ class DepartmentSerializer(serializers.ModelSerializer):
 
 
 class FullDepartmentSerializer(serializers.ModelSerializer):
+    number_of_employees = serializers.SerializerMethodField()
+
     class Meta:
         model = Department
         fields = (
-            "id", "name", "description", "department_id", "status"
+            "id", "name", "description", "department_id", "status", "number_of_employees"
         )
+
+    def get_number_of_employees(self, obj):
+        return obj.employees.count()

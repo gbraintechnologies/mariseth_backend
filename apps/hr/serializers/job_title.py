@@ -45,11 +45,16 @@ class FullJobTitleSerializer(serializers.ModelSerializer):
     department = DepartmentSerializer(read_only=True)
     level = CustomTypeSerializer(read_only=True)
     created_by = ShortUserSerializer(read_only=True)
+    number_of_employees = serializers.SerializerMethodField()
 
     class Meta:
         model = JobTitle
         fields = (
             "id", "name", "level", "department",
             "job_description_url", "job_title_id",
-            "probation", 'date_created', 'created_by'
+            "probation", 'date_created', 'created_by',
+            "number_of_employees"
         )
+
+    def get_number_of_employees(self, obj):
+        return obj.employees.count()
