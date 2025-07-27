@@ -1,10 +1,12 @@
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
+from django.core.validators import MinLengthValidator
 from django.db import models
 
 from apps.shared.literals import DECREASE_QUANTITY_STRING, INCREASE_QUANTITY_STRING, UPDATE_FIELD_STRING
 from apps.shared.models import BaseModel, CustomType
+from apps.shared.utils.validators import validate_only_digits
 
 User = get_user_model()
 
@@ -87,8 +89,13 @@ class Farmer(BaseModel):
     date_of_birth = models.DateField(null=True, blank=True)
     id_type = models.CharField(max_length=50, null=True, blank=True)
     id_number = models.CharField(max_length=50, null=True, blank=True)
-    phone_number = models.CharField(max_length=20, null=True, blank=True)
-    email = models.EmailField(null=True, blank=True)
+    phone_number = models.CharField(unique=True, max_length=40, blank=False, null=True,
+                                    validators=[
+                                        MinLengthValidator(
+                                            11, "Phone number number must be at least 11 characters."),
+                                        validate_only_digits],
+                                    )
+    email = models.EmailField(unique=True, null=True, blank=True)
     address = models.CharField(max_length=255, null=True, blank=True)
     village = models.CharField(max_length=100, null=True, blank=True)
     region = models.ForeignKey('shared.Region', related_name='farmers', on_delete=models.SET_NULL, null=True,
