@@ -56,7 +56,7 @@ class CustomTypeViewSet(viewsets.GenericViewSet):
             custom_type.soft_delete(owner=request.user)
             return Response(GENERAL_SUCCESS_RESPONSE, status=status.HTTP_200_OK)
         except CustomType.DoesNotExist:
-            return Response({'error': 'Branch not found'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'error': 'CustomType not found'}, status=status.HTTP_404_NOT_FOUND)
 
     def list(self, request):
         page = request.query_params.get('page', 1)
