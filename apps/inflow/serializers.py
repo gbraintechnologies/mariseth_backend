@@ -217,8 +217,10 @@ class FullInflowOrderSerializer(serializers.ModelSerializer):
             return {
                 "id": obj.destination_warehouse.id,
                 "warehouse_id": obj.destination_warehouse.warehouse_id,
-                "name": obj.destination_warehouse.name
+                "name": obj.destination_warehouse.name,
+                "warehouse_managers": ShortUserSerializer(obj.destination_warehouse.managers, many=True).data
             }
+        return None
 
 
 class DeliveryInspectionApprovalSerializer(serializers.Serializer):

@@ -12,7 +12,7 @@ from apps.shared.serializers.custom_types import CustomTypeSerializer
 class ShortProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
-        fields = ('id', 'name', 'type', 'status', 'color')
+        fields = ('id', 'product_id', 'name', 'type', 'status', 'color')
         read_only_fields = ('id',)
 
 

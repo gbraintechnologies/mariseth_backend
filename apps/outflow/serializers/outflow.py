@@ -237,12 +237,13 @@ class OutflowOrderWarehouseSerializer(serializers.ModelSerializer):
     total_cost = serializers.SerializerMethodField()
     warehouse = ShortWarehouseSerializer()
     images = OutflowWarehouseImageSerializer(many=True, source='images.all', read_only=True)
+    managers = ShortUserSerializer(source="warehouse.managers.all", many=True)
 
     class Meta:
         model = OutflowOrderWarehouse
         fields = (
             'id', 'warehouse', 'status', 'total_quantity',
-            'total_cost', 'products', 'images'
+            'total_cost', 'products', 'images', 'managers'
         )
 
     def get_total_quantity(self, obj):
