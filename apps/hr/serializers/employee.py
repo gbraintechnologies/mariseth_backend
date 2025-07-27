@@ -9,9 +9,13 @@ from apps.hr.utils import generate_employee_id
 
 
 class ShortEmployeeSerializer(serializers.ModelSerializer):
+    job_title = serializers.CharField(read_only=True, source='contract.job_title.name')
+    department = serializers.CharField(read_only=True, source='contract.department.name')
+
     class Meta:
         model = Employee
-        fields = ('id', 'first_name', 'last_name', 'employee_id')
+        fields = ('id', 'first_name', 'last_name', 'employee_id',
+                  'email', 'phone_number', 'job_title', 'department')
         read_only_fields = ('id',)
 
 

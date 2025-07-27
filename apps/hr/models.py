@@ -3,7 +3,10 @@ from django.db import models
 
 from apps.shared.models import BaseModel
 from apps.shared.utils.validators import validate_only_digits
+from django.contrib.auth import get_user_model
 
+
+User = get_user_model()
 
 class Department(BaseModel):
     STATUS_CHOICES = [
@@ -14,7 +17,7 @@ class Department(BaseModel):
     name = models.CharField(max_length=255, unique=True)
     department_id = models.CharField(max_length=255, unique=True, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="Active")
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="active")
     organization = models.ForeignKey(
         "organizations.Organization", on_delete=models.CASCADE, related_name="departments"
     )
@@ -74,6 +77,9 @@ class Employee(BaseModel):
         "organizations.Organization", on_delete=models.CASCADE, related_name="employees"
     )
 
+    def __str__(self):
+        return f"{self.id} - {self.first_name} {self.last_name}"
+
 
 class EmployeeEmergencyContact(BaseModel):
     employee = models.ForeignKey(Employee, related_name='emergency_contacts', on_delete=models.CASCADE)
@@ -126,3 +132,120 @@ class EmployeeDisciplinaryAction(BaseModel):
     offence = models.TextField()
     date_issued = models.DateField(auto_now_add=True)
     comments = models.TextField(null=True, blank=True)
+
+
+class LeaveType(BaseModel):
+    organization = models.ForeignKey(
+        "organizations.Organization", on_delete=models.CASCADE, related_name="leave_types"
+    )
+    name = models.CharField(max_length=50, unique=True)
+    description = models.TextField(blank=True)
+    max_days = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Maximum allowed days per year (null = unlimited)"
+    )
+    deducts_from_allowance = models.BooleanField(
+        default=True,
+        help_text="Whether this leave type deducts from employee's leave allowance"
+    )
+    deduct_from = models.CharField(
+        max_length=20,
+        choices=[('annual', 'Annual Leave'), ('sick', 'Sick Leave')],
+        default='annual'
+    )
+
+
+class LeaveRequest(BaseModel):
+    LEAVE_STATUS = (
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('declined', 'Rejected'),
+        ('canceled', 'Canceled'),
+    )
+    leave_id = models.CharField(max_length=20, unique=True, null=True, blank=True)
+    organization = models.ForeignKey(
+        "organizations.Organization", on_delete=models.CASCADE, related_name="leave_requests"
+    )
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='leave_requests')
+    leave_type = models.ForeignKey(LeaveType, on_delete=models.CASCADE, related_name='leave_requests')
+    start_date = models.DateField()
+    end_date = models.DateField()
+    leave_days = models.PositiveIntegerField()
+    reason = models.TextField()
+    status = models.CharField(max_length=20, choices=LEAVE_STATUS, default='pending')
+    rejection_reason = models.TextField(blank=True, null=True)
+    action_taken_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name='action_leave_requests'
+    )
+    action_taken_on = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-date_created']
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(end_date__gt=models.F('start_date')),
+                name="end_after_start"
+            )
+        ]
+
+
+class Training(BaseModel):
+    TRAINING_TYPES = (
+        ('internal', 'Internal'),
+        ('external', 'External'),
+    )
+    TRAINING_MODES = (
+        ('online', 'online'),
+        ('offline', 'Offline'),
+    )
+    training_id = models.CharField(max_length=20, unique=True)
+    organization = models.ForeignKey(
+        "organizations.Organization", on_delete=models.CASCADE, related_name="trainings"
+    )
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True, null=True)
+    training_type = models.CharField(max_length=20, choices=TRAINING_TYPES)
+    training_mode = models.CharField(max_length=20, choices=TRAINING_MODES)
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+    location = models.CharField(max_length=200, blank=True, null=True)
+    material_url = models.URLField(blank=True, null=True)
+    all_employees = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.id} - {self.title} ({self.training_id})"
+
+    @property
+    def attendees(self):
+        return TrainingAttendee.objects.filter(training=self)
+
+    @property
+    def attendee_count(self):
+        return self.attendees.count()
+
+    @property
+    def present_count(self):
+        return self.attendees.filter(status='present').count()
+
+    @property
+    def attendance_rate(self):
+        return round((self.present_count / self.attendee_count * 100), 1) if self.attendee_count else 0
+
+
+class TrainingAttendee(BaseModel):
+    ATTENDANCE_STATUS = (
+        ('present', 'Present'),
+        ('absent', 'Absent'),
+    )
+    training = models.ForeignKey(Training, on_delete=models.CASCADE, related_name='training_attendances')
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='training_attendances')
+    status = models.CharField(max_length=20, choices=ATTENDANCE_STATUS, default='absent')
+    marked_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        unique_together = ('training', 'employee')
+        verbose_name_plural = 'Training Attendances'
+
+    def __str__(self):
+        return f"{self.employee} - {self.training} - {self.status}"

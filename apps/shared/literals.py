@@ -150,3 +150,32 @@ ADD_EMPLOYEE_QUALIFICATION = 'employee|add_employee_qualification'
 REMOVE_EMPLOYEE_QUALIFICATION = 'employee|remove_employee_qualification'
 ADD_EMPLOYEE_DISCIPLINARY_ACTION = 'employee|add_employee_disciplinary_action'
 LIST_EMPLOYEE_DISCIPLINARY_ACTIONS = 'employee|list_employee_disciplinary_actions'
+LIST_EMPLOYEE_TRAININGS = 'employee|list_employee_trainings'
+
+
+# Leave
+CREATE_LEAVE_TYPE = 'leave|create_leave_type'
+VIEW_LEAVE_TYPE = 'leave|view_leave_type'
+UPDATE_LEAVE_TYPE = 'leave|update_leave_type'
+LIST_LEAVE_TYPES = 'leave|list_leave_types'
+DELETE_LEAVE_TYPE = 'leave|delete_leave_type'
+
+CREATE_LEAVE_REQUEST = 'leave|create_leave_request'
+VIEW_LEAVE_REQUEST = 'leave|view_leave_request'
+UPDATE_LEAVE_REQUEST = 'leave|update_leave_request'
+LIST_LEAVE_REQUESTS = 'leave|list_leave_requests'
+DELETE_LEAVE_REQUEST = 'leave|delete_leave_request'
+APPROVE_DECLINE_LEAVE_REQUEST = 'leave|approve_decline_leave_request'
+
+# Training
+CREATE_TRAINING = 'training|create_training'
+VIEW_TRAINING = 'training|view_training'
+UPDATE_TRAINING = 'training|update_training'
+LIST_TRAININGS = 'training|list_trainings'
+DELETE_TRAINING = 'training|delete_training'
+
+LIST_TRAINING_ATTENDEES = 'training|list_training_attendees'
+MARK_TRAINING_ATTENDEE_PRESENT = 'training|mark_training_attendee_present'
+ADD_TRAINING_ATTENDEE = 'training|add_training_attendee'
+REMOVE_TRAINING_ATTENDEE = 'training|remove_training_attendee'
+
