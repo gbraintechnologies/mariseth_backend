@@ -6,11 +6,13 @@ if [ "$SERVICE_TYPE" = "web" ]; then
   python manage.py check_and_create_db
 #  python manage.py collectstatic --noinput
   # Run Django makemigrations
+  python manage.py fix_duplicate_farmer_emails
+  python manage.py fix_duplicate_farmer_phone_numbers
+
   python manage.py makemigrations
 
   # Run Django migrate
   python manage.py migrate
-#  python manage.py populate_shareholder_reg_numbers
   # Run Django
   # Start the Django development server
   echo "Running server on environment: $ENVIRONMENT"
