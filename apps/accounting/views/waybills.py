@@ -4,7 +4,8 @@ from rest_framework import status, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.accounting.serializers.waybills import InflowOrderListRetrieveSerializer, OutflowOrderListRetrieveSerializer
+from apps.accounting.serializers.waybills import FullWaybillOutflowOrderSerializer, InflowOrderListRetrieveSerializer, \
+    OutflowOrderListRetrieveSerializer
 from apps.inflow.models import InflowOrder
 from apps.inflow.serializers import FullInflowOrderSerializer
 from apps.outflow.models import OutflowOrder
@@ -68,7 +69,7 @@ class WaybillViewSet(viewsets.ViewSet):
         elif order_type == 'outflow':
             queryset = OutflowOrder.objects.filter(is_active=True)
             order = get_object_or_404(queryset, pk=pk)
-            serializer = FullOutflowOrderSerializer(order)
+            serializer = FullWaybillOutflowOrderSerializer(order)
         else:
             return Response({'error': 'order_type parameter is required (inflow or outflow).'},
                             status=status.HTTP_400_BAD_REQUEST)

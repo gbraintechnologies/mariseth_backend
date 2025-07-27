@@ -7,7 +7,7 @@ from apps.accounting.serializers.invoices import InvoiceSerializer
 from apps.accounting.serializers.waybills import InflowOrderListRetrieveSerializer
 from apps.outflow.models import OutflowOrder, OutflowOrderPayments
 from apps.outflow.serializers.outflow import FullOutflowOrderSerializer
-from apps.shared.literals import LIST_INVOICES
+from apps.shared.literals import LIST_INVOICES, VIEW_INVOICE
 from apps.shared.utils.permissions import UserPermission
 
 
@@ -18,7 +18,7 @@ class InvoiceViewSet(viewsets.ViewSet):
     def get_permissions(self):
         permissions = {
             'list': LIST_INVOICES,
-            # 'retrieve': VIEW_INVOICE
+            'retrieve': VIEW_INVOICE
         }
         user_permission = permissions.get(self.action, None)
         if user_permission:
@@ -52,7 +52,13 @@ class InvoiceViewSet(viewsets.ViewSet):
         try:
             invoice = OutflowOrderPayments.objects.get(pk=pk, is_active=True)
             outflow = OutflowOrder.objects.get(pk=invoice.outflow_order.id, is_active=True)
-            return Response(FullOutflowOrderSerializer(outflow).data, status=status.HTTP_200_OK)
+            return Response(
+                data={
+                    "invoice": InvoiceSerializer(invoice).data,
+                    "outflow": FullOutflowOrderSerializer(outflow).data,
+                },
+                status=status.HTTP_200_OK
+            )
         except OutflowOrderPayments.DoesNotExist:
             return Response({'error': 'Invoice not found'}, status=status.HTTP_404_NOT_FOUND)
         except OutflowOrder.DoesNotExist:
