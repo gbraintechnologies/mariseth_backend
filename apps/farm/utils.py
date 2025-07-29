@@ -39,31 +39,38 @@ def generate_farmer_id(organization_id):
     return f"F-{int(organization_id):02}{sequence:03}"
 
 
-def generate_product_id(org_id, product_type):
+def generate_product_id(product_name):
     """
-    Generates product ID in format: {type_prefix}-{org_id:02}{sequence:05}
-    Example: C-0200001 for org_id=2's first crop
-             L-0200001 for org_id=2's first livestock
+    Generates product ID based on product name:
+    - Single word: First 2 letters capitalized (e.g., "Onion" -> "ON")
+    - Multiple words: First letter of each word capitalized (e.g., "Garden Eggs" -> "GE")
+    - If duplicate exists: Add sequence number (e.g., "GE-1", "GE-2")
     """
-    prefix = 'C' if product_type == 'crop' else 'L'
-
-    # get the last-created product for this org/type
-    last_obj = (
-        Product.objects
-        .filter(organization_id=org_id, type=product_type)
-        .order_by('date_created')
-        .last()
-    )
-    if last_obj and '-' in last_obj.product_id:
-        tail = last_obj.product_id.split('-', 1)[1]
-        seq = int(tail) + 1
-        width = len(tail)
+    words = product_name.split()
+    if len(words) == 1:
+        # Single word: take first 2 letters
+        initials = product_name[:2].upper()
     else:
-        # first-ever: ORGID (2 digits) + three zeros → then +1
-        org_part = f"{int(org_id):02}"
-        default_numeric = org_part + "0" * 3
-        width = len(default_numeric)
-        seq = int(default_numeric) + 1
+        # Multiple words: take first letter of each word
+        initials = ''.join(word[0].upper() for word in words)
 
-    return f"{prefix}-{seq:0{width}d}"
+    # Check if any product already exists with these initials
+    existing_products = Product.objects.filter(product_id__startswith=initials)
+    if existing_products.exists():
+        # If this is the first duplicate, it should be initials-1
+        # If others exist, increment the highest sequence
+        max_sequence = 0
+        for product in existing_products:
+            if '-' in product.product_id:
+                try:
+                    sequence = int(product.product_id.split('-')[-1])
+                    max_sequence = max(max_sequence, sequence)
+                except ValueError:
+                    continue
+
+        sequence = max_sequence + 1
+        return f"{initials}-{sequence}"
+    else:
+        # First occurrence - no sequence number
+        return initials
 

@@ -44,7 +44,7 @@ class WarehouseSerializer(serializers.ModelSerializer):
         managers_data = validated_data.pop('managers', [])
         validated_data.update({
             'organization': request.organization,
-            'warehouse_id': generate_warehouse_id(request.organization.id)
+            'warehouse_id': generate_warehouse_id(validated_data["name"]),
         })
         warehouse = Warehouse.objects.create(**validated_data)
         warehouse.managers.set(managers_data)

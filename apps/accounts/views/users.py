@@ -66,8 +66,6 @@ class UserAccountViewSet(viewsets.GenericViewSet):
         """
         try:
             user = self.get_queryset().get(is_active=True, id=pk)
-            if user.is_default == True:
-                return Response({'error': 'Cannot delete a default user'}, status=status.HTTP_400_BAD_REQUEST)
             fields_to_encrypt = ['email', 'phone_number', 'username']
             user.soft_delete(owner=request.user,
                              fields_to_encrypt=fields_to_encrypt)
