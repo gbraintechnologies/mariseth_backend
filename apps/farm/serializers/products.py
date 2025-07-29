@@ -52,7 +52,7 @@ class ProductSerializer(serializers.ModelSerializer):
         validated_data.update({
             'created_by': request.user,
             'organization': request.organization,
-            'product_id': generate_product_id(request.organization.id, product_type)
+            'product_id': generate_product_id(validated_data.get('name'))
         })
         return super().create(validated_data)
 
