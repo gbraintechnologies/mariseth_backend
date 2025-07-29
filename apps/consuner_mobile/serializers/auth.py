@@ -1,12 +1,12 @@
 import random
 
+from django.db import transaction
 from rest_framework import serializers
 
 from apps.accounts.models import User
 from apps.farm.models import Farmer
 from apps.farm.serializers.farmer import FullFarmerSerializer
 from apps.organizations.models import OrganizationUser
-from apps.shared.general_response import INVALID_LOGIN
 from apps.shared.literals import ACCESS_TOKEN, REFRESH_TOKEN
 from apps.shared.tasks.sms_tasks import send_verification_sms
 from apps.shared.utils.helpers import authenticate, generate_tokens
@@ -51,11 +51,12 @@ class MobileRegisterSerializer(serializers.Serializer):
         verification_code = random.randint(1000, 9999)
         user.verification_code = verification_code
         user.save()
-
-        send_verification_sms.delay(
-            user_id=user.id,
-            phone_number=phone_number,
-            verification_code=verification_code
+        transaction.on_commit(
+            lambda: send_verification_sms.delay(
+                user_id=user.id,
+                phone_number=phone_number,
+                verification_code=verification_code
+            )
         )
 
         return user
@@ -88,6 +89,8 @@ class MobileLoginSerializer(serializers.Serializer):
         user = authenticate(phone_number=attrs['phone_number'], pin=attrs['pin'])
         if user is None or not user.is_active:
             raise serializers.ValidationError("Invalid phone number or pin")
+        if not user.is_verified:
+            raise serializers.ValidationError("User is not verified")
         if not user.organization_users.exists():
             raise serializers.ValidationError("User is not associated with an organization")
         attrs['user'] = user
