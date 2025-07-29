@@ -101,7 +101,7 @@ class OutflowOrderSerializer(serializers.ModelSerializer):
             serial_number = generate_serial_number(
                 warehouse.warehouse_id,
                 order.id,
-                product.name,
+                product.product_id,
                 product_data['expected_quantity']
             )
 
@@ -165,7 +165,7 @@ class OutflowOrderSerializer(serializers.ModelSerializer):
                         'serial_number': generate_serial_number(
                             wh_group.warehouse.warehouse_id,
                             instance.id,
-                            item['product'].name,
+                            item['product'].product_id,
                             qty
                         )
                     }

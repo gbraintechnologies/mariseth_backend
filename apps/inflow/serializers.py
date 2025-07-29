@@ -76,9 +76,9 @@ class InflowOrderSerializer(serializers.ModelSerializer):
                 raise ValidationError(
                     f"Farm {product_data['farm'].name} does not have this product {product_data['product'].name}")
 
-            product_name = str(product_data['product'].name)
+            product_id = str(product_data['product'].product_id)
             quantity = product_data['quantity']
-            product_data['serial_number'] = generate_serial_number(order.id, farm_id, product_name, quantity)
+            product_data['serial_number'] = generate_serial_number(order.id, farm_id, product_id, quantity)
             product_data['total_cost'] = product_data['unit_price'] * product_data['quantity']
             InflowOrderProduct.objects.create(order=order, **product_data)
 
@@ -123,8 +123,9 @@ class InflowOrderSerializer(serializers.ModelSerializer):
                     inflow_order_product.save()
                 else:
                     # Create new product
-                    product_data['serial_number'] = generate_serial_number(product_data['farm'].farm_id,
-                                                                           product_data['product'].name,
+                    product_data['serial_number'] = generate_serial_number(
+                                                                           instance.id, product_data['farm'].farm_id,
+                                                                           product_data['product'].product_id,
                                                                            product_data['quantity'])
                     product_data['total_cost'] = product_data['unit_price'] * product_data['quantity']
                     if not FarmProduct.objects.filter(farm=product_data['farm'], product=product_data['product'],
