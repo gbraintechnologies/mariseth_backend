@@ -85,6 +85,7 @@ class FullFarmerSerializer(serializers.ModelSerializer):
     lead_farmer = serializers.SerializerMethodField()
     region = ShortRegionSerializer()
     district = DistrictSerializer()
+    number_of_smallholders = serializers.SerializerMethodField()
 
     class Meta:
         model = Farmer
@@ -93,13 +94,18 @@ class FullFarmerSerializer(serializers.ModelSerializer):
             'date_of_birth', 'id_number', 'phone_number', 'email', 'address',
             'village', 'region', 'district', 'country', 'farm', 'lead_farmer',
             'leadership_experience', 'support_assistance', 'created_by',
-            'date_created', 'farm', 'id_type',
+            'date_created', 'farm', 'id_type', 'number_of_smallholders'
         )
         read_only_fields = ('id', 'created_by', 'date_created')
 
     def get_lead_farmer(self, obj):
         if obj.lead_farmer:
             return ShortFarmerSerializer(obj.lead_farmer).data
+        return None
+
+    def get_number_of_smallholders(self, obj):
+        if obj.type == 'lead':
+            return Farmer.objects.filter(lead_farmer=obj).count()
         return None
 
 
