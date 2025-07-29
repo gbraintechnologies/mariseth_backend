@@ -6,8 +6,6 @@ if [ "$SERVICE_TYPE" = "web" ]; then
   python manage.py check_and_create_db
 #  python manage.py collectstatic --noinput
   # Run Django makemigrations
-  python manage.py fix_duplicate_farmer_emails
-  python manage.py fix_duplicate_farmer_phone_numbers
 
   python manage.py makemigrations
 

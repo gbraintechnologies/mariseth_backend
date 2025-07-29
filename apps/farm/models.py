@@ -129,7 +129,7 @@ class Farmer(BaseModel):
 class Product(BaseModel):
     PRODUCT_TYPE_CHOICES = (
         ('crop', 'Crop'),
-        ('livestock', 'Livestock')
+        ('other', 'Other')
     )
 
     PRODUCT_SEASON_CHOICES = (

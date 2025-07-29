@@ -127,7 +127,7 @@ class FullFarmSerializer(serializers.ModelSerializer):
     def get_livestock(self, obj):
         livestock_products = obj.farmproduct_set.filter(
             is_active=True,
-            product__type='livestock'
+            product__type='other'
         )
         return FarmProductSerializer(livestock_products, many=True).data
 
