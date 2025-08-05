@@ -139,6 +139,7 @@ class LeaveRequestViewSet(viewsets.GenericViewSet):
         status_param = request.query_params.get('status')
         department = request.query_params.get('department')
         query = request.query_params.get('query')
+        completed = request.query_params.get('completed')
 
         filter_q = Q(is_active=True, organization=request.organization)
 

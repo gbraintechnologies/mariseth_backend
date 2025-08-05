@@ -1,12 +1,12 @@
+from django.contrib.auth import get_user_model
 from django.core.validators import MinLengthValidator
 from django.db import models
 
 from apps.shared.models import BaseModel
 from apps.shared.utils.validators import validate_only_digits
-from django.contrib.auth import get_user_model
-
 
 User = get_user_model()
+
 
 class Department(BaseModel):
     STATUS_CHOICES = [
@@ -57,14 +57,14 @@ class Employee(BaseModel):
     EMP_STATUS = (('active', 'Active'), ('inactive', 'Inactive'), ('suspended', 'Suspended'))
     GENDER = (('m', 'Male'), ('f', 'Female'))
     RELATIONSHIP_STATUS = (('single', 'Single'), ('married', 'Married'), ('widowed', 'Widowed'))
+    NOTIFICATION_CHOICES = (('email', 'Email'), ('sms', 'SMS'))
 
     employee_id = models.CharField(max_length=20, unique=True)
-
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
     gender = models.CharField(max_length=10, choices=GENDER)
     relationship_status = models.CharField(max_length=20, choices=RELATIONSHIP_STATUS, null=True, blank=True)
-    email = models.EmailField(unique=True)
+    email = models.EmailField(unique=True, null=True, blank=True)
     phone_number = models.CharField(unique=True, max_length=40, blank=False, null=True,
                                     validators=[
                                         MinLengthValidator(
@@ -76,6 +76,7 @@ class Employee(BaseModel):
     organization = models.ForeignKey(
         "organizations.Organization", on_delete=models.CASCADE, related_name="employees"
     )
+    notification = models.CharField(max_length=20, choices=NOTIFICATION_CHOICES, default='email')
 
     def __str__(self):
         return f"{self.id} - {self.first_name} {self.last_name}"
@@ -162,6 +163,7 @@ class LeaveRequest(BaseModel):
         ('approved', 'Approved'),
         ('declined', 'Rejected'),
         ('canceled', 'Canceled'),
+        ('completed', 'Completed')
     )
     leave_id = models.CharField(max_length=20, unique=True, null=True, blank=True)
     organization = models.ForeignKey(

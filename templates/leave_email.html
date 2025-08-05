@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Leave Request Notification{% endblock %}
+
+{% block header %}
+Leave Status Update
+{% endblock %}
+
+{% block content %}
+<tr>
+  <td style="padding: 30px 30px 15px 30px;">
+    <p style="font-size: 16px;">
+      Your leave request for <strong>{{ leave.leave_type.name }}</strong> from
+      <strong>{{ leave.start_date|date:"F j, Y" }}</strong> to
+      <strong>{{ leave.end_date|date:"F j, Y" }}</strong> has been 
+      <strong style="text-transform: uppercase;">{{ status }}</strong>.
+    </p>
+
+    {% if leave.status == 'declined' and leave.rejection_reason %}
+    <p style="color: #b30000;">Rejection Reason: {{ leave.rejection_reason }}</p>
+    {% endif %}
+  </td>
+</tr>
+{% endblock %}

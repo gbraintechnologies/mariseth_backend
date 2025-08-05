@@ -6,6 +6,7 @@ from apps.accounts.serializers.users import ShortUserSerializer
 from apps.hr.models import LeaveRequest, LeaveType
 from apps.hr.serializers.employee import ShortEmployeeSerializer
 from apps.hr.utils import generate_leave_id
+from apps.shared.tasks.hr_tasks import send_leave_status_notification
 
 
 class LeaveTypeSerializer(serializers.ModelSerializer):
@@ -178,7 +179,9 @@ class ApproveDeclineLeaveRequestSerializer(serializers.ModelSerializer):
             instance.action_taken_by = self.context['request'].user
             instance.action_taken_on = timezone.now()
             instance.save()
-            #todo: Send email notification
+
+            send_leave_status_notification.delay(instance.id)
+
             return instance
 
 

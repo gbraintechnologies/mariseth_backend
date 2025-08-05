@@ -70,12 +70,6 @@ class InflowOrderViewSet(viewsets.GenericViewSet):
     def retrieve(self, request, pk=None):
         try:
             order = InflowOrder.objects.get(pk=pk, is_active=True, organization=request.organization)
-            # Check if the requesting user is a manager of the destination warehouse
-            if request.user not in order.destination_warehouse.managers.all():
-                return Response(
-                    {'error': 'You do not have permission to view this inflow order.'},
-                    status=status.HTTP_403_FORBIDDEN
-                )
             return Response(FullInflowOrderSerializer(order).data, status=status.HTTP_200_OK)
         except InflowOrder.DoesNotExist:
             return Response({'error': 'Order not found'}, status=status.HTTP_404_NOT_FOUND)
@@ -91,10 +85,6 @@ class InflowOrderViewSet(viewsets.GenericViewSet):
         completed = request.query_params.get('completed', 'false').lower()
 
         filter_q = Q(is_active=True, organization=request.organization)
-
-        # Filter by warehouses managed by the current user
-        user_managed_warehouses = request.user.managed_warehouses.all()
-        filter_q &= Q(destination_warehouse__in=user_managed_warehouses)
 
         if completed == 'true':
             filter_q &= Q(status='approved')
