@@ -6,6 +6,7 @@ from apps.accounts.serializers.users import ShortUserSerializer
 from apps.hr.models import Employee, Training, TrainingAttendee
 from apps.hr.serializers.employee import ShortEmployeeSerializer
 from apps.hr.utils import generate_training_id
+from apps.shared.tasks.training_tasks import send_training_notification
 
 
 class TrainingAttendeeSerializer(serializers.ModelSerializer):
@@ -73,6 +74,8 @@ class TrainingSerializer(TrainingBaseSerializer):
 
         if attendees_to_create:
             TrainingAttendee.objects.bulk_create(attendees_to_create)
+
+        send_training_notification.delay(training.id)
 
         return training
 

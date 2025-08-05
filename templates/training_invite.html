@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Verify Your Email - Mariseth Farms{% endblock %}
+
+{% block header %}
+Email Verification
+{% endblock %}
+
+{% block content %}
+ <!-- Greeting -->
+  <tr>
+    <td style="padding: 30px 30px 15px 30px;">
+      <p style="font-size: 16px; margin: 0;">You've been invited to attend an important training session:</p>
+    </td>
+  </tr>
+
+  <!-- Training Details Card -->
+  <tr>
+    <td style="padding: 0 30px;">
+      <div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 25px; background-color: #f9fbf8;">
+        <h2 style="margin-top: 0; color: #2c662d;">{{ training.title }}</h2>
+
+        <table cellpadding="5" style="font-size: 15px;">
+          <tr>
+            <td width="30" valign="top">📅</td>
+            <td><strong>Start Date:</strong> {{ training.start_date|date:"F j, Y, g:i A" }}</td>
+          </tr>
+          <tr>
+            <td width="30" valign="top">📅</td>
+            <td><strong>Start Date:</strong> {{ training.end_date|date:"F j, Y, g:i A" }}</td>
+          </tr>
+          <tr>
+            <td valign="top">📍</td>
+            <td><strong>Location:</strong>
+                {% if training.location %}
+                  {{ training.location }}
+                {% else %}
+                  Not specified
+                {% endif %}
+            </td>
+          </tr>
+
+        </table>
+         {% if training.material_url %}
+          <tr>
+              You can find the training materials here: <a href="{{ training.material_url }}">{{ training.material_url }}</a>
+          </tr>
+          {% endif %}
+      </div>
+    </td>
+  </tr>
+{% endblock %}

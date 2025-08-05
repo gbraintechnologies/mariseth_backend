@@ -7,6 +7,7 @@ from apps.shared.utils.validators import validate_only_digits
 
 User = get_user_model()
 
+
 class Department(BaseModel):
     STATUS_CHOICES = [
         ("active", "Active"),
@@ -75,7 +76,7 @@ class Employee(BaseModel):
     organization = models.ForeignKey(
         "organizations.Organization", on_delete=models.CASCADE, related_name="employees"
     )
-    notification = models.CharField(max_length=20, choices=NOTIFICATION_CHOICES, default='phone_number')
+    notification = models.CharField(max_length=20, choices=NOTIFICATION_CHOICES, default='email')
 
     def __str__(self):
         return f"{self.id} - {self.first_name} {self.last_name}"
