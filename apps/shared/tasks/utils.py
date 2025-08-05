@@ -3,10 +3,14 @@ from celery import signals
 from decouple import config as env
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from sentry_sdk.integrations.celery import CeleryIntegration
 
+from apps.credit.models import Credit
+from apps.hr.models import LeaveRequest
 from apps.organizations.models import OrganizationUser
 from apps.shared.models import CustomType
+from mariseth.celery import app
 
 User = get_user_model()
 
@@ -68,3 +72,25 @@ def get_organization_default_sender_id(organization):
         return organization_sms.name if organization_sms else "LOGICIEL"
     except CustomType.DoesNotExist:
         return "LOGICIEL"
+
+
+@app.task(bind=True)
+def update_overdue_credits(self) -> None:
+    print("------Updating overdue credits-----")
+    today = timezone.localdate()
+    updates = Credit.objects.filter(
+        due_date__lt=today,
+        payment_status__in=['active', 'partial']
+    ).update(payment_status='overdue')
+    print(f"------Overdue credits updated-----")
+
+
+@app.task(bind=True)
+def update_completed_leaves(self) -> None:
+    print("------Updating completed leaves-----")
+    today = timezone.localdate()
+    updates = LeaveRequest.objects.filter(
+        end_date__lt=today,
+        status='approved'
+    ).update(status='completed')
+    print(f"------Completed leaves updated: {updates}-----")

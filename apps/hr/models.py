@@ -162,6 +162,7 @@ class LeaveRequest(BaseModel):
         ('approved', 'Approved'),
         ('declined', 'Rejected'),
         ('canceled', 'Canceled'),
+        ('completed', 'Completed')
     )
     leave_id = models.CharField(max_length=20, unique=True, null=True, blank=True)
     organization = models.ForeignKey(
