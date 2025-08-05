@@ -94,8 +94,11 @@ LIST_INFLOW_ORDERS = 'inflow_orders|list_inflow_orders'
 APPROVE_INFLOW_DELIVERY_INSPECTION = 'inflow_orders|approve_inflow_delivery_inspection'
 APPROVE_INFLOW_ORDER = 'inflow_orders|approve_inflow_order'
 
+LIST_INFLOW_APPROVALS = 'inflow_orders|list_inflow_approvals'
+VIEW_INFLOW_APPROVAL = 'inflow_orders|view_inflow_approval'
+
 # OUTFLOW
-#     SUPPLY CHAIN
+# SUPPLY CHAIN
 CREATE_OUTFLOW_ORDER = 'outflow_orders|create_outflow_order'
 UPDATE_OUTFLOW_ORDER = 'outflow_orders|update_outflow_order'
 VIEW_OUTFLOW_ORDER = 'outflow_orders|view_outflow_order'
