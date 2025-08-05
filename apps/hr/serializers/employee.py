@@ -72,7 +72,8 @@ class EmployeeSerializer(serializers.ModelSerializer):
             'id', 'employee_id', 'first_name', 'last_name',
             'gender', 'relationship_status', 'email', 'phone_number',
             'date_of_birth', 'bank_account_number', 'status',
-            'emergency_contacts', 'qualifications', 'contract'
+            'emergency_contacts', 'qualifications', 'contract',
+            'notification'
         )
         read_only_fields = ('employee_id',)
 
@@ -155,7 +156,7 @@ class FullEmployeeSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'employee_id', 'first_name', 'last_name', 'gender',
             'relationship_status', 'email', 'phone_number', 'bank_account_number',
-            'status', 'date_of_birth', 'emergency_contacts',
+            'status', 'date_of_birth', 'emergency_contacts', 'notification',
             'qualifications', 'contract', 'created_by', 'date_created',
         )
         read_only_fields = ('id', 'employee_id', 'created_by', 'date_created', 'updated_by', 'date_updated')
