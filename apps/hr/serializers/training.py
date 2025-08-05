@@ -6,7 +6,7 @@ from apps.accounts.serializers.users import ShortUserSerializer
 from apps.hr.models import Employee, Training, TrainingAttendee
 from apps.hr.serializers.employee import ShortEmployeeSerializer
 from apps.hr.utils import generate_training_id
-from apps.shared.tasks.training_tasks import send_training_notification
+from apps.shared.tasks.hr_tasks import send_training_notification
 
 
 class TrainingAttendeeSerializer(serializers.ModelSerializer):
