@@ -33,9 +33,12 @@ class TrainingSerializer(TrainingBaseSerializer):
     selected_employees = serializers.ListField(
         child=serializers.IntegerField(), write_only=True, required=False, allow_empty=True
     )
+    departments = serializers.ListField(
+        child=serializers.IntegerField(), write_only=True, required=False, allow_empty=True
+    )
 
     class Meta(TrainingBaseSerializer.Meta):
-        fields = TrainingBaseSerializer.Meta.fields + ('all_employees', 'selected_employees')
+        fields = TrainingBaseSerializer.Meta.fields + ('all_employees', 'selected_employees', 'departments')
 
     def validate(self, attrs):
         if attrs['start_date'] > attrs['end_date']:
@@ -50,6 +53,7 @@ class TrainingSerializer(TrainingBaseSerializer):
 
         all_employees = validated_data.get('all_employees')
         selected_employees = validated_data.pop('selected_employees', [])
+        departments = validated_data.pop('departments', [])
 
         training = Training.objects.create(**validated_data)
         training.training_id = generate_training_id(request.organization.id, training.id)
@@ -71,6 +75,14 @@ class TrainingSerializer(TrainingBaseSerializer):
                     )
                 except Employee.DoesNotExist:
                     raise serializers.ValidationError(f"Employee with ID {employee_id} not found or not active.")
+        elif departments:
+            employees = Employee.objects.filter(contract__department__in=departments, organization=request.organization,
+                                                is_active=True).distinct()
+            print(employees)
+            for employee in employees:
+                attendees_to_create.append(
+                    TrainingAttendee(training=training, employee=employee, created_by=request.user)
+                )
 
         if attendees_to_create:
             TrainingAttendee.objects.bulk_create(attendees_to_create)
