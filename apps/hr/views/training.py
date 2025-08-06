@@ -28,7 +28,7 @@ class TrainingViewSet(viewsets.GenericViewSet):
             'list': LIST_TRAININGS,
             'destroy': DELETE_TRAINING,
             'list_attendees': LIST_TRAINING_ATTENDEES,
-            'mark_attendee_present': MARK_TRAINING_ATTENDEE_PRESENT,
+            'mark_attendees_present': MARK_TRAINING_ATTENDEE_PRESENT,
             'add_attendee': ADD_TRAINING_ATTENDEE,
             'remove_attendee': REMOVE_TRAINING_ATTENDEE
         }
@@ -208,25 +208,25 @@ class TrainingViewSet(viewsets.GenericViewSet):
             return Response({'error': 'Employee is not registered for this training.'},
                             status=status.HTTP_404_NOT_FOUND)
 
-    @action(detail=True, methods=['POST'], url_path='mark-attendee-present/(?P<employee_id>[^/.]+)')
+    @action(detail=True, methods=['POST'], url_path='mark-attendees-present')
     @transaction.atomic
-    def mark_attendee_present(self, request, pk=None, employee_id=None):
+    def mark_attendees_present(self, request, pk=None):
+        employee_ids = request.data.get('employees', [])
+        mark_all = request.data.get('mark_all', False)
+
         try:
             training = Training.objects.get(pk=pk, is_active=True, organization=request.organization)
         except Training.DoesNotExist:
             return Response({'error': 'Training not found'}, status=status.HTTP_404_NOT_FOUND)
-        try:
-            employee = Employee.objects.get(id=employee_id, organization=request.organization, is_active=True)
-        except Employee.DoesNotExist:
-            return Response({'error': 'Employee not found or not active.'}, status=status.HTTP_404_NOT_FOUND)
-        try:
-            training_attendee = TrainingAttendee.objects.get(training=training, employee=employee)
-            if training_attendee.status == 'present':
-                return Response({'message': 'Employee already marked as present.'}, status=status.HTTP_200_OK)
-            training_attendee.status = 'present'
-            training_attendee.marked_at = timezone.now()
-            training_attendee.save()
-            return Response({'message': 'Employee marked as present.'}, status=status.HTTP_200_OK)
-        except TrainingAttendee.DoesNotExist:
-            return Response({'error': 'Employee is not registered for this training.'},
-                            status=status.HTTP_404_NOT_FOUND)
+
+        if mark_all:
+            attendees_qs = TrainingAttendee.objects.filter(training=training, status='absent')
+        else:
+            if not isinstance(employee_ids, list) or not employee_ids:
+                return Response({'error': 'Provide a non-empty employees list or set mark_all=true.'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            attendees_qs = TrainingAttendee.objects.filter(training=training, employee_id__in=employee_ids, status='absent')
+
+        attendees_qs.update(status='present', marked_at=timezone.now())
+
+        return Response({'message': 'Attendees marked as present.'}, status=status.HTTP_200_OK)
