@@ -26,7 +26,8 @@ class CustomerViewSet(viewsets.GenericViewSet):
             'update': UPDATE_CUSTOMER,
             'destroy': DELETE_CUSTOMER,
             'list': LIST_CUSTOMERS,
-            'retrieve': VIEW_CUSTOMER
+            'retrieve': VIEW_CUSTOMER,
+            'list_orders': VIEW_CUSTOMER
         }
         user_permission = permissions.get(self.action, None)
         if user_permission:
