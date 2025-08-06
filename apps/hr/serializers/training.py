@@ -87,7 +87,7 @@ class TrainingSerializer(TrainingBaseSerializer):
         if attendees_to_create:
             TrainingAttendee.objects.bulk_create(attendees_to_create)
 
-        # send_training_notification.delay(training.id)
+        send_training_notification.delay(training.id)
 
         return training
 
