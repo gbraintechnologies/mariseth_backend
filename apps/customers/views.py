@@ -1,13 +1,16 @@
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Sum
 from rest_framework import status, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.decorators import action
 
 from apps.customers.models import Customer
 from apps.customers.serializers import CustomerSerializer, FullCustomerSerializer
 from apps.customers.swagger import add_swagger_to_customer_viewset
+from apps.outflow.models import OutflowOrder
+from apps.outflow.serializers.outflow import ListOutflowOrderSerializer
 from apps.shared.literals import (CREATE_CUSTOMER, DELETE_CUSTOMER, LIST_CUSTOMERS, UPDATE_CUSTOMER, VIEW_CUSTOMER)
 from apps.shared.utils.permissions import UserPermission
 
@@ -90,6 +93,38 @@ class CustomerViewSet(viewsets.GenericViewSet):
             'results': FullCustomerSerializer(page_obj.object_list, many=True).data,
             'pagination': {
                 'total': customers.count(),
+                'page': page_obj.number,
+                'pages': paginator.num_pages,
+                'has_next': page_obj.has_next(),
+                'has_previous': page_obj.has_previous(),
+            }
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['GET'], url_path='orders')
+    def list_orders(self, request, pk=None):
+        try:
+            customer = Customer.objects.get(pk=pk, is_active=True, organization=request.organization)
+        except Customer.DoesNotExist:
+            return Response({'error': 'Customer not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        page = request.query_params.get('page', 1)
+        page_size = request.query_params.get('page_size', 10)
+        status_param = request.query_params.get('status', None)
+
+        filter_q = Q(is_active=True, organization=request.organization)
+        if status_param:
+            filter_q &= Q(status=status_param)
+
+        outflows = OutflowOrder.objects.filter(filter_q, customer=customer).order_by('-date_created')
+
+        paginator = Paginator(outflows, page_size)
+        page_obj = paginator.get_page(page)
+
+        return Response({
+            'total_amount': outflows.aggregate(Sum('total_cost'))['total_cost__sum'],
+            'results': ListOutflowOrderSerializer(page_obj.object_list, many=True).data,
+            'pagination': {
+                'total': outflows.count(),
                 'page': page_obj.number,
                 'pages': paginator.num_pages,
                 'has_next': page_obj.has_next(),
