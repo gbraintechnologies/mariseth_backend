@@ -33,13 +33,12 @@ class LoginSerializer(serializers.Serializer):
 class UserWithTokenSerializer(serializers.ModelSerializer):
     access_token = serializers.CharField(read_only=True)
     refresh_token = serializers.CharField(read_only=True)
-    groups = GroupSerializer(many=True)
 
     class Meta:
         model = User
         fields = [
             'id', 'email', 'gender', 'first_name', 'last_name',
-            'access_token', 'refresh_token', 'avatar','user_type',
+            'access_token', 'refresh_token', 'avatar', 'user_type',
         ]
 
     def to_representation(self, user):
