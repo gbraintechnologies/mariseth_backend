@@ -39,8 +39,7 @@ class UserWithTokenSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'id', 'email', 'gender', 'first_name', 'last_name',
-            'groups', 'access_token', 'refresh_token', 'avatar',
-            'user_type',
+            'access_token', 'refresh_token', 'avatar','user_type',
         ]
 
     def to_representation(self, user):

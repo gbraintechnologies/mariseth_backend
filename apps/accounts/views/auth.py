@@ -10,6 +10,7 @@ from apps.accounts.serializers.auth import (AccountVerificationSerializer, Forgo
 from apps.accounts.serializers.users import UserSerializer
 from apps.accounts.swagger import add_swagger_to_user_auth_viewset
 from apps.shared.general_response import GENERAL_SUCCESS_RESPONSE
+from apps.accounts.serializers.users import GroupSerializer
 
 User = get_user_model()
 
@@ -50,7 +51,7 @@ class UserAuthViewSet(viewsets.GenericViewSet):
         """
         Instantiates and returns the list of permissions that this view requires.
         """
-        if self.action in ["update_password", "update_account", 'logout', 'me']:
+        if self.action in ["update_password", "update_account", 'logout', 'me', 'groups']:
             return [IsAuthenticated()]
         return [AllowAny()]
 
@@ -151,3 +152,9 @@ class UserAuthViewSet(viewsets.GenericViewSet):
     def me(self, request):
         user = request.user
         return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['GET'])
+    def groups(self, request):
+        user = request.user
+        groups = user.groups.all()
+        return Response(GroupSerializer(groups, many=True).data, status=status.HTTP_200_OK)
