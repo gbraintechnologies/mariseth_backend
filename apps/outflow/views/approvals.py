@@ -21,10 +21,10 @@ class OutflowApprovalViewSet(viewsets.GenericViewSet):
 
     def get_permissions(self):
         permissions = {
-            # 'retrieve': VIEW_OUTFLOW_APPROVAL,
-            # 'list_outflow_orders': LIST_OUTFLOW_APPROVAL,
-            # 'verify_availability': VERIFY_OUTFLOW_AVAILABILITY,
-            # 'mark_order_picked': MARK_OUTFLOW_ORDER_PICKED
+            'retrieve': VIEW_OUTFLOW_APPROVAL,
+            'list_outflow_orders': LIST_OUTFLOW_APPROVAL,
+            'verify_availability': VERIFY_OUTFLOW_AVAILABILITY,
+            'mark_order_picked': MARK_OUTFLOW_ORDER_PICKED
         }
         user_permission = permissions.get(self.action, None)
         if user_permission:
