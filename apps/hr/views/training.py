@@ -12,7 +12,8 @@ from apps.hr.serializers.training import FullTrainingSerializer, TrainingAttende
     TrainingSerializer
 from apps.shared.general_response import GENERAL_SUCCESS_RESPONSE
 from apps.shared.literals import ADD_TRAINING_ATTENDEE, CREATE_TRAINING, DELETE_TRAINING, LIST_TRAININGS, \
-    LIST_TRAINING_ATTENDEES, MARK_TRAINING_ATTENDEE_PRESENT, REMOVE_TRAINING_ATTENDEE, UPDATE_TRAINING, VIEW_TRAINING
+    LIST_TRAINING_ATTENDEES, MARK_TRAINING_ATTENDEE_PRESENT, REMOVE_TRAINING_ATTENDEE, SET_ATTENDANCE_STATUS, \
+    UPDATE_TRAINING, VIEW_TRAINING
 from apps.shared.utils.permissions import UserPermission
 
 
@@ -30,7 +31,8 @@ class TrainingViewSet(viewsets.GenericViewSet):
             'list_attendees': LIST_TRAINING_ATTENDEES,
             'mark_attendees_present': MARK_TRAINING_ATTENDEE_PRESENT,
             'add_attendee': ADD_TRAINING_ATTENDEE,
-            'remove_attendee': REMOVE_TRAINING_ATTENDEE
+            'remove_attendee': REMOVE_TRAINING_ATTENDEE,
+            'set_attendee_status': SET_ATTENDANCE_STATUS
         }
         user_permission = permissions.get(self.action, None)
         if user_permission:
@@ -247,3 +249,31 @@ class TrainingViewSet(viewsets.GenericViewSet):
         attendees_qs.update(status=actions, marked_at=timezone.now())
 
         return Response({'message': f'Attendee marked as {actions}.', 'action': actions}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['POST'], url_path='set-attendance-status')
+    @transaction.atomic
+    def set_attendance_status(self, request, pk=None):
+        """
+        Toggles the attendance_status between 'ongoing' and 'completed'
+        based on the 'status' field in the request body.
+        """
+        desired_status = request.data.get('status', 'completed').lower()
+
+        if desired_status not in ['ongoing', 'completed']:
+            return Response(
+                {'error': 'Invalid status. Must be "ongoing" or "completed".'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            training = Training.objects.get(pk=pk, is_active=True, organization=request.organization)
+        except Training.DoesNotExist:
+            return Response({'error': 'Training not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        training.attendance_status = desired_status
+        training.save(update_fields=['attendance_status'])
+
+        return Response(
+            {'message': f'Attendance status set to {desired_status}.'},
+            status=status.HTTP_200_OK
+        )

@@ -201,6 +201,10 @@ class Training(BaseModel):
         ('online', 'online'),
         ('offline', 'Offline'),
     )
+    ATTENDANCE_STATUS = (
+        ('ongoing', 'Ongoing'),
+        ('completed', 'Completed'),
+    )
     training_id = models.CharField(max_length=20, unique=True)
     organization = models.ForeignKey(
         "organizations.Organization", on_delete=models.CASCADE, related_name="trainings"
@@ -214,6 +218,7 @@ class Training(BaseModel):
     location = models.CharField(max_length=200, blank=True, null=True)
     material_url = models.URLField(blank=True, null=True)
     all_employees = models.BooleanField(default=False)
+    attendance_status = models.CharField(max_length=20, choices=ATTENDANCE_STATUS, default='ongoing')
 
     def __str__(self):
         return f"{self.id} - {self.title} ({self.training_id})"

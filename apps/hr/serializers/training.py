@@ -118,7 +118,7 @@ class FullTrainingSerializer(TrainingBaseSerializer):
             'id', 'training_id', 'description', 'training_type',
             'training_mode', 'start_date', 'end_date', 'location', 'material_url',
             'attendee_count', 'attendance_rate', 'date_created', 'created_by',
-            'status', 'participants'
+            'status', 'participants', 'attendance_status'
         )
 
     def get_status(self, obj):
