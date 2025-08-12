@@ -132,16 +132,27 @@ class TrainingViewSet(viewsets.GenericViewSet):
         page = request.query_params.get('page', 1)
         page_size = request.query_params.get('page_size', 10)
         status_param = request.query_params.get('status')
+        query = request.query_params.get('query')
 
         try:
             training = Training.objects.get(pk=pk, is_active=True, organization=request.organization)
         except Training.DoesNotExist:
             return Response({'error': 'Training not found'}, status=status.HTTP_404_NOT_FOUND)
-        filter_q = Q()
+
+        filter_q = Q(training=training, is_active=True)
         if status_param:
             filter_q &= Q(status=status_param)
+        if query:
+            filter_q &= (
+                Q(employee__first_name__icontains=query) |
+                Q(employee__last_name__icontains=query) |
+                Q(employee__employee_id__icontains=query) |
+                Q(employee__email__icontains=query) |
+                Q(employee__phone_number__icontains=query[1:])
+            )
 
-        attendees = TrainingAttendee.objects.filter(training=training, ).order_by('-date_created')
+        attendees = TrainingAttendee.objects.filter(filter_q) \
+            .select_related('training', 'employee').order_by('-date_created')
 
         paginator = Paginator(attendees, page_size)
         page_obj = paginator.get_page(page)
@@ -213,6 +224,11 @@ class TrainingViewSet(viewsets.GenericViewSet):
     def mark_attendees_present(self, request, pk=None):
         employee_ids = request.data.get('employees', [])
         mark_all = request.data.get('mark_all', False)
+        actions = request.data.get('action', 'present').lower()
+
+        if actions not in ['present', 'absent']:
+            return Response({'error': 'Invalid action. Must be "present" or "absent".'},
+                            status=status.HTTP_400_BAD_REQUEST)
 
         try:
             training = Training.objects.get(pk=pk, is_active=True, organization=request.organization)
@@ -220,13 +236,14 @@ class TrainingViewSet(viewsets.GenericViewSet):
             return Response({'error': 'Training not found'}, status=status.HTTP_404_NOT_FOUND)
 
         if mark_all:
-            attendees_qs = TrainingAttendee.objects.filter(training=training, status='absent')
+            attendees_qs = TrainingAttendee.objects.filter(training=training)
         else:
             if not isinstance(employee_ids, list) or not employee_ids:
                 return Response({'error': 'Provide a non-empty employees list or set mark_all=true.'},
                                 status=status.HTTP_400_BAD_REQUEST)
-            attendees_qs = TrainingAttendee.objects.filter(training=training, employee_id__in=employee_ids, status='absent')
+            attendees_qs = TrainingAttendee.objects.filter(training=training, employee_id__in=employee_ids)
 
-        attendees_qs.update(status='present', marked_at=timezone.now())
+        # Update status and timestamp
+        attendees_qs.update(status=actions, marked_at=timezone.now())
 
-        return Response({'message': 'Attendees marked as present.'}, status=status.HTTP_200_OK)
+        return Response({'message': f'Attendee marked as {actions}.', 'action': actions}, status=status.HTTP_200_OK)
