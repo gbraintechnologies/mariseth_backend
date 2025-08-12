@@ -12,7 +12,8 @@ from apps.hr.serializers.training import FullTrainingSerializer, TrainingAttende
     TrainingSerializer
 from apps.shared.general_response import GENERAL_SUCCESS_RESPONSE
 from apps.shared.literals import ADD_TRAINING_ATTENDEE, CREATE_TRAINING, DELETE_TRAINING, LIST_TRAININGS, \
-    LIST_TRAINING_ATTENDEES, MARK_TRAINING_ATTENDEE_PRESENT, REMOVE_TRAINING_ATTENDEE, UPDATE_TRAINING, VIEW_TRAINING
+    LIST_TRAINING_ATTENDEES, MARK_TRAINING_ATTENDEE_PRESENT, REMOVE_TRAINING_ATTENDEE, SET_ATTENDANCE_STATUS, \
+    UPDATE_TRAINING, VIEW_TRAINING
 from apps.shared.utils.permissions import UserPermission
 
 
@@ -30,7 +31,8 @@ class TrainingViewSet(viewsets.GenericViewSet):
             'list_attendees': LIST_TRAINING_ATTENDEES,
             'mark_attendees_present': MARK_TRAINING_ATTENDEE_PRESENT,
             'add_attendee': ADD_TRAINING_ATTENDEE,
-            'remove_attendee': REMOVE_TRAINING_ATTENDEE
+            'remove_attendee': REMOVE_TRAINING_ATTENDEE,
+            'set_attendee_status': SET_ATTENDANCE_STATUS
         }
         user_permission = permissions.get(self.action, None)
         if user_permission:
@@ -132,16 +134,27 @@ class TrainingViewSet(viewsets.GenericViewSet):
         page = request.query_params.get('page', 1)
         page_size = request.query_params.get('page_size', 10)
         status_param = request.query_params.get('status')
+        query = request.query_params.get('query')
 
         try:
             training = Training.objects.get(pk=pk, is_active=True, organization=request.organization)
         except Training.DoesNotExist:
             return Response({'error': 'Training not found'}, status=status.HTTP_404_NOT_FOUND)
-        filter_q = Q()
+
+        filter_q = Q(training=training, is_active=True)
         if status_param:
             filter_q &= Q(status=status_param)
+        if query:
+            filter_q &= (
+                Q(employee__first_name__icontains=query) |
+                Q(employee__last_name__icontains=query) |
+                Q(employee__employee_id__icontains=query) |
+                Q(employee__email__icontains=query) |
+                Q(employee__phone_number__icontains=query[1:])
+            )
 
-        attendees = TrainingAttendee.objects.filter(training=training, ).order_by('-date_created')
+        attendees = TrainingAttendee.objects.filter(filter_q) \
+            .select_related('training', 'employee').order_by('-date_created')
 
         paginator = Paginator(attendees, page_size)
         page_obj = paginator.get_page(page)
@@ -213,6 +226,11 @@ class TrainingViewSet(viewsets.GenericViewSet):
     def mark_attendees_present(self, request, pk=None):
         employee_ids = request.data.get('employees', [])
         mark_all = request.data.get('mark_all', False)
+        actions = request.data.get('action', 'present').lower()
+
+        if actions not in ['present', 'absent']:
+            return Response({'error': 'Invalid action. Must be "present" or "absent".'},
+                            status=status.HTTP_400_BAD_REQUEST)
 
         try:
             training = Training.objects.get(pk=pk, is_active=True, organization=request.organization)
@@ -220,13 +238,42 @@ class TrainingViewSet(viewsets.GenericViewSet):
             return Response({'error': 'Training not found'}, status=status.HTTP_404_NOT_FOUND)
 
         if mark_all:
-            attendees_qs = TrainingAttendee.objects.filter(training=training, status='absent')
+            attendees_qs = TrainingAttendee.objects.filter(training=training)
         else:
             if not isinstance(employee_ids, list) or not employee_ids:
                 return Response({'error': 'Provide a non-empty employees list or set mark_all=true.'},
                                 status=status.HTTP_400_BAD_REQUEST)
-            attendees_qs = TrainingAttendee.objects.filter(training=training, employee_id__in=employee_ids, status='absent')
+            attendees_qs = TrainingAttendee.objects.filter(training=training, employee_id__in=employee_ids)
 
-        attendees_qs.update(status='present', marked_at=timezone.now())
+        # Update status and timestamp
+        attendees_qs.update(status=actions, marked_at=timezone.now())
 
-        return Response({'message': 'Attendees marked as present.'}, status=status.HTTP_200_OK)
+        return Response({'message': f'Attendee marked as {actions}.', 'action': actions}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['POST'], url_path='set-attendance-status')
+    @transaction.atomic
+    def set_attendance_status(self, request, pk=None):
+        """
+        Toggles the attendance_status between 'ongoing' and 'completed'
+        based on the 'status' field in the request body.
+        """
+        desired_status = request.data.get('status', 'completed').lower()
+
+        if desired_status not in ['ongoing', 'completed']:
+            return Response(
+                {'error': 'Invalid status. Must be "ongoing" or "completed".'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            training = Training.objects.get(pk=pk, is_active=True, organization=request.organization)
+        except Training.DoesNotExist:
+            return Response({'error': 'Training not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+        training.attendance_status = desired_status
+        training.save(update_fields=['attendance_status'])
+
+        return Response(
+            {'message': f'Attendance status set to {desired_status}.'},
+            status=status.HTTP_200_OK
+        )

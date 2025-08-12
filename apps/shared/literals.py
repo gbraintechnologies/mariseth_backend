@@ -181,4 +181,4 @@ LIST_TRAINING_ATTENDEES = 'training|list_training_attendees'
 MARK_TRAINING_ATTENDEE_PRESENT = 'training|mark_training_attendee_present'
 ADD_TRAINING_ATTENDEE = 'training|add_training_attendee'
 REMOVE_TRAINING_ATTENDEE = 'training|remove_training_attendee'
-
+SET_ATTENDANCE_STATUS = 'training|set_attendee_status'
