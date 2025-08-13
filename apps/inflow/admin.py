@@ -36,7 +36,7 @@ class InflowOrderAdmin(admin.ModelAdmin):
     inlines = (InflowOrderProductInline, InflowMediaInline, InflowOrderHistoryInline)
     list_display = (
         "id", 'order_id', 'waybill_id', 'aggregator', 'procurement_officer',
-        'destination_warehouse', 'status', 'is_active'
+        "total_cost", "total_products_cost", "total_bags", 'destination_warehouse', 'status', 'is_active'
     )
     list_filter = ('status', 'aggregator', 'procurement_officer')
     search_fields = ('order_id', 'aggregator__username', 'procurement_officer__username')
