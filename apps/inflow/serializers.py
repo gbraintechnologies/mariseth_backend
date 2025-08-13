@@ -33,9 +33,9 @@ class InflowOrderProductSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'order_id', 'serial_number', 'product', 'farm',
             'quantity', 'unit_price', 'problematic_quantity',
-            'reason', 'comment', 'total_cost',
+            'reason', 'comment', 'total_cost', 'total_weight',
         )
-        read_only_fields = ('id', 'serial_number', 'order_id', 'total_cost')
+        read_only_fields = ('id', 'serial_number', 'order_id', 'total_cost', 'total_weight')
 
 
 class InflowOrderSerializer(serializers.ModelSerializer):
@@ -51,9 +51,9 @@ class InflowOrderSerializer(serializers.ModelSerializer):
             'order_creation_date', 'destination_warehouse',
             'expected_delivery_date', 'status', 'total_bags',
             'additional_costs', 'additional_cost_amount', 'comments',
-            'products',
+            'products', 'total_weight',
         )
-        read_only_fields = ('id', 'order_id', 'total_cost', 'status')
+        read_only_fields = ('id', 'order_id', 'total_cost', 'status', 'total_weight')
 
     def create(self, validated_data):
         request = self.context['request']
@@ -80,15 +80,19 @@ class InflowOrderSerializer(serializers.ModelSerializer):
             quantity = product_data['quantity']
             product_data['serial_number'] = generate_serial_number(order.id, farm_id, product_id, quantity)
             product_data['total_cost'] = product_data['unit_price'] * product_data['quantity']
+            # Calculate total_weight for InflowOrderProduct
+            product_data['total_weight'] = product_data['product'].weight * product_data['quantity']
             InflowOrderProduct.objects.create(order=order, **product_data)
 
-        # Calculate total_products_cost, total_cost and total_bags for the InflowOrder
+        # Calculate total_products_cost, total_cost, total_bags and total_weight for the InflowOrder
         total_products_costs = sum(product.total_cost for product in order.products.all())
         total_bags = sum(product.quantity for product in order.products.all())
+        total_weight = sum(product.total_weight for product in order.products.all())
         order.total_products_cost = total_products_costs
         order.total_cost = total_products_costs + order.additional_cost_amount
         order.total_bags = total_bags
-        order.save(update_fields=['total_products_cost', 'total_cost', 'total_bags'])
+        order.total_weight = total_weight
+        order.save(update_fields=['total_products_cost', 'total_cost', 'total_bags', 'total_weight'])
 
         return order
 
@@ -117,6 +121,7 @@ class InflowOrderSerializer(serializers.ModelSerializer):
                 inflow_order_product.quantity = product_data.get('quantity', inflow_order_product.quantity)
                 inflow_order_product.unit_price = product_data.get('unit_price', inflow_order_product.unit_price)
                 inflow_order_product.total_cost = inflow_order_product.quantity * inflow_order_product.unit_price
+                inflow_order_product.total_weight = inflow_order_product.product.weight * inflow_order_product.quantity
                 inflow_order_product.save()
             else:
                 if InflowOrderProduct.objects.filter(order=instance, product=product_data['product'],
@@ -128,6 +133,7 @@ class InflowOrderSerializer(serializers.ModelSerializer):
                     inflow_order_product.quantity = product_data.get('quantity', inflow_order_product.quantity)
                     inflow_order_product.unit_price = product_data.get('unit_price', inflow_order_product.unit_price)
                     inflow_order_product.total_cost = inflow_order_product.quantity * inflow_order_product.unit_price
+                    inflow_order_product.total_weight = inflow_order_product.product.weight * inflow_order_product.quantity
                     inflow_order_product.save()
                 else:
                     # Create new product
@@ -136,6 +142,7 @@ class InflowOrderSerializer(serializers.ModelSerializer):
                                                                            product_data['product'].product_id,
                                                                            product_data['quantity'])
                     product_data['total_cost'] = product_data['unit_price'] * product_data['quantity']
+                    product_data['total_weight'] = product_data['product'].weight * product_data['quantity']
                     if not FarmProduct.objects.filter(farm=product_data['farm'], product=product_data['product'],
                                                       is_active=True).exists():
                         raise ValidationError(
@@ -145,9 +152,12 @@ class InflowOrderSerializer(serializers.ModelSerializer):
             total_bag += product_data.get('quantity', 0)
             total_products_costs += product_data.get('quantity', 0) * product_data.get('unit_price', 0)
 
+        # Recalculate total_weight for the InflowOrder after product updates
+        total_weight = sum(product.total_weight for product in instance.products.all())
         instance.total_products_cost = total_products_costs
         instance.total_cost = total_products_costs + instance.additional_cost_amount
         instance.total_bags = total_bag
+        instance.total_weight = total_weight
         instance.save()
 
         return instance
@@ -203,9 +213,9 @@ class FullInflowOrderSerializer(serializers.ModelSerializer):
             'expected_delivery_date', 'actual_delivery_date',
             'status', 'total_bags', 'additional_costs', 'total_products_cost',
             'additional_cost_amount', 'total_cost', 'comments', 'products',
-            'media_files', 'history', 'waybill_id'
+            'media_files', 'history', 'waybill_id', 'total_weight'
         )
-        read_only_fields = ('id', 'order_id', 'total_cost', 'status', 'total_products_cost')
+        read_only_fields = ('id', 'order_id', 'total_cost', 'status', 'total_products_cost', 'total_weight')
 
     def get_products(self, obj):
         return InflowOrderProductAggregateSerializer(
