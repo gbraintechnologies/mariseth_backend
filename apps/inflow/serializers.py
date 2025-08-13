@@ -82,6 +82,14 @@ class InflowOrderSerializer(serializers.ModelSerializer):
             product_data['total_cost'] = product_data['unit_price'] * product_data['quantity']
             InflowOrderProduct.objects.create(order=order, **product_data)
 
+        # Calculate total_products_cost, total_cost and total_bags for the InflowOrder
+        total_products_costs = sum(product.total_cost for product in order.products.all())
+        total_bags = sum(product.quantity for product in order.products.all())
+        order.total_products_cost = total_products_costs
+        order.total_cost = total_products_costs + order.additional_cost_amount
+        order.total_bags = total_bags
+        order.save(update_fields=['total_products_cost', 'total_cost', 'total_bags'])
+
         return order
 
     def update(self, instance, validated_data):
@@ -136,10 +144,8 @@ class InflowOrderSerializer(serializers.ModelSerializer):
 
             total_bag += product_data.get('quantity', 0)
             total_products_costs += product_data.get('quantity', 0) * product_data.get('unit_price', 0)
-            total_bag += product_data.get('quantity', 0)
-            total_products_costs += product_data.get('quantity', 0) * product_data.get('unit_price', 0)
 
-        instance.total_product_cost = total_products_costs
+        instance.total_products_cost = total_products_costs
         instance.total_cost = total_products_costs + instance.additional_cost_amount
         instance.total_bags = total_bag
         instance.save()

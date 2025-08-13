@@ -36,11 +36,23 @@ class InflowOrderAdmin(admin.ModelAdmin):
     inlines = (InflowOrderProductInline, InflowMediaInline, InflowOrderHistoryInline)
     list_display = (
         "id", 'order_id', 'waybill_id', 'aggregator', 'procurement_officer',
-        "total_cost", "total_products_cost", "total_bags", 'destination_warehouse', 'status', 'is_active'
+        "total_cost", "total_products_cost", "total_bags",
+        'additional_cost_amount', 'destination_warehouse', 'status', 'is_active'
     )
     list_filter = ('status', 'aggregator', 'procurement_officer')
     search_fields = ('order_id', 'aggregator__username', 'procurement_officer__username')
-    readonly_fields = ('total_cost', 'total_products_cost', 'total_bags', 'waybill_id')
+    readonly_fields = ('waybill_id',)
+    fieldsets = (
+        (None, {
+            'fields': (
+                'organization', 'order_id', 'aggregator', 'procurement_officer',
+                'destination_warehouse', 'order_creation_date', 'expected_delivery_date',
+                'actual_delivery_date', 'status', 'total_bags', 'order_total',
+                'additional_costs', 'additional_cost_amount', 'total_cost',
+                'total_products_cost', 'comments', 'waybill_id'
+            )
+        }),
+    )
 
 #
 # @admin.register(InflowOrderProduct)
