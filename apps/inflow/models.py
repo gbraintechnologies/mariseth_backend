@@ -31,6 +31,7 @@ class InflowOrder(BaseModel):
     additional_cost_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     total_cost = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     total_products_cost = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    total_weight = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     comments = models.TextField(blank=True)
     waybill_id = models.CharField(max_length=50, unique=True, blank=True, null=True)
 
@@ -49,6 +50,7 @@ class InflowOrderProduct(BaseModel):
     reason = models.CharField(max_length=255, blank=True)
     comment = models.TextField(blank=True)
     total_cost = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    total_weight = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
 
     class Meta:
         unique_together = ('order', 'product', 'farm')
