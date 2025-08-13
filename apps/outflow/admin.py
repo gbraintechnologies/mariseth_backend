@@ -42,13 +42,15 @@ class OutflowOrderAdmin(admin.ModelAdmin):
         OutflowOrderWarehouseInline,
         OutflowOrderDeliveryInformationInline,
     ]
-    list_display = ('id', 'order_id', 'waybill_id', 'status', 'customer', 'total_quantity', 'total_cost')
+    list_display = ('id', 'order_id', 'waybill_id', 'status', 'customer', 'total_quantity', 'total_cost', 'total_weight')
     list_filter = ('status', 'customer')
 
 
 class OutflowOrderWarehouseProductInline(admin.TabularInline):
     model = OutflowOrderWarehouseProduct
     extra = 0
+    fields = ('serial_number', 'product', 'expected_quantity', 'available_quantity', 'price_per_unit', 'cost', 'total_weight', 'status', 'reason', 'comments')
+    readonly_fields = ('serial_number', 'available_quantity', 'cost', 'total_weight')
 
 
 class OutflowOrderWarehouseImagesInline(admin.TabularInline):
@@ -69,7 +71,7 @@ class OutflowOrderWarehouseAdmin(admin.ModelAdmin):
         OutflowOrderWarehouseImagesInline,
         OutflowOrderWarehouseHistoryInline,
     ]
-    list_display = ('id', 'outflow_order', 'warehouse', 'total_quantity', 'total_cost', 'status')
+    list_display = ('id', 'outflow_order', 'warehouse', 'total_quantity', 'total_cost', 'total_weight', 'status')
     list_filter = ('status', 'warehouse')
 
 

@@ -28,6 +28,7 @@ class OutflowOrder(BaseModel):
     actual_delivery_date = models.DateField(null=True, blank=True)
     total_quantity = models.IntegerField(default=0)
     total_cost = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    total_weight = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     amount_paid = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     amount_due = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     extra_comments = models.TextField(blank=True)
@@ -189,6 +190,7 @@ class OutflowOrderWarehouse(BaseModel):
     warehouse = models.ForeignKey('warehouse.Warehouse', on_delete=models.CASCADE)
     total_quantity = models.IntegerField(default=0)
     total_cost = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    total_weight = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     status = models.CharField(max_length=20, choices=STATUS, default='pending_verification')
 
     class Meta:
@@ -210,6 +212,7 @@ class OutflowOrderWarehouseProduct(BaseModel):
     available_quantity = models.IntegerField(null=True, blank=True)
     price_per_unit = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     cost = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    total_weight = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending_verification')
     reason = models.CharField(max_length=255, blank=True, null=True)
     comments = models.TextField(blank=True, null=True)

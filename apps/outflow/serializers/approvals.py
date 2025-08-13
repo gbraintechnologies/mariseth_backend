@@ -27,12 +27,13 @@ class OutflowWarehouseProductSerializer(serializers.ModelSerializer):
     product = ShortProductSerializer(read_only=True)
     price_per_unit = serializers.DecimalField(max_digits=10, decimal_places=2)
     cost = serializers.DecimalField(max_digits=10, decimal_places=2)
+    total_weight = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
 
     class Meta:
         model = OutflowOrderWarehouseProduct
         fields = (
             'id', 'serial_number', 'available_quantity',
-            'expected_quantity', 'price_per_unit', 'cost',
+            'expected_quantity', 'price_per_unit', 'cost', 'total_weight',
             'status', 'product', 'reason', 'comments'
         )
 
@@ -44,6 +45,7 @@ class OutflowOrderWarehouseSerializer(serializers.ModelSerializer):
     )
     total_quantity = serializers.SerializerMethodField()
     total_cost = serializers.SerializerMethodField()
+    total_weight = serializers.SerializerMethodField()
     warehouse = ShortWarehouseSerializer()
     images = OutflowWarehouseImageSerializer(many=True, source='images.all', read_only=True)
     delivery_information = serializers.SerializerMethodField()
@@ -51,7 +53,7 @@ class OutflowOrderWarehouseSerializer(serializers.ModelSerializer):
     class Meta:
         model = OutflowOrderWarehouse
         fields = (
-            'id', 'status', 'total_quantity', 'total_cost',
+            'id', 'status', 'total_quantity', 'total_cost', 'total_weight',
             'warehouse', 'products', 'images', 'delivery_information'
         )
 
@@ -73,6 +75,9 @@ class OutflowOrderWarehouseSerializer(serializers.ModelSerializer):
     def get_total_cost(self, obj):
         return sum(float(p.cost) for p in obj.products.filter(is_active=True))
 
+    def get_total_weight(self, obj):
+        return sum(float(p.total_weight) for p in obj.products.filter(is_active=True))
+
 
 class OutflowOrderApprovalSerializer(serializers.ModelSerializer):
     warehouses = serializers.SerializerMethodField()
@@ -80,13 +85,14 @@ class OutflowOrderApprovalSerializer(serializers.ModelSerializer):
     procurement_officer = ShortUserSerializer()
     total_quantity = serializers.IntegerField()
     total_cost = serializers.DecimalField(max_digits=12, decimal_places=2)
+    total_weight = serializers.DecimalField(max_digits=12, decimal_places=2)
 
     class Meta:
         model = OutflowOrder
         fields = (
             'id', 'order_id', 'customer', 'procurement_officer',
             'destination', 'expected_delivery_date', 'status',
-            'total_quantity', 'total_cost', 'warehouses'
+            'total_quantity', 'total_cost', 'total_weight', 'warehouses'
         )
         read_only_fields = fields
 
@@ -99,6 +105,9 @@ class OutflowOrderApprovalSerializer(serializers.ModelSerializer):
         # Filter OutflowOrderWarehouse objects based on these managed warehouses
         managed_outflow_warehouses = obj.warehouses.filter(warehouse__in=user_managed_warehouses)
         return OutflowOrderWarehouseSerializer(managed_outflow_warehouses, many=True).data
+
+    def get_total_weight(self, obj):
+        return obj.total_weight
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
@@ -286,7 +295,7 @@ class MarkOrderPickedSerializer(serializers.Serializer):
                         warehouse_product=warehouse_product,
                         product=warehouse_product_order.product,
                         quantity=Decimal(warehouse_product_order.expected_quantity),
-                        weight=warehouse_product_order.product.weight * warehouse_product_order.expected_quantity,
+                        weight=warehouse_product_order.total_weight,
                         movement_type="outflow",
                         amount=warehouse_product_order.cost,
                         buyer=order.customer,
@@ -376,12 +385,13 @@ class ShortOutflowOrderWarehouseSerializer(serializers.ModelSerializer):
     )
     total_quantity = serializers.SerializerMethodField()
     total_cost = serializers.SerializerMethodField()
+    total_weight = serializers.SerializerMethodField()
     warehouse = ShortWarehouseSerializer()
 
     class Meta:
         model = OutflowOrderWarehouse
         fields = (
-            'id', 'status', 'total_quantity', 'total_cost',
+            'id', 'status', 'total_quantity', 'total_cost', 'total_weight',
             'warehouse', 'products')
 
     def get_total_quantity(self, obj):
@@ -389,6 +399,9 @@ class ShortOutflowOrderWarehouseSerializer(serializers.ModelSerializer):
 
     def get_total_cost(self, obj):
         return sum(float(p.cost) for p in obj.products.filter(is_active=True))
+
+    def get_total_weight(self, obj):
+        return sum(float(p.total_weight) for p in obj.products.filter(is_active=True))
 
 
 class OutflowWarehouseListSerializer(serializers.Serializer):

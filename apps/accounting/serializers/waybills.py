@@ -19,7 +19,7 @@ class InflowOrderListRetrieveSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'order_id', 'waybill_id', 'status', 'date_created',
             'destination_warehouse', 'total_bags', 'order_total',
-            'total_cost', 'date_created', 'aggregator', 'procurement_officer',
+            'total_cost', 'total_weight', 'date_created', 'aggregator', 'procurement_officer',
         )
 
 
@@ -32,7 +32,7 @@ class OutflowOrderListRetrieveSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'order_id', 'waybill_id', 'customer', 'procurement_officer',
             'status', 'total_cost', 'expected_delivery_date', 'total_quantity',
-            'destination', 'date_created',
+            'total_weight', 'destination', 'date_created',
         )
 
 
@@ -42,6 +42,7 @@ class FullWaybillOutflowOrderSerializer(serializers.ModelSerializer):
     procurement_officer = ShortUserSerializer()
     total_quantity = serializers.IntegerField()
     total_cost = serializers.DecimalField(max_digits=12, decimal_places=2)
+    total_weight = serializers.DecimalField(max_digits=12, decimal_places=2)
     delivery_information = OutflowOrderDeliveryInfoResponseSerializer(many=True)
     products = serializers.SerializerMethodField()
     payments = OutflowOrderPaymentRequestSerializer(many=True)
@@ -53,7 +54,7 @@ class FullWaybillOutflowOrderSerializer(serializers.ModelSerializer):
             'id', 'order_id', 'customer', 'procurement_officer',
             'destination', 'expected_delivery_date', 'status',
             'additional_costs', 'additional_cost_amount', 'total_quantity',
-            'total_cost', 'amount_paid', 'amount_due', 'products', 'warehouses',
+            'total_cost', 'total_weight', 'amount_paid', 'amount_due', 'products', 'warehouses',
             'delivery_information', 'payments', 'logs', 'waybill_id'
         )
 
