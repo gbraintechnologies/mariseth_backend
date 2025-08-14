@@ -20,11 +20,10 @@ services:
       redis:
         condition: service_healthy
     env_file:
-      - production.env
+      - ./.env
     environment:
       - SERVICE_TYPE=web
       - ENVIRONMENT=production
-      - SERVER_TYPE=local
     networks:
       - app_network
     command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
@@ -71,12 +70,11 @@ services:
       - db
       - redis
     env_file:
-      - production.env
+      - ./.env
     networks:
       - app_network
     environment:
       - SERVICE_TYPE=celery
-      - SERVER_TYPE=local
       - ENVIRONMENT=production
 
   celery-beat:
@@ -88,7 +86,7 @@ services:
       - db
       - redis
     env_file:
-      - production.env
+      - ./.env
     networks:
       - app_network
     environment:
