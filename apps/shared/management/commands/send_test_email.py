@@ -8,7 +8,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         email_client = EmailClient()
 
-        sender = 'alerts@youstart.com.gh'
+        sender = 'noreply@scaleforge.farm'
         recipients = ['okwesi73@gmail.com']
         subject = 'Hello from EmailClient'
         body_text = 'This is a test email from the abstracted EmailClient.'
@@ -22,4 +22,4 @@ class Command(BaseCommand):
             body_html=body_html,
         )
 
-        self.stdout.write(self.style.SUCCESS(f"Email sent! Response: {response.status_code}"))
+        self.stdout.write(self.style.SUCCESS(f"Email sent! Response: {response}"))

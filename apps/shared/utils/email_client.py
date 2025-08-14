@@ -3,6 +3,7 @@ from typing import Optional
 import sentry_sdk
 from django.conf import settings
 from apps.shared.utils.sendgrid import sendgrid_send_email
+from apps.shared.utils.zepto_mail import ZeptoMailClient
 
 
 class EmailClient:
@@ -23,6 +24,8 @@ class EmailClient:
         try:
             if self.provider == "sendgrid":
                 return sendgrid_send_email(sender, recipients, subject, body_text, body_html, attachments, bcc, cc)
+            elif self.provider == "zepto_mail":
+                return ZeptoMailClient().send_email(sender, recipients, subject, body_text, body_html, bcc, cc)
             elif self.provider == "mailgun":
                 raise NotImplementedError("Mailgun provider is not implemented yet.")
                 # return mailgun_send_email(...)
