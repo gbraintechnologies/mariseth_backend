@@ -141,7 +141,7 @@ STORAGES = {
     "default": {"BACKEND": "apps.shared.overrides.MediaRootS3Boto3Storage"},
     "staticfiles": {"BACKEND": "apps.shared.overrides.StaticRootS3Boto3Storage"},
 }
-
+print(f"//////////////////////////{env('ENVIRONMENT')}///////////////////////")
 CORS_ALLOWED_ORIGINS = [
     'https://local.iyfconnect.com',
     'http://localhost:8000',
