@@ -27,8 +27,6 @@ def send_verification_email(verification_code, template_name, user_id):
         template = get_template(template_name)
         email_template = template.render(context)
         email = get_organization_email(organization_user.organization)
-
-        sender = f'{organization_user.organization.name} <{email}>'
         to_email = [user.email]
         subject = f'Verification Code for {user.get_full_name()}'
         body_html = email_template
@@ -37,7 +35,7 @@ def send_verification_email(verification_code, template_name, user_id):
         if to_email:
             email_client = EmailClient()
             response = email_client.send_email(
-                sender=sender, recipients=to_email,
+                sender=email, recipients=to_email,
                 subject=subject, body_html=body_html,
                 body_text=body_text
             )

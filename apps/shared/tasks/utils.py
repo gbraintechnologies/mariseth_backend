@@ -54,9 +54,9 @@ def get_organization_email(organization):
             is_active=True,
             is_default=True
         ).order_by('-date_created').first()
-        return organization_email.name if organization_email else "alerts@youstart.com.gh"
+        return organization_email.name if organization_email else "noreply@scaleforge.farm"
     except CustomType.DoesNotExist:
-        return "alerts@youstart.com.gh"
+        return "noreply@scaleforge.farm"
 
 
 def get_organization_default_sender_id(organization):

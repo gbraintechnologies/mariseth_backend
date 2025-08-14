@@ -225,8 +225,9 @@ sentry_sdk.init(
     integrations=[DjangoIntegration()]
 )
 
-EMAIL_PROVIDER = "sendgrid"
+EMAIL_PROVIDER = "zepto_mail"
 SENDGRID_API_KEY = env("SENDGRID_API_KEY")
+ZEPTO_MAIL_API_KEY = env("ZEPTO_MAIL_API_KEY")
 SMS_PROVIDER = "wirepick"
 WIREPICK_CLIENT_ID = env("WIREPICK_CLIENT_ID")
 WIREPICK_PASSWORD = env("WIREPICK_PASSWORD")
