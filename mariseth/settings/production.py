@@ -4,19 +4,23 @@ from mariseth.settings.base import *
 
 ALLOWED_HOSTS = ['*']
 ENVIRONMENT = env('ENVIRONMENT')
+print(f"//////////////////////////{ENVIRONMENT}///////////////////////")
+DEBUG = False
 
 CORS_ALLOWED_ORIGINS = [
-    "https://mariseth.scaleforge.farm",
-    "https://ukskccsc0cwwo4cockkkks4w.135.181.238.146.sslip.io",
-    "https://a08cs8s80kgoowwo4g04g0gw.65.109.122.43.sslip.io"
+    # "https://mariseth.scaleforge.farm",
+    # "https://ukskccsc0cwwo4cockkkks4w.135.181.238.146.sslip.io",
+    # "https://a08cs8s80kgoowwo4g04g0gw.65.109.122.43.sslip.io"
+    "http://*", "https://*",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://mariseth.scaleforge.farm",
-    "https://dwg0gwkko0w0kw0ccgogwo0c.135.181.238.146.sslip.io",
-    "https://a08cs8s80kgoowwo4g04g0gw.65.109.122.43.sslip.io"
+    # "https://mariseth.scaleforge.farm",
+    # "https://dwg0gwkko0w0kw0ccgogwo0c.135.181.238.146.sslip.io",
+    # "https://a08cs8s80kgoowwo4g04g0gw.65.109.122.43.sslip.io"
+
+    "http://*", "https://*",
 ]
-DEBUG = False
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=30),
@@ -26,13 +30,6 @@ SIMPLE_JWT = {
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 INTERNAL_HOST = env('INTERNAL_HOST')
-# # extra static and media file settings.
-# AWS_STORAGE_BUCKET_NAME = env('AWS_STORAGE_BUCKET_NAME')
-# AWS_S3_CUSTOM_DOMAIN = env('AWS_S3_CUSTOM_DOMAIN')
-# # Static files (CSS, JavaScript, images)
-# STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/static/'
-# # Media files
-# MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/'
 
 STATIC_URL = '/static/'
 STATICFILES_LOCATION = 'static'

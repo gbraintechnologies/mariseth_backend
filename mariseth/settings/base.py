@@ -141,14 +141,6 @@ STORAGES = {
     "default": {"BACKEND": "apps.shared.overrides.MediaRootS3Boto3Storage"},
     "staticfiles": {"BACKEND": "apps.shared.overrides.StaticRootS3Boto3Storage"},
 }
-print(f"//////////////////////////{env('ENVIRONMENT')}///////////////////////")
-CORS_ALLOWED_ORIGINS = [
-    'https://local.iyfconnect.com',
-    'http://localhost:8000',
-    'http://0.0.0.0:8000',
-    'http://127.0.0.1:0000',
-    'https://ukskccsc0cwwo4cockkkks4w.135.181.238.146.sslip.io',
-]
 
 REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_CLASSES': [
