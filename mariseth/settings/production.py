@@ -3,6 +3,7 @@ from datetime import timedelta
 from mariseth.settings.base import *
 
 ALLOWED_HOSTS = ['*']
+ENVIRONMENT = env('ENVIRONMENT')
 
 CORS_ALLOWED_ORIGINS = [
     "https://mariseth.scaleforge.farm",
