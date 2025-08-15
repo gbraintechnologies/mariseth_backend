@@ -73,6 +73,8 @@ class TrainingViewSet(viewsets.GenericViewSet):
         training_type = request.query_params.get('training_type')
         training_mode = request.query_params.get('training_mode')
         status_param = request.query_params.get('status', None)
+        training_date_from = request.query_params.get('training_date_from')
+        training_date_to = request.query_params.get('training_date_to')
 
         filter_q = Q(is_active=True, organization=request.organization)
 
@@ -93,6 +95,13 @@ class TrainingViewSet(viewsets.GenericViewSet):
             filter_q &= Q(end_date__lt=timezone.now())
         elif status_param == 'ongoing':
             filter_q &= Q(start_date__lte=timezone.now(), end_date__gte=timezone.now())
+
+        if training_date_from and training_date_to:
+            filter_q &= Q(start_date__date__gte=training_date_from,  end_date__date__lt=training_date_to)
+        elif training_date_from:
+            filter_q &= Q(start_date__date__gte=training_date_from)
+        elif training_date_to:
+            filter_q &= Q(end_date__date__lte=training_date_to)
 
         trainings = Training.objects.filter(filter_q).order_by('-date_created')
 
