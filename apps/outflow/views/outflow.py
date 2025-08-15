@@ -79,6 +79,7 @@ class OutflowOrderViewSet(viewsets.GenericViewSet):
         query = request.query_params.get('query')
         completed = request.query_params.get('completed', 'false').lower()
         export = request.query_params.get('export', 'false').lower()
+        warehouse = request.query_params.get('warehouse', None)
 
         filter_q = Q(is_active=True, organization=request.organization)
         if completed == 'true':
@@ -87,10 +88,14 @@ class OutflowOrderViewSet(viewsets.GenericViewSet):
             filter_q &= ~Q(status='complete')
         if status_filter:
             filter_q &= Q(status=status_filter)
+        if warehouse:
+            filter_q &= Q(warehouses__warehouse_id=warehouse)
         if query:
             filter_q &= (
                     Q(order_id__icontains=query) |
-                    Q(destination__name__icontains=query)
+                    Q(destination__name__icontains=query) |
+                    Q(customer__first_name__icontains=query) |
+                    Q(customer__last_name__icontains=query)
             )
 
         orders = OutflowOrder.objects.filter(filter_q).order_by("-date_created")

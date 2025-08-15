@@ -64,6 +64,7 @@ class OutflowApprovalViewSet(viewsets.GenericViewSet):
         page_size = int(request.query_params.get('page_size', 10))
         status_filter = request.query_params.get('status')
         completed = request.query_params.get('completed', 'false').lower()
+        warehouse = request.query_params.get('warehouse', None)
 
         qs = OutflowOrderWarehouse.objects.select_related(
             'outflow_order', 'warehouse',
@@ -80,6 +81,8 @@ class OutflowApprovalViewSet(viewsets.GenericViewSet):
             qs = qs.exclude(Q(status='order_pickup') | Q(status='completed'))
         if status_filter:
             qs = qs.filter(status=status_filter)
+        if warehouse:
+            qs = qs.filter(warehouse=warehouse)
 
         qs = qs.order_by('-outflow_order__date_created')
 
