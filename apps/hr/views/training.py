@@ -97,7 +97,7 @@ class TrainingViewSet(viewsets.GenericViewSet):
             filter_q &= Q(start_date__lte=timezone.now(), end_date__gte=timezone.now())
 
         if training_date_from and training_date_to:
-            filter_q &= Q(start_date__date__gte=training_date_from,  end_date__date__lt=training_date_to)
+            filter_q &= Q(start_date__date__gte=training_date_from,  end_date__date__lte=training_date_to)
         elif training_date_from:
             filter_q &= Q(start_date__date__gte=training_date_from)
         elif training_date_to:
