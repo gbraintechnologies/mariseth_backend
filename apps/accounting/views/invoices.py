@@ -1,4 +1,5 @@
 from django.core.paginator import Paginator
+from django.db.models import Q
 from rest_framework import status, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -28,9 +29,32 @@ class InvoiceViewSet(viewsets.ViewSet):
     def list(self, request):
         page = request.query_params.get('page', 1)
         page_size = request.query_params.get('page_size', 10)
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+        payment_date_from = request.query_params.get('payment_date_from')
+        payment_date_to = request.query_params.get('payment_date_to')
+        query = request.query_params.get('query')
 
-        invoices = OutflowOrderPayments.objects.filter(invoice_id__isnull=False, is_active=True).order_by(
-            "-date_created")
+        filter_q = Q(is_active=True, organization=request.organization, invoice_id__isnull=False)
+
+        if start_date and end_date:
+            filter_q &= Q(date_created__range=[start_date, end_date])
+        elif start_date:
+            filter_q &= Q(date_created__gte=start_date)
+        elif end_date:
+            filter_q &= Q(date_created__lte=end_date)
+
+        if payment_date_from and payment_date_to:
+            filter_q &= Q(payment_date__range=[payment_date_from, payment_date_to])
+        elif payment_date_from:
+            filter_q &= Q(payment_date__gte=payment_date_from)
+        elif payment_date_to:
+            filter_q &= Q(payment_date__lte=payment_date_to)
+
+        if query:
+            filter_q &= Q(order_id__icontains=query)
+
+        invoices = OutflowOrderPayments.objects.filter(filter_q).order_by("-date_created")
 
         paginator = Paginator(invoices, page_size)
         page_obj = paginator.get_page(page)
