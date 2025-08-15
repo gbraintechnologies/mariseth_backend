@@ -1,4 +1,4 @@
-from django.db.models import Max
+from django.db.models import Max, Q
 
 from apps.farm.models import Farm, Farmer, Product
 
@@ -74,3 +74,47 @@ def generate_product_id(product_name):
         # First occurrence - no sequence number
         return initials
 
+
+def build_farm_filter_q(params, organization):
+    filter_q = Q(is_active=True, organization=organization)
+
+    query = params.get('query')
+    farm_type = params.get('farm_type')
+    farm_size = params.get('farm_size')
+    crop_type = params.get('crop_type')
+    region = params.get('region')
+    district = params.get('district')
+    land_ownership = params.get('ownership_type') or params.get('land_ownership')
+    date_from = params.get('date_from')
+    date_to = params.get('date_to')
+
+    if farm_type:
+        filter_q &= Q(farm_type=farm_type)
+
+    if farm_size:
+        filter_q &= Q(farm_size=farm_size)
+
+    if crop_type:
+        filter_q &= Q(farmproduct_set__product__category=crop_type)
+
+    if region:
+        filter_q &= Q(region=region)
+
+    if district:
+        filter_q &= Q(district=district)
+
+    if land_ownership:
+        filter_q &= Q(land_ownership=land_ownership)
+
+    if date_from and date_to:
+        filter_q &= Q(date_created__date__range=[date_from, date_to])
+
+    if query:
+        filter_q &= (
+                Q(name__icontains=query) |
+                Q(farm_id__icontains=query) |
+                Q(farmer__first_name__icontains=query) |
+                Q(farmer__last_name__icontains=query)
+        )
+
+    return filter_q

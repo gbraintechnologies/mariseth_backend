@@ -13,6 +13,7 @@ from apps.farm.models import Farm, Farmer, Product
 from apps.farm.serializers.farm import FarmExportSerializer
 from apps.farm.serializers.farmer import FarmerExportSerializer
 from apps.farm.serializers.products import ProductExportSerializer
+from apps.farm.utils import build_farm_filter_q
 from apps.organizations.models import Organization
 from apps.shared.consumers.notifications import send_client_notification
 from apps.shared.utils.s3_upload import upload_to_s3
@@ -28,37 +29,13 @@ def process_farm_export(filter_params):
     try:
         user = User.objects.get(pk=filter_params['user_id'])
         organization = Organization.objects.get(pk=filter_params['organization_id'])
-
-        # Extract filters
-        query = filter_params.get('query')
-        farm_type = filter_params.get('farm_type')
-        land_ownership = filter_params.get('land_ownership')
-        district = filter_params.get('district')
-        date_from = filter_params.get('date_from')
-        date_to = filter_params.get('date_to')
-
-        filter_q = Q(is_active=True, organization=organization)
-
-        if farm_type:
-            filter_q &= Q(farm_type=farm_type)
-        if land_ownership:
-            filter_q &= Q(land_ownership=land_ownership)
-        if district:
-            filter_q &= Q(district__iexact=district)
-        if date_from and date_to:
-            filter_q &= Q(date_created__date__range=[date_from, date_to])
-        if query:
-            filter_q &= (
-                    Q(name__icontains=query) |
-                    Q(location__icontains=query) |
-                    Q(farm_id__icontains=query) |
-                    Q(farmer__first_name__icontains=query) |
-                    Q(farmer__last_name__icontains=query)
-            )
-
-        farms = Farm.objects.select_related(
-            'size_metric', 'farmer', 'created_by'
-        ).filter(filter_q).order_by("-date_created")
+        farm_type = filter_params['farm_type']
+        filter_q = build_farm_filter_q(filter_params, organization)
+        farms = (
+            Farm.objects.select_related('created_by').prefetch_related('farmproduct_set', 'farmers')
+            .filter(filter_q).order_by("-date_created").distinct()
+        )
+        print(farms)
 
         serializer = FarmExportSerializer(farms, many=True)
         export_data = serializer.data
