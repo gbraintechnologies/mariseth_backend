@@ -19,6 +19,7 @@ from apps.shared.consumers.notifications import send_client_notification
 from apps.shared.utils.s3_upload import upload_to_s3
 from apps.warehouse.models import Warehouse
 from apps.warehouse.serializers import WarehouseExportSerializer
+from apps.warehouse.utils import build_warehouse_filter_q
 from mariseth.logging import logger
 
 User = get_user_model()
@@ -339,31 +340,9 @@ def process_warehouse_export(filter_params):
         user = User.objects.get(pk=filter_params['user_id'])
         organization = Organization.objects.get(pk=filter_params['organization_id'])
 
-        # Extract filters
-        query = filter_params.get('query')
-        region = filter_params.get('region')
-        district = filter_params.get('district')
-        date_from = filter_params.get('date_from')
-        date_to = filter_params.get('date_to')
+        filter_q = build_warehouse_filter_q(filter_params, organization)
 
-        filter_q = Q(is_active=True, organization=organization)
-
-        if region:
-            filter_q &= Q(region=region)
-        if district:
-            filter_q &= Q(district=district)
-        if date_from and date_to:
-            filter_q &= Q(date_created__date__range=[date_from, date_to])
-        if query:
-            filter_q &= (
-                Q(name__icontains=query) |
-                Q(warehouse_id__icontains=query) |
-                Q(description__icontains=query)
-            )
-
-        warehouses = Warehouse.objects.select_related(
-            'manager', 'organization'
-        ).filter(filter_q).order_by("-date_created")
+        warehouses = Warehouse.objects.prefetch_related('managers').filter(filter_q).order_by("-date_created")
 
         serializer = WarehouseExportSerializer(warehouses, many=True)
         export_data = serializer.data
@@ -375,7 +354,7 @@ def process_warehouse_export(filter_params):
             'region': 'Region',
             'district': 'District',
             'capacity': 'Capacity',
-            'manager': 'Manager',
+            'managers': 'Managers',
             'products': 'Products',
             'date_created': 'Date Created',
             'date_modified': 'Last Updated'

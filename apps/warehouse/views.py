@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from apps.farm.models import Farm, Product
 from django.contrib.auth import get_user_model
 from apps.shared.literals import CREATE_WAREHOUSE, DELETE_WAREHOUSE, GET_PRODUCT_WAREHOUSE_MOVEMENT,     GET_WAREHOUSE_INVENTORY, LIST_WAREHOUSES, UPDATE_WAREHOUSE, UPLOAD_WAREHOUSES, VIEW_WAREHOUSE,     ADD_REMOVE_WAREHOUSE_MANAGER
+from apps.warehouse.utils import build_warehouse_filter_q
 
 User = get_user_model()
 from apps.shared.tasks.export_tasks import process_warehouse_export
@@ -75,48 +76,25 @@ class WarehouseViewSet(viewsets.GenericViewSet):
     def list(self, request):
         page = request.query_params.get('page', 1)
         page_size = request.query_params.get('page_size', 10)
-        query = request.query_params.get('query')
-        region = request.query_params.get('region')
-        district = request.query_params.get('district')
         export = request.query_params.get('export', 'false').lower()
-        date_from = request.query_params.get('date_from')
-        date_to = request.query_params.get('date_to')
-        last_updated_from = request.query_params.get('last_updated_from')
-        last_updated_to = request.query_params.get('last_updated_to')
 
-        filter_q = Q(is_active=True, organization=request.organization)
+        filter_q = build_warehouse_filter_q(request.query_params, request.organization)
 
-        if region:
-            filter_q &= Q(region=region)
-        if district:
-            filter_q &= Q(district=district)
-        if date_from and date_to:
-            filter_q &= Q(date_created__date__range=[date_from, date_to])
-        if last_updated_from and last_updated_to:
-            filter_q &= Q(date_modified__date__range=[last_updated_from, last_updated_to])
-        if query:
-            filter_q &= (
-                    Q(name__icontains=query) |
-                    Q(warehouse_id__icontains=query)
-            )
-        # Changed from select_related('manager') to prefetch_related('managers')
-        # to correctly fetch the ManyToMany relationship for managers.
         warehouses = Warehouse.objects.prefetch_related('managers').filter(filter_q).order_by('date_created')
 
         # Handle export
         export_response = None
         if export == 'true':
-            filter_params = {
-                'user_id': request.user.id,
-                'organization_id': request.organization.id,
-                'query': query,
-                'region': region,
-                'district': district,
-                'date_from': date_from,
-                'date_to': date_to
-            }
-            process_warehouse_export.delay(filter_params)
-            export_response = 'Export started. You will receive an email when ready.'
+            if not warehouses.exists():
+                export_response = 'No warehouses to export.'
+            else:
+                filter_params = {
+                    'user_id': request.user.id,
+                    'organization_id': request.organization.id,
+                    **request.query_params.dict()
+                }
+                process_warehouse_export.delay(filter_params)
+                export_response = 'Export started. You will receive an email when ready.'
 
         paginator = Paginator(warehouses, page_size)
         page_obj = paginator.get_page(page)

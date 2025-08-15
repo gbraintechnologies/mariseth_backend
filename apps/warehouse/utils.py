@@ -1,4 +1,4 @@
-from django.db.models import Max
+from django.db.models import Max, Q
 
 from apps.warehouse.models import Warehouse
 
@@ -36,3 +36,27 @@ def generate_warehouse_id(warehouse_name):
     else:
         # First occurrence - no sequence number
         return initials
+
+
+def build_warehouse_filter_q(filter_params, organization):
+    query = filter_params.get('query')
+    region = filter_params.get('region')
+    district = filter_params.get('district')
+    date_from = filter_params.get('start_date')
+    date_to = filter_params.get('end_date')
+
+    filter_q = Q(is_active=True, organization=organization)
+
+    if region:
+        filter_q &= Q(region=region)
+    if district:
+        filter_q &= Q(district=district)
+    if date_from and date_to:
+        filter_q &= Q(date_created__date__range=[date_from, date_to])
+    if query:
+        filter_q &= (
+            Q(name__icontains=query) |
+            Q(warehouse_id__icontains=query)
+        )
+
+    return filter_q
