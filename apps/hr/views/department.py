@@ -75,7 +75,7 @@ class DepartmentViewSet(viewsets.GenericViewSet):
         filter_q = Q(is_active=True, organization=request.organization)
 
         if query:
-            filter_q &= Q(name__icontains=query)
+            filter_q &= (Q(name__icontains=query, ) | Q(department_id__icontains=query))
         if status_param:
             filter_q &= Q(status=status_param)
 

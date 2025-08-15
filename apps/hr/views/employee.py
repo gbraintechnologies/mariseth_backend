@@ -82,11 +82,12 @@ class EmployeeViewSet(viewsets.GenericViewSet):
 
         if query:
             filter_q &= (
+                Q(employee_id__icontains=query) |
                 Q(first_name__icontains=query) |
                 Q(last_name__icontains=query) |
                 Q(employee_id__icontains=query) |
                 Q(email__icontains=query) |
-                Q(phone_number__icontains=query)
+                Q(phone_number__icontains=query[1:])
             )
         if job_title:
             filter_q &= Q(contract__job_title=job_title)
