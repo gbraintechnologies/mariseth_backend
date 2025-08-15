@@ -13,7 +13,8 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://mariseth.scaleforge.farm",
+    "http://*",
+    "https://*",
     "https://v48ws000c8wg0gcgg880sg4o.65.109.122.43.sslip.io",
 ]
 
