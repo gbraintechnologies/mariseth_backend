@@ -13,6 +13,7 @@ SIMPLE_JWT = {
 }
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
+    "https://mariseth.scaleforge.farm",
     "https://ukskccsc0cwwo4cockkkks4w.135.181.238.146.sslip.io"
 ]
 CSRF_TRUSTED_ORIGINS = [
