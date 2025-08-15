@@ -67,7 +67,10 @@ class LeaveTypeViewSet(viewsets.GenericViewSet):
 
     def list(self, request):
         organization = request.organization
+        query = request.query_params.get('query')
         leave_types = LeaveType.objects.filter(is_active=True, organization=organization)
+        if query:
+            leave_types = leave_types.filter(Q(name__icontains=query))
         return Response(
             LeaveTypeSerializer(instance=leave_types, many=True).data, status=status.HTTP_200_OK
         )
@@ -139,12 +142,14 @@ class LeaveRequestViewSet(viewsets.GenericViewSet):
         status_param = request.query_params.get('status')
         department = request.query_params.get('department')
         query = request.query_params.get('query')
-        completed = request.query_params.get('completed')
+        request_date_from = request.query_params.get('request_date_from')
+        request_date_to = request.query_params.get('request_date_to')
 
         filter_q = Q(is_active=True, organization=request.organization)
 
         if query:
             filter_q &= (
+                Q(leave_id__icontains=query) |
                 Q(employee__first_name__icontains=query) |
                 Q(employee__last_name__icontains=query) |
                 Q(employee__employee_id__icontains=query) |
@@ -158,6 +163,12 @@ class LeaveRequestViewSet(viewsets.GenericViewSet):
             filter_q &= Q(status=status_param)
         if department:
             filter_q &= Q(employee__contract__department__id=department)
+        if request_date_from and request_date_to:
+            filter_q &= Q(start_date__gte=request_date_from, end_date__lte=request_date_to)
+        elif request_date_from:
+            filter_q &= Q(start_date__gte=request_date_from)
+        elif request_date_to:
+            filter_q &= Q(end_date__lte=request_date_to)
 
         queryset = LeaveRequest.objects.filter(filter_q).order_by('-date_created')
 

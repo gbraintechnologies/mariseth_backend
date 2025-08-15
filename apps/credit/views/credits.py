@@ -10,6 +10,7 @@ from apps.credit.models import Credit
 from apps.credit.serializers.credits import CreditApprovalSerializer, CreditDeleteSerializer, CreditSerializer, \
     FullCreditSerializer
 from apps.credit.swagger import add_swagger_to_credit_viewset
+from apps.credit.utils import build_credit_filter_q
 from apps.shared.literals import APPROVE_OR_DENY_CREDIT, CREATE_CREDIT, DELETE_CREDIT, LIST_CREDITS, UPDATE_CREDIT, \
     UPLOAD_CREDITS, VIEW_CREDIT
 from apps.shared.tasks.export_tasks import process_credit_export
@@ -65,50 +66,24 @@ class CreditViewSet(viewsets.GenericViewSet):
     def list(self, request):
         page = request.query_params.get('page', 1)
         page_size = request.query_params.get('page_size', 10)
-        query = request.query_params.get('query')
-        payment_status = request.query_params.get('payment_status')
-        farmer = request.query_params.get('farmer')
-        input_type = request.query_params.get('input_type')
-        date_from = request.query_params.get('date_from')
-        date_to = request.query_params.get('date_to')
         export = request.query_params.get('export', 'false').lower()
 
-        filter_q = Q(is_active=True, organization=request.organization)
-
-        if query:
-            filter_q &= (
-                    Q(id__icontains=query) |
-                    Q(farmer__first_name__icontains=query) |
-                    Q(farmer__last_name__icontains=query)
-            )
-
-        if payment_status:
-            filter_q &= Q(payment_status=payment_status.lower())
-
-        if input_type:
-            filter_q &= Q(type=input_type.lower())
-
-        if date_from and date_to:
-            filter_q &= Q(issue_date__range=[date_from, date_to])
-
-        if farmer:
-            filter_q &= Q(farmer__id=farmer)
+        filter_q = build_credit_filter_q(request.query_params, request.organization)
 
         queryset = Credit.objects.select_related('farmer').filter(filter_q).order_by('-issue_date')
 
         export_response = None
         if export == 'true':
-            filter_params = {
-                'user_id': request.user.id,
-                'organization_id': request.organization.id,
-                'query': query,
-                'payment_status': payment_status,
-                'input_type': input_type,
-                'date_from': date_from,
-                'date_to': date_to
-            }
-            process_credit_export.delay(filter_params)
-            export_response = 'Export started. You will receive a notification when it is done.'
+            if not queryset.exists():
+                export_response = 'No credits to export.'
+            else:
+                filter_params = {
+                    'user_id': request.user.id,
+                    'organization_id': request.organization.id,
+                    **request.query_params.dict(),
+                }
+                process_credit_export.delay(filter_params)
+                export_response = 'Export started. You will receive a notification when it is done.'
 
         paginator = Paginator(queryset, page_size)
         page_obj = paginator.get_page(page)

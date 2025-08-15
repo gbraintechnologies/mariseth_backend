@@ -11,6 +11,7 @@ from apps.farm.models import Farm
 from apps.farm.serializers.farm import FarmDeleteSerializer, FarmProductDeleteSerializer, FarmSerializer, \
     FullFarmSerializer
 from apps.farm.swaagger import add_swagger_to_farm_viewset
+from apps.farm.utils import build_farm_filter_q
 from apps.shared.literals import CREATE_FARM, DELETE_FARM, DELETE_FARM_PRODUCTS, LIST_FARMS, UPDATE_FARM, UPLOAD_FARMS, \
     VIEW_FARM
 from apps.shared.tasks.export_tasks import process_farm_export
@@ -68,55 +69,28 @@ class FarmViewSet(viewsets.GenericViewSet):
     def list(self, request):
         page = request.query_params.get('page', 1)
         page_size = request.query_params.get('page_size', 10)
-        query = request.query_params.get('query')
-        farm_type = request.query_params.get('farm_type')
-        farm_size = request.query_params.get('farm_size')
-        crop_type = request.query_params.get('crop_type')
         export = request.query_params.get('export', 'false').lower()
-        # TODO: ADD A CROP FILTER
-
-        if export == 'true' and not farm_type:
+        if export == 'true' and not request.query_params.get('farm_type'):
             return Response({'error': 'Please select a farm type.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        filter_q = Q(is_active=True, organization=request.organization)
-
-        if farm_type:
-            filter_q &= Q(farm_type=farm_type)
-
-        if farm_size:
-            filter_q &= Q(farm_size=farm_size)
-
-        if crop_type:
-            filter_q &= Q(crop_type=crop_type)
-
-        if query:
-            filter_q &= (
-                    Q(name__icontains=query) |
-                    Q(farm_id__icontains=query)
-            )
-
+        filter_q = build_farm_filter_q(request.query_params, request.organization)
         farms = (
-            Farm.objects
-            .select_related('created_by')
-            .prefetch_related('farmproduct_set')
-            .filter(filter_q)
-            .order_by("-date_created")
-            .distinct()
+            Farm.objects.select_related('created_by').prefetch_related('farmproduct_set', 'farmers')
+            .filter(filter_q).order_by("-date_created").distinct()
         )
 
         export_response = None
         if export == 'true':
-            filter_params = {
-                'user_id': request.user.id,
-                'organization_id': request.organization.id,
-                'query': request.query_params.get('query'),
-                'farm_type': request.query_params.get('farm_type'),
-                'district': request.query_params.get('district'),
-                'date_from': request.query_params.get('date_from'),
-                'date_to': request.query_params.get('date_to')
-            }
-            process_farm_export.delay(filter_params)
-            export_response = 'Export started. You will receive a notification when it is done.'
+            if farms.count() == 0:
+                export_response = 'No farms to export'
+            else:
+                filter_params = {
+                    'user_id': request.user.id,
+                    'organization_id': request.organization.id,
+                    **request.query_params.dict(),
+                }
+                process_farm_export.delay(filter_params)
+                export_response = 'Export started. You will receive a notification when it is done.'
 
         paginator = Paginator(farms, page_size)
         page_obj = paginator.get_page(page)

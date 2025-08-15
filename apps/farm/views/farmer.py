@@ -12,10 +12,10 @@ from apps.farm.models import Farm, Farmer
 from apps.farm.serializers.farm import FarmSerializer, FullFarmSerializer
 from apps.farm.serializers.farmer import FarmerSerializer, FullFarmerSerializer
 from apps.farm.swaagger import add_swagger_to_farmer_viewset
+from apps.farm.utils import build_farmer_filter_q
 from apps.shared.general_response import GENERAL_SUCCESS_RESPONSE
 from apps.shared.literals import CREATE_FARMER, DELETE_FARMER, GET_FARMER_CREDIT_HISTORY, GET_SMALLHOLDERS_BY_LEAD, \
-    LIST_FARMERS, LIST_FARMS, UPDATE_FARMER, \
-    UPLOAD_FARMERS, VIEW_FARMER
+    LIST_FARMERS, LIST_FARMS, UPDATE_FARMER, UPLOAD_FARMERS, VIEW_FARMER
 from apps.shared.tasks.export_tasks import process_farmer_export
 from apps.shared.utils.permissions import UserPermission
 
@@ -73,57 +73,30 @@ class FarmerViewSet(viewsets.GenericViewSet):
     def list(self, request):
         page = request.query_params.get('page', 1)
         page_size = request.query_params.get('page_size', 10)
-        query = request.query_params.get('query')
-        farmer_type = request.query_params.get('farmer_type')
-        ownership_type = request.query_params.get('ownership_type')
-        country = request.query_params.get('country')
         export = request.query_params.get('export', 'false').lower()
-        # Lead: This is used when the you want to fetch the smallholder farmers for a lead farmer
-        lead = request.query_params.get('lead')
 
-        if export == 'true' and not farmer_type:
+        if export == 'true' and not request.query_params.get('farmer_type'):
             return Response({'error': 'Please select a farmer type.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        filter_q = Q(is_active=True, organization=request.organization)
+        filter_q = build_farmer_filter_q(request.query_params, request.organization)
 
-        if farmer_type:
-            filter_q &= Q(type=farmer_type)
-
-        if ownership_type:
-            filter_q &= Q(farm__land_ownership=ownership_type)
-
-        if country:
-            filter_q &= Q(country__iexact=country)
-
-        if lead:
-            filter_q &= Q(lead_farmer__id=lead)
-
-        if query:
-            filter_q &= (
-                    Q(first_name__icontains=query) |
-                    Q(last_name__icontains=query) |
-                    Q(phone_number__icontains=query) |
-                    Q(email__icontains=query) |
-                    Q(farm__name__icontains=query) |
-                    Q(farmer_id__icontains=query)
-            )
-
-        farmers = Farmer.objects.select_related('farm', 'lead_farmer').filter(filter_q).order_by(
-            '-date_created').distinct()
+        farmers = (
+            Farmer.objects.select_related('farm', 'lead_farmer', 'created_by', 'region', 'district')
+            .filter(filter_q).order_by('-date_created').distinct()
+        )
 
         export_response = None
         if export == 'true':
-            filter_params = {
-                'user_id': request.user.id,
-                'organization_id': request.organization.id,
-                'query': request.query_params.get('query'),
-                'type': request.query_params.get('type'),
-                'country': request.query_params.get('country'),
-                'date_from': request.query_params.get('date_from'),
-                'date_to': request.query_params.get('date_to')
-            }
-            process_farmer_export.delay(filter_params)
-            export_response = "Export started. You will receive a notification when the export is complete."
+            if not farmers.exists():
+                export_response = 'No farmers to export.'
+            else:
+                filter_params = {
+                    'user_id': request.user.id,
+                    'organization_id': request.organization.id,
+                    **request.query_params.dict(),
+                }
+                process_farmer_export.delay(filter_params)
+                export_response = "Export started. You will receive a notification when the export is complete."
 
         paginator = Paginator(farmers, page_size)
         page_obj = paginator.get_page(page)

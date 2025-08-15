@@ -77,7 +77,7 @@ class JobTitleViewSet(viewsets.GenericViewSet):
         filter_q = Q(is_active=True, organization=request.organization)
 
         if query:
-            filter_q &= Q(name__icontains=query)
+            filter_q &= (Q(name__icontains=query) | Q(job_title_id__icontains=query))
         if department_id:
             filter_q &= Q(department=department_id)
         if level:

@@ -9,15 +9,18 @@ from django.db.models import Q
 
 from apps.credit.models import Credit
 from apps.credit.serializers.credits import CreditExportSerializer
+from apps.credit.utils import build_credit_filter_q
 from apps.farm.models import Farm, Farmer, Product
 from apps.farm.serializers.farm import FarmExportSerializer
 from apps.farm.serializers.farmer import FarmerExportSerializer
 from apps.farm.serializers.products import ProductExportSerializer
+from apps.farm.utils import build_farm_filter_q, build_farmer_filter_q, build_product_filter_q
 from apps.organizations.models import Organization
 from apps.shared.consumers.notifications import send_client_notification
 from apps.shared.utils.s3_upload import upload_to_s3
 from apps.warehouse.models import Warehouse
 from apps.warehouse.serializers import WarehouseExportSerializer
+from apps.warehouse.utils import build_warehouse_filter_q
 from mariseth.logging import logger
 
 User = get_user_model()
@@ -28,38 +31,12 @@ def process_farm_export(filter_params):
     try:
         user = User.objects.get(pk=filter_params['user_id'])
         organization = Organization.objects.get(pk=filter_params['organization_id'])
-
-        # Extract filters
-        query = filter_params.get('query')
-        farm_type = filter_params.get('farm_type')
-        land_ownership = filter_params.get('land_ownership')
-        district = filter_params.get('district')
-        date_from = filter_params.get('date_from')
-        date_to = filter_params.get('date_to')
-
-        filter_q = Q(is_active=True, organization=organization)
-
-        if farm_type:
-            filter_q &= Q(farm_type=farm_type)
-        if land_ownership:
-            filter_q &= Q(land_ownership=land_ownership)
-        if district:
-            filter_q &= Q(district__iexact=district)
-        if date_from and date_to:
-            filter_q &= Q(date_created__date__range=[date_from, date_to])
-        if query:
-            filter_q &= (
-                    Q(name__icontains=query) |
-                    Q(location__icontains=query) |
-                    Q(farm_id__icontains=query) |
-                    Q(farmer__first_name__icontains=query) |
-                    Q(farmer__last_name__icontains=query)
-            )
-
-        farms = Farm.objects.select_related(
-            'size_metric', 'farmer', 'created_by'
-        ).filter(filter_q).order_by("-date_created")
-
+        farm_type = filter_params['farm_type']
+        filter_q = build_farm_filter_q(filter_params, organization)
+        farms = (
+            Farm.objects.select_related('created_by').prefetch_related('farmproduct_set', 'farmers')
+            .filter(filter_q).order_by("-date_created").distinct()
+        )
         serializer = FarmExportSerializer(farms, many=True)
         export_data = serializer.data
 
@@ -154,37 +131,12 @@ def process_product_export(filter_params):
         user = User.objects.get(pk=filter_params['user_id'])
         organization = Organization.objects.get(pk=filter_params['organization_id'])
 
-        # Extract filters
-        query = filter_params.get('query')
-        product_type = filter_params.get('type')
-        category = filter_params.get('category')
-        status_filter = filter_params.get('status')
-        season_status = filter_params.get('season_status')
-        date_from = filter_params.get('date_from')
-        date_to = filter_params.get('date_to')
-
-        filter_q = Q(is_active=True, organization=organization)
-
-        if product_type:
-            filter_q &= Q(type=product_type)
-        if category:
-            filter_q &= Q(category_id=category)
-        if status_filter:
-            filter_q &= Q(status=status_filter)
-        if season_status:
-            filter_q &= Q(season_status=season_status)
-        if date_from and date_to:
-            filter_q &= Q(date_created__date__range=[date_from, date_to])
-        if query:
-            filter_q &= (
-                    Q(name__icontains=query) |
-                    Q(description__icontains=query) |
-                    Q(breed__icontains=query)
-            )
+        filter_q = build_product_filter_q(filter_params, organization)
+        product_type = filter_params['type']
 
         products = Product.objects.select_related(
             'category', 'weight_metric', 'quantity_metric', 'created_by'
-        ).filter(filter_q).order_by("-date_created")
+        ).filter(filter_q).order_by("-date_created").distinct()
 
         serializer = ProductExportSerializer(products, many=True)
         export_data = serializer.data
@@ -251,35 +203,12 @@ def process_farmer_export(filter_params):
         user = User.objects.get(pk=filter_params['user_id'])
         organization = Organization.objects.get(pk=filter_params['organization_id'])
 
-        # Extract filters
-        query = filter_params.get('query')
-        farmer_type = filter_params.get('type')
-        ownership_type = filter_params.get('ownership_type')
-        country = filter_params.get('country')
-        date_from = filter_params.get('date_from')
-        date_to = filter_params.get('date_to')
+        filter_q = build_farmer_filter_q(filter_params, organization)
 
-        filter_q = Q(is_active=True, organization=organization)
-        # TODO: FIX FARMER TYPE FILTER
-        if farmer_type:
-            filter_q &= Q(type=farmer_type)
-        if ownership_type:
-            filter_q &= Q(farm__land_ownership=ownership_type)
-        if country:
-            filter_q &= Q(country__iexact=country)
-        if date_from and date_to:
-            filter_q &= Q(date_created__date__range=[date_from, date_to])
-        if query:
-            filter_q &= (
-                    Q(first_name__icontains=query) |
-                    Q(last_name__icontains=query) |
-                    Q(phone_number__icontains=query) |
-                    Q(id_number__icontains=query)
-            )
-
-        farmers = Farmer.objects.select_related(
-            'farm', 'lead_farmer', 'created_by'
-        ).filter(filter_q).order_by("-date_created")
+        farmers = (
+            Farmer.objects.select_related('farm', 'lead_farmer', 'created_by', 'region', 'district')
+            .filter(filter_q).order_by('-date_created').distinct()
+        )
 
         serializer = FarmerExportSerializer(farmers, many=True)
         export_data = serializer.data
@@ -343,25 +272,10 @@ def process_credit_export(filter_params):
     try:
         user = User.objects.get(pk=filter_params['user_id'])
         organization = Organization.objects.get(pk=filter_params['organization_id'])
-        query = filter_params.get('query')
-        payment_status = filter_params.get('payment_status')
-        input_type = filter_params.get('input_type')
-        date_from = filter_params.get('date_from')
-        date_to = filter_params.get('date_to')
-        filter_q = Q(is_active=True, organization=organization)
-        if query:
-            filter_q &= (
-                    Q(id__icontains=query) |
-                    Q(farmer__first_name__icontains=query) |
-                    Q(farmer__last_name__icontains=query)
-            )
-        if payment_status:
-            filter_q &= Q(payment_status=payment_status.lower())
-        if input_type:
-            filter_q &= Q(type=input_type.lower())
-        if date_from and date_to:
-            filter_q &= Q(issue_date__range=[date_from, date_to])
+        filter_q = build_credit_filter_q(filter_params, organization)
+
         credits = Credit.objects.select_related('farmer').filter(filter_q).order_by('-issue_date')
+
         serializer = CreditExportSerializer(credits, many=True)
         df = pd.DataFrame(serializer.data)
         column_map = {
@@ -412,31 +326,9 @@ def process_warehouse_export(filter_params):
         user = User.objects.get(pk=filter_params['user_id'])
         organization = Organization.objects.get(pk=filter_params['organization_id'])
 
-        # Extract filters
-        query = filter_params.get('query')
-        region = filter_params.get('region')
-        district = filter_params.get('district')
-        date_from = filter_params.get('date_from')
-        date_to = filter_params.get('date_to')
+        filter_q = build_warehouse_filter_q(filter_params, organization)
 
-        filter_q = Q(is_active=True, organization=organization)
-
-        if region:
-            filter_q &= Q(region=region)
-        if district:
-            filter_q &= Q(district=district)
-        if date_from and date_to:
-            filter_q &= Q(date_created__date__range=[date_from, date_to])
-        if query:
-            filter_q &= (
-                Q(name__icontains=query) |
-                Q(warehouse_id__icontains=query) |
-                Q(description__icontains=query)
-            )
-
-        warehouses = Warehouse.objects.select_related(
-            'manager', 'organization'
-        ).filter(filter_q).order_by("-date_created")
+        warehouses = Warehouse.objects.prefetch_related('managers').filter(filter_q).order_by("-date_created")
 
         serializer = WarehouseExportSerializer(warehouses, many=True)
         export_data = serializer.data
@@ -448,7 +340,7 @@ def process_warehouse_export(filter_params):
             'region': 'Region',
             'district': 'District',
             'capacity': 'Capacity',
-            'manager': 'Manager',
+            'managers': 'Managers',
             'products': 'Products',
             'date_created': 'Date Created',
             'date_modified': 'Last Updated'

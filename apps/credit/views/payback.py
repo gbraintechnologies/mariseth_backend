@@ -49,22 +49,22 @@ class PaybackViewSet(viewsets.GenericViewSet):
         return Response(FullPaybackSerializer(serializer.instance).data, status=status.HTTP_200_OK)
 
     def list(self, request):
-        credit_id = request.query_params.get('credit')
-        method = request.query_params.get('method')
-        date_from = request.query_params.get('date_from')
-        date_to = request.query_params.get('date_to')
-        status_filter = request.query_params.get('status')
         page = request.query_params.get('page', 1)
         page_size = request.query_params.get('page_size', 10)
+        credit_id = request.query_params.get('credit')
+        payback_method = request.query_params.get('payback_method')
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+        status_filter = request.query_params.get('status')
 
         filters = Q(credit__organization=request.organization, is_active=True)
 
         if credit_id:
             filters &= Q(credit_id=credit_id)
-        if method:
-            filters &= Q(payback_method=method)
-        if date_from and date_to:
-            filters &= Q(date_paid__range=[date_from, date_to])
+        if payback_method:
+            filters &= Q(payback_method=payback_method)
+        if start_date and end_date:
+            filters &= Q(date_paid__range=[start_date, end_date])
         if status_filter:
             filters &= Q(status=status_filter)
 
