@@ -166,3 +166,40 @@ def build_farmer_filter_q(params, organization):
         )
 
     return filter_q
+
+
+def build_product_filter_q(params, organization):
+    filter_q = Q(is_active=True, organization=organization)
+
+    query = params.get('query')
+    product_type = params.get('type')
+    category = params.get('category')
+    status_filter = params.get('status')
+    season_status = params.get('season_status')
+    date_from = params.get('date_from') or params.get('start_date')
+    date_to = params.get('date_to') or params.get('start_date')
+    last_updated_from = params.get('last_updated_from')
+    last_updated_to = params.get('last_updated_to')
+
+    if product_type:
+        filter_q &= Q(type=product_type)
+    if category:
+        filter_q &= Q(category_id=category)
+    if status_filter:
+        filter_q &= Q(status=status_filter)
+    if season_status:
+        filter_q &= Q(season_status=season_status)
+    if date_from and date_to:
+        filter_q &= Q(date_created__date__range=[date_from, date_to])
+    if last_updated_from and last_updated_to:
+        filter_q &= Q(last_updated__date__range=[last_updated_from, last_updated_to])
+
+    if query:
+        filter_q &= (
+            Q(name__icontains=query) |
+            Q(description__icontains=query) |
+            Q(breed__icontains=query) |
+            Q(color__icontains=query)
+        )
+
+    return filter_q

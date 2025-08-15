@@ -10,6 +10,7 @@ from apps.farm.models import Farm, Product
 from apps.farm.serializers.farm import FarmSerializer
 from apps.farm.serializers.products import FullProductSerializer, ProductSerializer
 from apps.farm.swaagger import add_swagger_to_product_viewset
+from apps.farm.utils import build_product_filter_q
 from apps.shared.literals import (
     CREATE_PRODUCT, DELETE_PRODUCT, GET_PRODUCT_MOVEMENT, LIST_PRODUCTS, UPDATE_PRODUCT,
     UPLOAD_PRODUCTS, VIEW_PRODUCT
@@ -83,39 +84,12 @@ class ProductViewSet(viewsets.GenericViewSet):
     def list(self, request):
         page = request.query_params.get('page', 1)
         page_size = request.query_params.get('page_size', 10)
-        query = request.query_params.get('query')
-        product_type = request.query_params.get('type')
-        category = request.query_params.get('category')
-        status_filter = request.query_params.get('status')
-        season_status = request.query_params.get('season_status')
         export = request.query_params.get('export', 'false').lower()
-        date_from = request.query_params.get('date_from')
-        date_to = request.query_params.get('date_to')
-        last_updated_from = request.query_params.get('last_updated_from')
-        last_updated_to = request.query_params.get('last_updated_to')
 
-        filter_q = Q(is_active=True, organization=request.organization)
-
-        if export == 'true' and not product_type:
+        if export == 'true' and not request.query_params.get('type'):
             return Response({'error': 'Please select a product type.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        if product_type:
-            filter_q &= Q(type=product_type)
-        if category:
-            filter_q &= Q(category_id=category)
-        if status_filter:
-            filter_q &= Q(status=status_filter)
-        if season_status:
-            filter_q &= Q(season_status=season_status)
-        if date_from and date_to:
-            filter_q &= Q(date_created__date__range=[date_from, date_to])
-        if last_updated_from and last_updated_to:
-            filter_q &= Q(last_updated__date__range=[last_updated_from, last_updated_to])
-        if query:
-            filter_q &= (
-                    Q(name__icontains=query) |
-                    Q(product_type__icontains=query)
-            )
+        filter_q = build_product_filter_q(request.query_params, request.organization)
 
         products = Product.objects.select_related(
             'category', 'weight_metric', 'quantity_metric', 'created_by'
@@ -124,18 +98,16 @@ class ProductViewSet(viewsets.GenericViewSet):
         # Handle export
         export_response = None
         if export == 'true':
-            ilter_params = {
-                'query': query,
-                'type': product_type,
-                'category': category,
-                'status': status_filter,
-                'season_status': season_status,
-                'date_range': f"{date_from} to {date_to}",
-                'user_id': request.user.id,
-                'organization_id': request.organization.id,
-            }
-            process_product_export.delay(ilter_params)
-            export_response = 'Export started. You will receive an email when ready.'
+            if not products.exists():
+                export_response = 'No products to export.'
+            else:
+                filter_params = {
+                    'user_id': request.user.id,
+                    'organization_id': request.organization.id,
+                    **request.query_params.dict()
+                }
+                process_product_export.delay(filter_params)
+                export_response = 'Export started. You will receive an email when ready.'
 
         paginator = Paginator(products, page_size)
         page_obj = paginator.get_page(page)

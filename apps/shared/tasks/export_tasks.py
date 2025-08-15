@@ -13,7 +13,7 @@ from apps.farm.models import Farm, Farmer, Product
 from apps.farm.serializers.farm import FarmExportSerializer
 from apps.farm.serializers.farmer import FarmerExportSerializer
 from apps.farm.serializers.products import ProductExportSerializer
-from apps.farm.utils import build_farm_filter_q, build_farmer_filter_q
+from apps.farm.utils import build_farm_filter_q, build_farmer_filter_q, build_product_filter_q
 from apps.organizations.models import Organization
 from apps.shared.consumers.notifications import send_client_notification
 from apps.shared.utils.s3_upload import upload_to_s3
@@ -129,37 +129,12 @@ def process_product_export(filter_params):
         user = User.objects.get(pk=filter_params['user_id'])
         organization = Organization.objects.get(pk=filter_params['organization_id'])
 
-        # Extract filters
-        query = filter_params.get('query')
-        product_type = filter_params.get('type')
-        category = filter_params.get('category')
-        status_filter = filter_params.get('status')
-        season_status = filter_params.get('season_status')
-        date_from = filter_params.get('date_from')
-        date_to = filter_params.get('date_to')
-
-        filter_q = Q(is_active=True, organization=organization)
-
-        if product_type:
-            filter_q &= Q(type=product_type)
-        if category:
-            filter_q &= Q(category_id=category)
-        if status_filter:
-            filter_q &= Q(status=status_filter)
-        if season_status:
-            filter_q &= Q(season_status=season_status)
-        if date_from and date_to:
-            filter_q &= Q(date_created__date__range=[date_from, date_to])
-        if query:
-            filter_q &= (
-                    Q(name__icontains=query) |
-                    Q(description__icontains=query) |
-                    Q(breed__icontains=query)
-            )
+        filter_q = build_product_filter_q(filter_params, organization)
+        product_type = filter_params['type']
 
         products = Product.objects.select_related(
             'category', 'weight_metric', 'quantity_metric', 'created_by'
-        ).filter(filter_q).order_by("-date_created")
+        ).filter(filter_q).order_by("-date_created").distinct()
 
         serializer = ProductExportSerializer(products, many=True)
         export_data = serializer.data

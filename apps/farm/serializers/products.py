@@ -89,8 +89,10 @@ class ProductExportSerializer(serializers.ModelSerializer):
     status = serializers.SerializerMethodField()
     season_status = serializers.SerializerMethodField()
     created_by = serializers.SerializerMethodField()
-    date_created = serializers.DateTimeField(format="%d-%m-%Y %H:%M:%S", read_only=True, allow_null=True)
-    last_updated = serializers.DateTimeField(format="%d-%m-%Y %H:%M:%S", read_only=True, allow_null=True)
+    date_created = serializers.DateTimeField(format="%d-%m-%Y", allow_null=True)
+    last_updated = serializers.DateField(format="%d-%m-%Y", allow_null=True)
+    season_start = serializers.DateField(format="%d-%m-%Y", allow_null=True)
+    season_end = serializers.DateField(format="%d-%m-%Y", allow_null=True)
 
     class Meta:
         model = Product
