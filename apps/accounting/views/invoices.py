@@ -35,24 +35,24 @@ class InvoiceViewSet(viewsets.ViewSet):
         payment_date_to = request.query_params.get('payment_date_to')
         query = request.query_params.get('query')
 
-        filter_q = Q(is_active=True, organization=request.organization, invoice_id__isnull=False)
+        filter_q = Q(is_active=True, outflow_order__organization=request.organization, invoice_id__isnull=False)
 
         if start_date and end_date:
-            filter_q &= Q(date_created__range=[start_date, end_date])
+            filter_q &= Q(date_created__gt=start_date, date_created__lt=end_date)
         elif start_date:
             filter_q &= Q(date_created__gte=start_date)
         elif end_date:
             filter_q &= Q(date_created__lte=end_date)
 
         if payment_date_from and payment_date_to:
-            filter_q &= Q(payment_date__range=[payment_date_from, payment_date_to])
+            filter_q &= Q(payment_date__gt=payment_date_from, payment_date__lt=payment_date_to)
         elif payment_date_from:
             filter_q &= Q(payment_date__gte=payment_date_from)
         elif payment_date_to:
             filter_q &= Q(payment_date__lte=payment_date_to)
 
         if query:
-            filter_q &= Q(order_id__icontains=query)
+            filter_q &= Q(outflow_order__order_id__icontains=query)
 
         invoices = OutflowOrderPayments.objects.filter(filter_q).order_by("-date_created")
 

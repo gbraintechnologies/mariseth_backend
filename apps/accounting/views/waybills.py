@@ -1,4 +1,5 @@
 from django.core.paginator import Paginator
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from rest_framework import status, viewsets
 from rest_framework.permissions import IsAuthenticated
@@ -32,12 +33,27 @@ class WaybillViewSet(viewsets.ViewSet):
         page = request.query_params.get('page', 1)
         page_size = request.query_params.get('page_size', 10)
         order_type = request.query_params.get('order_type', 'inflow')
+        query = request.query_params.get('query', None)
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+
+        filter_q = Q(is_active=True)
+
+        if start_date and end_date:
+            filter_q &= Q(date_created__gt=start_date, date_created__lt=end_date)
+        elif start_date:
+            filter_q &= Q(date_created__gte=start_date)
+        elif end_date:
+            filter_q &= Q(date_created__lte=end_date)
+
+        if query:
+            filter_q &= Q(order_id__icontains=query)
 
         if order_type == 'inflow':
-            queryset = InflowOrder.objects.filter(is_active=True).order_by('-date_created')
+            queryset = InflowOrder.objects.filter(filter_q).order_by('-date_created')
             serializer_class = InflowOrderListRetrieveSerializer
         elif order_type == 'outflow':
-            queryset = OutflowOrder.objects.filter(is_active=True).order_by('-date_created')
+            queryset = OutflowOrder.objects.filter(filter_q).order_by('-date_created')
             serializer_class = OutflowOrderListRetrieveSerializer
         else:
             return Response({'error': 'order_type parameter is required (inflow or outflow).'},
