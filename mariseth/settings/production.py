@@ -4,22 +4,21 @@ from mariseth.settings.base import *
 
 ALLOWED_HOSTS = ['*']
 ENVIRONMENT = env('ENVIRONMENT')
-print(f"//////////////////////////{ENVIRONMENT}///////////////////////")
+print(f"/////////////settings/////////////{ENVIRONMENT}///////////////////////")
 DEBUG = False
 
 CORS_ALLOWED_ORIGINS = [
-    # "https://mariseth.scaleforge.farm",
+    "https://mariseth.scaleforge.farm",
     # "https://ukskccsc0cwwo4cockkkks4w.135.181.238.146.sslip.io",
-    # "https://a08cs8s80kgoowwo4g04g0gw.65.109.122.43.sslip.io"
-    "http://*", "https://*",
+    "https://a08cs8s80kgoowwo4g04g0gw.65.109.122.43.sslip.io"
+    "https://v48ws000c8wg0gcgg880sg4o.65.109.122.43.sslip.io",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    # "https://mariseth.scaleforge.farm",
-    # "https://dwg0gwkko0w0kw0ccgogwo0c.135.181.238.146.sslip.io",
-    # "https://a08cs8s80kgoowwo4g04g0gw.65.109.122.43.sslip.io"
-
-    "http://*", "https://*",
+    "https://mariseth.scaleforge.farm",
+    "https://dwg0gwkko0w0kw0ccgogwo0c.135.181.238.146.sslip.io",
+    "https://a08cs8s80kgoowwo4g04g0gw.65.109.122.43.sslip.io"
+    "https://v48ws000c8wg0gcgg880sg4o.65.109.122.43.sslip.io",
 ]
 
 SIMPLE_JWT = {
