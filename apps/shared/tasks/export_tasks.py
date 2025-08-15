@@ -9,6 +9,7 @@ from django.db.models import Q
 
 from apps.credit.models import Credit
 from apps.credit.serializers.credits import CreditExportSerializer
+from apps.credit.utils import build_credit_filter_q
 from apps.farm.models import Farm, Farmer, Product
 from apps.farm.serializers.farm import FarmExportSerializer
 from apps.farm.serializers.farmer import FarmerExportSerializer
@@ -271,25 +272,10 @@ def process_credit_export(filter_params):
     try:
         user = User.objects.get(pk=filter_params['user_id'])
         organization = Organization.objects.get(pk=filter_params['organization_id'])
-        query = filter_params.get('query')
-        payment_status = filter_params.get('payment_status')
-        input_type = filter_params.get('input_type')
-        date_from = filter_params.get('date_from')
-        date_to = filter_params.get('date_to')
-        filter_q = Q(is_active=True, organization=organization)
-        if query:
-            filter_q &= (
-                    Q(id__icontains=query) |
-                    Q(farmer__first_name__icontains=query) |
-                    Q(farmer__last_name__icontains=query)
-            )
-        if payment_status:
-            filter_q &= Q(payment_status=payment_status.lower())
-        if input_type:
-            filter_q &= Q(type=input_type.lower())
-        if date_from and date_to:
-            filter_q &= Q(issue_date__range=[date_from, date_to])
+        filter_q = build_credit_filter_q(filter_params, organization)
+
         credits = Credit.objects.select_related('farmer').filter(filter_q).order_by('-issue_date')
+
         serializer = CreditExportSerializer(credits, many=True)
         df = pd.DataFrame(serializer.data)
         column_map = {

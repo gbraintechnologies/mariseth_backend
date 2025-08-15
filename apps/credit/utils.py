@@ -1,4 +1,4 @@
-from django.db.models import Max
+from django.db.models import Max, Q
 
 from apps.credit.models import Credit
 
@@ -23,3 +23,36 @@ def generate_credit_id(organization_id):
         sequence = 1
 
     return f"C-{int(organization_id):02}{sequence:03}"
+
+
+def build_credit_filter_q(params, organization):
+    filter_q = Q(is_active=True, organization=organization)
+
+    query = params.get('query')
+    payment_status = params.get('payment_status')
+    type_param = params.get('type') or params.get('type_param')  # handle both
+    start_date = params.get('start_date')
+    end_date = params.get('end_date')
+    farmer = params.get('farmer')
+
+    if query:
+        filter_q &= (
+                Q(id__icontains=query) |
+                Q(credit_id__icontains=query) |
+                Q(farmer__first_name__icontains=query) |
+                Q(farmer__last_name__icontains=query)
+        )
+
+    if payment_status:
+        filter_q &= Q(payment_status=payment_status.lower())
+
+    if type_param:
+        filter_q &= Q(type=type_param.lower())
+
+    if farmer:
+        filter_q &= Q(farmer__id=farmer)
+
+    if start_date and end_date:
+        filter_q &= Q(issue_date__range=[start_date, end_date])
+
+    return filter_q
