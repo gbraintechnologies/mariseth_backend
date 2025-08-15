@@ -118,3 +118,51 @@ def build_farm_filter_q(params, organization):
         )
 
     return filter_q
+
+
+def build_farmer_filter_q(params, organization):
+    filter_q = Q(is_active=True, organization=organization)
+
+    query = params.get('query')
+    farmer_type = params.get('type') or params.get('farmer_type')
+    ownership_type = params.get('ownership_type')
+    country = params.get('country')
+    region = params.get('region')
+    district = params.get('district')
+    lead = params.get('lead')
+    date_from = params.get('start_date')
+    date_to = params.get('end_date')
+
+    if farmer_type:
+        filter_q &= Q(type=farmer_type)
+
+    if ownership_type:
+        filter_q &= Q(farm__land_ownership=ownership_type)
+
+    if country:
+        filter_q &= Q(country__iexact=country)
+
+    if region:
+        filter_q &= Q(farm__region=region)
+
+    if district:
+        filter_q &= Q(farm__district=district)
+
+    if lead:
+        filter_q &= Q(lead_farmer__id=lead)
+
+    if date_from and date_to:
+        filter_q &= Q(date_created__date__range=[date_from, date_to])
+
+    if query:
+        filter_q &= (
+            Q(first_name__icontains=query) |
+            Q(last_name__icontains=query) |
+            Q(phone_number__icontains=query[1:]) |
+            Q(email__icontains=query) |
+            Q(farm__name__icontains=query) |
+            Q(farmer_id__icontains=query) |
+            Q(id_number__icontains=query)
+        )
+
+    return filter_q
