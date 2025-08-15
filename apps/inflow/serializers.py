@@ -208,7 +208,7 @@ class FullInflowOrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = InflowOrder
         fields = (
-            'id', 'aggregator', 'procurement_officer',
+            'id', 'order_id', 'aggregator', 'procurement_officer',
             'order_creation_date', 'destination_warehouse',
             'expected_delivery_date', 'actual_delivery_date',
             'status', 'total_bags', 'additional_costs', 'total_products_cost',

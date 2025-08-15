@@ -38,21 +38,16 @@ class InflowOrderApprovalViewSet(viewsets.GenericViewSet):
             return Response({'error': 'Order not found'}, status=status.HTTP_404_NOT_FOUND)
 
     def list(self, request):
-        print("request.query_params", request.query_params)
         page = request.query_params.get('page', 1)
         page_size = request.query_params.get('page_size', 10)
         status_filter = request.query_params.get('status')
         warehouse = request.query_params.get('warehouse')
-        date_from = request.query_params.get('date_from')
-        date_to = request.query_params.get('date_to')
+        date_from = request.query_params.get('start_date')
+        date_to = request.query_params.get('end-date')
         query = request.query_params.get('query')
         completed = request.query_params.get('completed', 'false').lower()
 
         filter_q = Q(is_active=True, organization=request.organization)
-
-        # Filter by warehouses managed by the current user
-        user_managed_warehouses = request.user.managed_warehouses.all()
-        filter_q &= Q(destination_warehouse__in=user_managed_warehouses)
 
         if completed == 'true':
             filter_q &= Q(status='approved')
@@ -67,7 +62,8 @@ class InflowOrderApprovalViewSet(viewsets.GenericViewSet):
         if query:
             filter_q &= (
                     Q(order_id__icontains=query) |
-                    Q(comments__icontains=query)
+                    Q(aggregator__first_name__icontains=query) |
+                    Q(aggregator__last_name__icontains=query)
             )
 
         orders = InflowOrder.objects.filter(filter_q).order_by("-order_creation_date")

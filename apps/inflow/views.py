@@ -79,8 +79,8 @@ class InflowOrderViewSet(viewsets.GenericViewSet):
         page_size = request.query_params.get('page_size', 10)
         status_filter = request.query_params.get('status')
         warehouse = request.query_params.get('warehouse')
-        date_from = request.query_params.get('date_from')
-        date_to = request.query_params.get('date_to')
+        date_from = request.query_params.get('start_date')
+        date_to = request.query_params.get('end-date')
         query = request.query_params.get('query')
         completed = request.query_params.get('completed', 'false').lower()
 
@@ -99,7 +99,8 @@ class InflowOrderViewSet(viewsets.GenericViewSet):
         if query:
             filter_q &= (
                     Q(order_id__icontains=query) |
-                    Q(comments__icontains=query)
+                    Q(aggregator__first_name__icontains=query) |
+                    Q(aggregator__last_name__icontains=query)
             )
 
         orders = InflowOrder.objects.filter(filter_q).order_by("-order_creation_date")
