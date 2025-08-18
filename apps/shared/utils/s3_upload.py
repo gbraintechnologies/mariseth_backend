@@ -1,5 +1,6 @@
 import boto3
 from botocore.exceptions import NoCredentialsError
+from boto3.session import Config
 
 from django.conf import settings
 
@@ -7,21 +8,19 @@ from django.conf import settings
 def upload_to_s3(file_data, file_name):
 
     bucket_name = settings.AWS_STORAGE_BUCKET_NAME
-    custom_domain = settings.AWS_S3_CUSTOM_DOMAIN
 
     try:
-        print("Uploading to S3")
-        if settings.ENVIRONMENT == 'local':
-            s3 = boto3.client(
-                's3',
-                region_name=settings.AWS_S3_REGION_NAME,
-                aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-                aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY
-            )
-        else:
-            s3 = boto3.client('s3')
+        print("Uploading to MinIO")
+        s3 = boto3.client(
+            's3',
+            endpoint_url=settings.AWS_S3_ENDPOINT_URL,
+            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+            config=boto3.session.Config(signature_version='s3v4'),
+            verify=False # This might be needed for self-signed certs in local MinIO setups
+        )
         s3.upload_fileobj(file_data, bucket_name, f"media/reports/{file_name}")
-        s3_url = f'https://{custom_domain}/media/reports/{file_name}'
+        s3_url = f'{settings.MINIO_ACCESS_URL}/{bucket_name}/media/reports/{file_name}'
         print(s3_url)
         return s3_url
     except NoCredentialsError:
