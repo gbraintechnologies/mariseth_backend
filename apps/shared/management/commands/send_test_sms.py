@@ -12,7 +12,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         client_id = env('WIREPICK_CLIENT_ID')
         password = env('WIREPICK_PASSWORD')
-        sender_id = 'LOGICIEL'
+        sender_id = env('WIREPICK_SENDER_ID')
         phone = '233545865156'
         message = 'This is a sample message sent using Wirepick.'
         climsgid = 'MSG12345'
@@ -32,6 +32,9 @@ class Command(BaseCommand):
         # Encode URL and make the request
         url = f'https://api.wirepick.com/httpsms/send?{urlencode(params)}'
         response = requests.get(url)
+
+        print(response)
+        print(response.__dict__)
 
         # Handle XML response
         if response.status_code == 200:
