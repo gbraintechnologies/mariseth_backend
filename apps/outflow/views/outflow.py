@@ -80,6 +80,9 @@ class OutflowOrderViewSet(viewsets.GenericViewSet):
         completed = request.query_params.get('completed', 'false').lower()
         export = request.query_params.get('export', 'false').lower()
         warehouse = request.query_params.get('warehouse', None)
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+        expected_delivery_date = request.query_params.get('expected_delivery_date')
 
         filter_q = Q(is_active=True, organization=request.organization)
         if completed == 'true':
@@ -90,6 +93,14 @@ class OutflowOrderViewSet(viewsets.GenericViewSet):
             filter_q &= Q(status=status_filter)
         if warehouse:
             filter_q &= Q(warehouses__warehouse_id=warehouse)
+        if start_date and end_date:
+            filter_q &= Q(date_created__date__gte=start_date, date_created__date__lte=end_date)
+        elif start_date:
+            filter_q &= Q(date_created__date__gte=start_date)
+        elif end_date:
+            filter_q &= Q(date_created__date__lte=end_date)
+        if expected_delivery_date:
+            filter_q &= Q(expected_delivery_date=expected_delivery_date)
         if query:
             filter_q &= (
                     Q(order_id__icontains=query) |

@@ -15,14 +15,16 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "https://mariseth.scaleforge.farm",
     "https://ukskccsc0cwwo4cockkkks4w.135.181.238.146.sslip.io",
-    "https://s4ckwk8g4cc88k8sgww084ko.65.109.122.43.sslip.io"
+    "https://s4ckwk8g4cc88k8sgww084ko.65.109.122.43.sslip.io",
+    "https://aok8g0c8kcg8gk448kgkcoww.135.181.238.146.sslip.io"
 ]
 CSRF_TRUSTED_ORIGINS = [
     "http://*",
     "https://*",
     "https://dwg0gwkko0w0kw0ccgogwo0c.135.181.238.146.sslip.io",
     "https://v48ws000c8wg0gcgg880sg4o.65.109.122.43.sslip.io",
-    "https://s4ckwk8g4cc88k8sgww084ko.65.109.122.43.sslip.io"
+    "https://s4ckwk8g4cc88k8sgww084ko.65.109.122.43.sslip.io",
+    "https://aok8g0c8kcg8gk448kgkcoww.135.181.238.146.sslip.io"
 ]
 # # MinIO Configuration
 # MINIO_ENDPOINT = env('MINIO_ENDPOINT_URL')  # e.g. http://minio:9000

@@ -65,6 +65,9 @@ class OutflowApprovalViewSet(viewsets.GenericViewSet):
         status_filter = request.query_params.get('status')
         completed = request.query_params.get('completed', 'false').lower()
         warehouse = request.query_params.get('warehouse', None)
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+
 
         qs = OutflowOrderWarehouse.objects.select_related(
             'outflow_order', 'warehouse',
@@ -83,6 +86,13 @@ class OutflowApprovalViewSet(viewsets.GenericViewSet):
             qs = qs.filter(status=status_filter)
         if warehouse:
             qs = qs.filter(warehouse=warehouse)
+        if start_date and end_date:
+            qs = qs.filter(outflow_order__date_created__date__gte=start_date,
+                           outflow_order__date_created__date__lte=end_date)
+        elif start_date:
+            qs = qs.filter(outflow_order__date_created__date__gte=start_date)
+        elif end_date:
+            qs = qs.filter(outflow_order__date_created__date__lte=end_date)
 
         qs = qs.order_by('-outflow_order__date_created')
 
