@@ -42,8 +42,8 @@ class InflowOrderApprovalViewSet(viewsets.GenericViewSet):
         page_size = request.query_params.get('page_size', 10)
         status_filter = request.query_params.get('status')
         warehouse = request.query_params.get('warehouse')
-        date_from = request.query_params.get('start_date')
-        date_to = request.query_params.get('end-date')
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
         query = request.query_params.get('query')
         completed = request.query_params.get('completed', 'false').lower()
 
@@ -57,8 +57,12 @@ class InflowOrderApprovalViewSet(viewsets.GenericViewSet):
             filter_q &= Q(status=status_filter)
         if warehouse:
             filter_q &= Q(destination_warehouse=warehouse)
-        if date_from and date_to:
-            filter_q &= Q(order_creation_date__range=[date_from, date_to])
+        if start_date and end_date:
+            filter_q &= Q(date_created__date__gte=start_date, date_created__date__lte=end_date)
+        elif start_date:
+            filter_q &= Q(date_created__date__gte=start_date)
+        elif end_date:
+            filter_q &= Q(date_created__date__lte=end_date)
         if query:
             filter_q &= (
                     Q(order_id__icontains=query) |

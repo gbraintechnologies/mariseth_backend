@@ -4,7 +4,6 @@ from mariseth.settings.base import *
 
 ALLOWED_HOSTS = ['*']
 ENVIRONMENT = env('ENVIRONMENT')
-print(f"/////////////settings/////////////{ENVIRONMENT}///////////////////////")
 DEBUG = False
 
 CORS_ALLOWED_ORIGINS = [
