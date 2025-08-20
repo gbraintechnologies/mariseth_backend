@@ -140,6 +140,7 @@ class LeaveRequestViewSet(viewsets.GenericViewSet):
         page_size = request.query_params.get('page_size', 10)
         leave_type = request.query_params.get('leave_type')
         status_param = request.query_params.get('status')
+        pending = request.query_params.get('pending', 'true').lower()
         department = request.query_params.get('department')
         query = request.query_params.get('query')
         request_date_from = request.query_params.get('request_date_from')
@@ -159,6 +160,10 @@ class LeaveRequestViewSet(viewsets.GenericViewSet):
 
         if leave_type:
             filter_q &= Q(leave_type=leave_type)
+        if pending == 'true':
+            filter_q &= Q(status__in=["pending", "declined"])
+        elif pending == 'false':
+            filter_q &= Q(status__in=["approved", "completed"])
         if status_param:
             filter_q &= Q(status=status_param)
         if department:
