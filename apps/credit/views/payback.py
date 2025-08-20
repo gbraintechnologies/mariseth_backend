@@ -68,7 +68,7 @@ class PaybackViewSet(viewsets.GenericViewSet):
         if status_filter:
             filters &= Q(status=status_filter)
 
-        queryset = CreditPayback.objects.filter(filters)
+        queryset = CreditPayback.objects.filter(filters).order_by("-date_created")
 
         paginator = Paginator(queryset, page_size)
         page_obj = paginator.get_page(page)
