@@ -75,7 +75,7 @@ class TrainingViewSet(viewsets.GenericViewSet):
         status_param = request.query_params.get('status', None)
         training_date_from = request.query_params.get('training_date_from')
         training_date_to = request.query_params.get('training_date_to')
-
+        now = timezone.now()
         filter_q = Q(is_active=True, organization=request.organization)
 
         if query:
@@ -89,12 +89,14 @@ class TrainingViewSet(viewsets.GenericViewSet):
         if training_mode:
             filter_q &= Q(training_mode=training_mode)
 
-        if status_param == 'upcoming':
-            filter_q &= Q(start_date__gt=timezone.now())
+        if status_param in ['upcoming', 'ongoing']:
+            print("here we go")
+            filter_q &= (
+                    Q(start_date__gt=now) |
+                    Q(start_date__lte=now, end_date__gte=now)
+            )
         elif status_param == 'completed':
-            filter_q &= Q(end_date__lt=timezone.now())
-        elif status_param == 'ongoing':
-            filter_q &= Q(start_date__lte=timezone.now(), end_date__gte=timezone.now())
+            filter_q &= Q(end_date__lt=now)
 
         if training_date_from and training_date_to:
             filter_q &= Q(start_date__date__gte=training_date_from,  end_date__date__lte=training_date_to)
