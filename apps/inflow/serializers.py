@@ -12,9 +12,8 @@ from apps.farm.models import FarmProduct
 from apps.farm.serializers.farm import ShortFarmSerializer
 from apps.farm.serializers.products import ShortProductSerializer
 from apps.inflow.models import InflowMedia, InflowOrder, InflowOrderHistory, InflowOrderProduct
-from apps.inflow.utils import generate_inflow_waybill_id, generate_order_id, generate_serial_number
+from apps.inflow.utils import generate_inflow_waybill_id, generate_serial_number
 from apps.warehouse.models import Warehouse, WarehouseProduct, WarehouseProductMovement
-from apps.shared.serializers.warehouse import ShortWarehouseSerializer
 
 
 class ShortInflowOrderSerializer(serializers.ModelSerializer):
@@ -61,10 +60,10 @@ class InflowOrderSerializer(serializers.ModelSerializer):
         additional_cost = validated_data.get('additional_cost_amount', 0)
 
         # Generate order ID
-        validated_data['order_id'] = generate_order_id(request.organization)
         order = InflowOrder.objects.create(**validated_data)
+        order.order_id = f"ORD-i{order.id}"
         order.waybill_id = generate_inflow_waybill_id(order.pk)
-        order.save(update_fields=['waybill_id'])
+        order.save(update_fields=['waybill_id', 'order_id'])
 
         for product_data in products_data:
             farm_id = product_data['farm'].farm_id

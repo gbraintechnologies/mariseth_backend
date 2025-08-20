@@ -16,7 +16,7 @@ class InflowOrder(BaseModel):
         ('cancelled', 'Cancelled')
     ]
     organization = models.ForeignKey('organizations.Organization', on_delete=models.CASCADE)
-    order_id = models.CharField(max_length=50, unique=True)
+    order_id = models.CharField(max_length=50, unique=True, null=True, blank=True)
     aggregator = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='aggregator_orders')
     procurement_officer = models.ForeignKey(User, on_delete=models.SET_NULL, null=True,
                                             related_name='procurement_orders')
