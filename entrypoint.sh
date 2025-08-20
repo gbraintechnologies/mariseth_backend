@@ -3,7 +3,7 @@
 
 # Run Django-related commands only for the web service
 if [ "$SERVICE_TYPE" = "web" ]; then
-  python manage.py check_and_create_db
+#  python manage.py check_and_create_db
 #  python manage.py collectstatic --noinput
   # Run Django makemigrations
 

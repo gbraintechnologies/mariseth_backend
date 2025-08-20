@@ -90,7 +90,6 @@ class TrainingViewSet(viewsets.GenericViewSet):
             filter_q &= Q(training_mode=training_mode)
 
         if status_param in ['upcoming', 'ongoing']:
-            print("here we go")
             filter_q &= (
                     Q(start_date__gt=now) |
                     Q(start_date__lte=now, end_date__gte=now)
