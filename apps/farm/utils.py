@@ -95,7 +95,7 @@ def build_farm_filter_q(params, organization):
         filter_q &= Q(farm_size=farm_size)
 
     if crop_type:
-        filter_q &= Q(farmproduct_set__product__category=crop_type)
+        filter_q &= Q(farmproduct__product__id=crop_type)
 
     if region:
         filter_q &= Q(region=region)
