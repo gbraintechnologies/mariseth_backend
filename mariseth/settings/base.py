@@ -195,7 +195,7 @@ CHANNEL_LAYERS = {
         'CONFIG': {
             'hosts': [
                 (
-                    env('REDIS_HOST', 'redis'),  # Service name in Docker
+                    env('REDIS_HOST', 'redis'),
                     int(env('REDIS_PORT', 6379))
                 )
             ],

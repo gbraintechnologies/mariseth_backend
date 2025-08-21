@@ -104,7 +104,8 @@ def process_farm_export(filter_params):
         df.to_csv(csv_buffer, index=False)
         file_data = BytesIO(csv_buffer.getvalue().encode('utf-8'))
 
-        s3_url = upload_to_s3(file_data, file_name)
+        # s3_url = upload_to_s3(file_data, file_name)
+        s3_url = "https://ontheline.trincoll.edu/images/bookdown/sample-local-pdf.pdf"
 
         if not s3_url:
             return
@@ -177,7 +178,9 @@ def process_product_export(filter_params):
         df.to_csv(csv_buffer, index=False)
         file_data = BytesIO(csv_buffer.getvalue().encode('utf-8'))
 
-        s3_url = upload_to_s3(file_data, file_name)
+        # s3_url = upload_to_s3(file_data, file_name)
+        s3_url = "https://ontheline.trincoll.edu/images/bookdown/sample-local-pdf.pdf"
+
         if not s3_url:
             return
         group_names = [
@@ -186,6 +189,7 @@ def process_product_export(filter_params):
         message = {
             "has_permission": True,
             "results": s3_url,
+            "export_type": "product_export"
         }
         send_client_notification(
             message=message,
@@ -246,7 +250,9 @@ def process_farmer_export(filter_params):
         df.to_csv(csv_buffer, index=False)
         file_data = BytesIO(csv_buffer.getvalue().encode('utf-8'))
 
-        s3_url = upload_to_s3(file_data, file_name)
+        # s3_url = upload_to_s3(file_data, file_name)
+        s3_url = "https://ontheline.trincoll.edu/images/bookdown/sample-local-pdf.pdf"
+
         if not s3_url:
             return
 
@@ -256,6 +262,7 @@ def process_farmer_export(filter_params):
         message = {
             "has_permission": True,
             "results": s3_url,
+            "export_type": "farmer_export"
         }
         send_client_notification(
             message=message,
@@ -300,14 +307,16 @@ def process_credit_export(filter_params):
         df.to_csv(csv_buffer, index=False)
         file_data = BytesIO(csv_buffer.getvalue().encode('utf-8'))
 
-        s3_url = upload_to_s3(file_data, file_name)
+        # s3_url = upload_to_s3(file_data, file_name)
+        s3_url = "https://ontheline.trincoll.edu/images/bookdown/sample-local-pdf.pdf"
+
         if not s3_url:
             return
         group_names = [f'user_{user.id}']
         message = {
             "has_permission": True,
             "results": s3_url,
-            "export_type": "export_credits"
+            "export_type": "credits_exports"
         }
         send_client_notification(
             message=message,
@@ -353,7 +362,9 @@ def process_warehouse_export(filter_params):
         df.to_csv(csv_buffer, index=False)
         file_data = BytesIO(csv_buffer.getvalue().encode('utf-8'))
 
-        s3_url = upload_to_s3(file_data, file_name)
+        # s3_url = upload_to_s3(file_data, file_name)
+        s3_url = "https://ontheline.trincoll.edu/images/bookdown/sample-local-pdf.pdf"
+
         if not s3_url:
             return
 
@@ -361,6 +372,7 @@ def process_warehouse_export(filter_params):
         message = {
             "has_permission": True,
             "results": s3_url,
+            "export_type": "warehouse_export"
         }
         send_client_notification(
             message=message,
