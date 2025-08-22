@@ -45,7 +45,7 @@ class NewUserSerializer(serializers.ModelSerializer):
         if group:
             if not (group.is_default or group.organization == organization):
                 raise serializers.ValidationError(
-                    f"The group does not belong to your organization."
+                    "The group does not belong to your organization."
                 )
         return data
 

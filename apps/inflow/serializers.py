@@ -191,7 +191,7 @@ class InflowOrderProductAggregateSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'serial_number', 'product', 'farm',
             'quantity', 'unit_price', 'problematic_quantity',
-            'reason', 'comment', 'total_cost'
+            'reason', 'comment', 'total_cost', 'total_weight'
         )
         read_only_fields = ('id', 'serial_number', 'total_cost')
 

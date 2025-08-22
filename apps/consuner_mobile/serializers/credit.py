@@ -2,7 +2,6 @@ from rest_framework import serializers
 
 from apps.credit.models import Credit, CreditPayback
 from apps.credit.utils import generate_credit_id
-from apps.farm.models import Farmer
 
 
 class MobileCreditSerializer(serializers.ModelSerializer):

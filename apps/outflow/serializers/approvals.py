@@ -9,7 +9,7 @@ from apps.accounts.serializers.users import ShortUserSerializer
 from apps.customers.serializers import CustomerSerializer
 from apps.farm.serializers.products import ShortProductSerializer
 from apps.outflow.models import OutflowOrder, OutflowOrderDeliveryInformationWarehouse, OutflowOrderWarehouse, \
-    OutflowOrderWarehouseHistory, OutflowOrderWarehouseImages, OutflowOrderWarehouseProduct
+    OutflowOrderWarehouseImages, OutflowOrderWarehouseProduct
 from apps.outflow.serializers.outflow import OutflowOrderDeliveryInfoResponseSerializer
 from apps.outflow.utils import create_warehouse_history, track_product_changes
 from apps.shared.utils.helpers import base64_to_image

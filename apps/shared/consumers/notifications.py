@@ -3,7 +3,6 @@ from typing import List, Dict
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
-from apps.accounts.models import User
 
 
 def send_client_notification(

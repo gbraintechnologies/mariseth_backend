@@ -6,8 +6,7 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.consuner_mobile.serializers.lead_farmer import FarmSerializer, \
-    MobileAddSmallholderFarmerSerializer
+from apps.consuner_mobile.serializers.lead_farmer import MobileAddSmallholderFarmerSerializer
 from apps.consuner_mobile.swagger import add_swagger_to_mobile_lead_farmer_viewset
 from apps.farm.models import Farm, Farmer
 from apps.farm.serializers.farm import FullFarmSerializer

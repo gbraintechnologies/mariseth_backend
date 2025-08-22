@@ -16,7 +16,7 @@ class ShortCreditSerializer(serializers.ModelSerializer):
     class Meta:
         model = Credit
         fields = (
-            'id', 'farmer', 'input_credits', 'type', 'quantity',
+            'id', 'credit_id', 'farmer', 'input_credits', 'type', 'quantity',
             'quantity_metric', 'credit_amount', 'issue_date', 'due_date',
             'interest_rate', 'payment_status', 'approval_status', 'notes'
         )

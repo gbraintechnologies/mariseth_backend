@@ -2,7 +2,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.db.models import Q
 
-from apps.outflow.models import OutflowOrder, OutflowOrderWarehouse, OutflowOrderWarehouseProduct
+from apps.outflow.models import OutflowOrder
 
 
 class Command(BaseCommand):
