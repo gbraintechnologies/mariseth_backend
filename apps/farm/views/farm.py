@@ -1,6 +1,5 @@
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Q
 from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -142,7 +141,7 @@ class FarmViewSet(viewsets.GenericViewSet):
         farm_products = serializer.validated_data['farm_product_ids']
         farm_products.update(is_active=False, deleted_by=request.user, date_deleted=timezone.now())
         return Response(
-            {'message': f'Farm products deleted successfully'},
+            {'message': 'Farm products deleted successfully'},
             status=status.HTTP_200_OK
         )
 

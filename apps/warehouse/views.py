@@ -1,12 +1,12 @@
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Q, Sum
+from django.db.models import Sum
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.farm.models import Farm, Product
+from apps.farm.models import Product
 from django.contrib.auth import get_user_model
 from apps.shared.literals import CREATE_WAREHOUSE, DELETE_WAREHOUSE, GET_PRODUCT_WAREHOUSE_MOVEMENT,     GET_WAREHOUSE_INVENTORY, LIST_WAREHOUSES, UPDATE_WAREHOUSE, UPLOAD_WAREHOUSES, VIEW_WAREHOUSE,     ADD_REMOVE_WAREHOUSE_MANAGER
 from apps.warehouse.utils import build_warehouse_filter_q

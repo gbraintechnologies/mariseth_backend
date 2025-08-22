@@ -31,7 +31,7 @@ class Command(BaseCommand):
             cursor = connection.cursor()
 
             # Check if the database exists
-            cursor.execute(f"SELECT 1 FROM pg_database WHERE datname = %s;", (db_name,))
+            cursor.execute("SELECT 1 FROM pg_database WHERE datname = %s;", (db_name,))
             exists = cursor.fetchone()
 
             if not exists:

@@ -1,8 +1,6 @@
 import requests
 import sentry_sdk
 from typing import Optional
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 from django.conf import settings
 from mariseth.settings.base import ENVIRONMENT
 

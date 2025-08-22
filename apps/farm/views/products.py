@@ -1,12 +1,12 @@
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Q, Sum
+from django.db.models import Sum
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.farm.models import Farm, Product
+from apps.farm.models import Product
 from apps.farm.serializers.farm import FarmSerializer
 from apps.farm.serializers.products import FullProductSerializer, ProductSerializer
 from apps.farm.swaagger import add_swagger_to_product_viewset

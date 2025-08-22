@@ -82,7 +82,7 @@ def update_overdue_credits(self) -> None:
         due_date__lt=today,
         payment_status__in=['active', 'partial']
     ).update(payment_status='overdue')
-    print(f"------Overdue credits updated-----")
+    print("------Overdue credits updated-----")
 
 
 @app.task(bind=True)

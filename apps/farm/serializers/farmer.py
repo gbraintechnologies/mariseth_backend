@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from apps.accounts.serializers.users import ShortUserSerializer
 from apps.farm.models import Farm, Farmer
-from apps.farm.serializers.farm import FullFarmSerializer, ShortFarmSerializer
+from apps.farm.serializers.farm import FullFarmSerializer
 from apps.farm.utils import generate_farmer_id
 from apps.shared.models import District, Region
 from apps.shared.serializers.regions import DistrictSerializer, ShortRegionSerializer

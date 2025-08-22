@@ -4,7 +4,6 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.db import transaction
 
-from apps.accounts.serializers.users import GroupSerializer
 from apps.organizations.models import OrganizationUser
 from apps.organizations.serializers.organization import ShortOrganizationSerializer
 from apps.shared.general_response import INVALID_LOGIN

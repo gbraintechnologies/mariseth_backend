@@ -4,7 +4,7 @@ from celery import Celery
 
 from mariseth.logging import logger
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', f"mariseth.settings.local")
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', "mariseth.settings.local")
 app = Celery('mariseth')
 app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks()

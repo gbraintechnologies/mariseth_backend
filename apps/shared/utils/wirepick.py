@@ -36,7 +36,7 @@ def send_wirepick_sms(
             'batchid': batchid,
         }
 
-        url = f"https://api.wirepick.com/httpsms/send"
+        url = "https://api.wirepick.com/httpsms/send"
         response = requests.get(url, params=params)
 
         if response.status_code == 200:
