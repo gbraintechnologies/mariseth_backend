@@ -75,7 +75,7 @@ class InflowOrderHistory(BaseModel):
     EVENT_CHOICES = [
         ('status_change', 'Status Change'),
         ('comment', 'Comment'),
-        ('document_upload', 'Document Upload'),
+        ('document_upload', 'Document Up load'),
     ]
 
     order = models.ForeignKey(InflowOrder, on_delete=models.CASCADE, related_name='history')
