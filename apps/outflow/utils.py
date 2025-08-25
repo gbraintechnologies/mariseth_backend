@@ -1,6 +1,8 @@
 import re
 from datetime import datetime
 
+from django.db.models import Max, Q
+
 from apps.outflow.models import OutflowOrder, OutflowOrderWarehouseHistory
 
 
@@ -89,3 +91,40 @@ def generate_invoice_id(payment_pk: int) -> str:
     """
     current_year = datetime.now().year
     return f"INV-{current_year}-00{payment_pk}"
+
+
+def build_outflow_filter_q(filter_params, organization):
+    filter_q = Q(is_active=True, organization=organization)
+
+    status_filter = filter_params.get('status')
+    query = filter_params.get('query')
+    completed = filter_params.get('completed', 'false').lower()
+    warehouse = filter_params.get('warehouse', None)
+    start_date = filter_params.get('start_date')
+    end_date = filter_params.get('end_date')
+    expected_delivery_date = filter_params.get('expected_delivery_date')
+
+    if completed == 'true':
+        filter_q &= Q(status='complete')
+    else:
+        filter_q &= ~Q(status='complete')
+    if status_filter:
+        filter_q &= Q(status=status_filter)
+    if warehouse:
+        filter_q &= Q(warehouses__warehouse_id=warehouse)
+    if start_date and end_date:
+        filter_q &= Q(date_created__date__gte=start_date, date_created__date__lte=end_date)
+    elif start_date:
+        filter_q &= Q(date_created__date__gte=start_date)
+    elif end_date:
+        filter_q &= Q(date_created__date__lte=end_date)
+    if expected_delivery_date:
+        filter_q &= Q(expected_delivery_date=expected_delivery_date)
+    if query:
+        filter_q &= (
+                Q(order_id__icontains=query) |
+                Q(destination__name__icontains=query) |
+                Q(customer__first_name__icontains=query) |
+                Q(customer__last_name__icontains=query)
+        )
+    return filter_q

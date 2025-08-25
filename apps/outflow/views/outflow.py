@@ -13,10 +13,12 @@ from apps.outflow.serializers.outflow import (
     OutflowOrderDeliveryInformationSerializer,
     OutflowOrderPaymentRequestSerializer, OutflowOrderSerializer
 )
+from apps.outflow.utils import build_outflow_filter_q
 from apps.shared.general_response import GENERAL_SUCCESS_RESPONSE
 from apps.shared.literals import ASSIGN_DELIVERY_INFO, CREATE_OUTFLOW_ORDER, DELETE_OUTFLOW_ORDER, LIST_OUTFLOW_ORDERS, \
     MARK_OUTFLOW_COMPLETE, MARK_OUTFLOW_DELIVERED, RECORD_OUTFLOW_PAYMENT, UPDATE_OUTFLOW_ORDER, \
     VIEW_OUTFLOW_ORDER
+from apps.shared.tasks.export_tasks import process_outflow_export
 from apps.shared.utils.permissions import UserPermission
 
 
@@ -75,50 +77,30 @@ class OutflowOrderViewSet(viewsets.GenericViewSet):
     def list(self, request):
         page = request.query_params.get('page', 1)
         page_size = request.query_params.get('page_size', 10)
-        status_filter = request.query_params.get('status')
-        query = request.query_params.get('query')
-        completed = request.query_params.get('completed', 'false').lower()
         export = request.query_params.get('export', 'false').lower()
-        warehouse = request.query_params.get('warehouse', None)
-        start_date = request.query_params.get('start_date')
-        end_date = request.query_params.get('end_date')
-        expected_delivery_date = request.query_params.get('expected_delivery_date')
 
-        filter_q = Q(is_active=True, organization=request.organization)
-        if completed == 'true':
-            filter_q &= Q(status='complete')
-        else:
-            filter_q &= ~Q(status='complete')
-        if status_filter:
-            filter_q &= Q(status=status_filter)
-        if warehouse:
-            filter_q &= Q(warehouses__warehouse_id=warehouse)
-        if start_date and end_date:
-            filter_q &= Q(date_created__date__gte=start_date, date_created__date__lte=end_date)
-        elif start_date:
-            filter_q &= Q(date_created__date__gte=start_date)
-        elif end_date:
-            filter_q &= Q(date_created__date__lte=end_date)
-        if expected_delivery_date:
-            filter_q &= Q(expected_delivery_date=expected_delivery_date)
-        if query:
-            filter_q &= (
-                    Q(order_id__icontains=query) |
-                    Q(destination__name__icontains=query) |
-                    Q(customer__first_name__icontains=query) |
-                    Q(customer__last_name__icontains=query)
-            )
+        filter_q = build_outflow_filter_q(request.query_params, request.organization)
 
         orders = OutflowOrder.objects.filter(filter_q).order_by("-date_created")
 
-        # Export placeholder
+        export_response = None
         if export == 'true':
-            pass  # TODO: ADD AN EXPORT BACKGROUND TASK
+            if orders.count() == 0:
+                export_response = 'No Outbound Orders to Export'
+            else:
+                filter_params = {
+                    'user_id': request.user.id,
+                    'organization_id': request.organization.id,
+                    **request.query_params.dict(),
+                }
+                process_outflow_export.delay(filter_params)
+                export_response = 'Export started. You will receive a notification when it is done.'
 
         paginator = Paginator(orders, page_size)
         page_obj = paginator.get_page(page)
 
         return Response({
+            'export_response': export_response,
             'results': ListOutflowOrderSerializer(page_obj.object_list, many=True).data,
             'pagination': {
                 'total': orders.count(),
