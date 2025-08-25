@@ -1,9 +1,10 @@
 import re
 from datetime import datetime
 
-from django.db.models import Max
+from django.db.models import Max, Q
 
 from .models import InflowOrder
+
 
 def generate_serial_number(order_id: int,farm_id: str, product_id: str, quantity: int) -> str:
     """
@@ -57,3 +58,36 @@ def generate_inflow_waybill_id(order_pk: int) -> str:
     """
     current_year = datetime.now().year
     return f"WI-{current_year}-00{order_pk}"
+
+
+def build_inflow_filter_q(filter_params, organization):
+    filter_q = Q(is_active=True, organization=organization)
+
+    status_filter = filter_params.get('status')
+    warehouse = filter_params.get('warehouse')
+    start_date = filter_params.get('start_date')
+    end_date = filter_params.get('end_date')
+    query = filter_params.get('query')
+    completed = filter_params.get('completed', 'false').lower()
+
+    if completed == 'true':
+        filter_q &= Q(status='approved')
+    else:
+        filter_q &= ~Q(status='approved')
+    if status_filter:
+        filter_q &= Q(status=status_filter)
+    if warehouse:
+        filter_q &= Q(destination_warehouse=warehouse)
+    if start_date and end_date:
+        filter_q &= Q(date_created__date__gte=start_date, date_created__date__lte=end_date)
+    elif start_date:
+        filter_q &= Q(date_created__date__gte=start_date)
+    elif end_date:
+        filter_q &= Q(date_created__date__lte=end_date)
+    if query:
+        filter_q &= (
+                Q(order_id__icontains=query) |
+                Q(aggregator__first_name__icontains=query) |
+                Q(aggregator__last_name__icontains=query)
+        )
+    return filter_q

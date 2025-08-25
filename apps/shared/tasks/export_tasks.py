@@ -18,6 +18,9 @@ from apps.farm.utils import (
     build_farmer_filter_q,
     build_product_filter_q,
 )
+from apps.inflow.models import InflowOrder
+from apps.inflow.serializers import InflowOrderExportSerializer
+from apps.inflow.utils import build_inflow_filter_q
 from apps.organizations.models import Organization
 from apps.shared.consumers.notifications import send_client_notification
 from apps.shared.utils.s3_upload import upload_to_s3
@@ -400,3 +403,66 @@ def process_warehouse_export(filter_params):
     except Exception as e:
         sentry_sdk.capture_exception(e)
         logger.error(f"Warehouse export failed: {str(e)}")
+
+
+@shared_task
+def process_inflow_export(filter_params):
+    try:
+        user = User.objects.get(pk=filter_params["user_id"])
+        organization = Organization.objects.get(pk=filter_params["organization_id"])
+
+        filter_q = build_inflow_filter_q(filter_params, organization)
+
+        inflow_orders = InflowOrder.objects.filter(filter_q).order_by("-order_creation_date")
+
+        serializer = InflowOrderExportSerializer(inflow_orders, many=True)
+        export_data = serializer.data
+
+        df = pd.DataFrame(export_data)
+
+        column_map = {
+            "order_id": "Order ID",
+            "aggregator": "Aggregator",
+            "procurement_officer": "Procurement Officer",
+            "destination_warehouse": "Destination Warehouse",
+            "order_creation_date": "Order Creation Date",
+            "expected_delivery_date": "Expected Delivery Date",
+            "actual_delivery_date": "Actual Delivery Date",
+            "status": "Status",
+            "total_bags": "Total Bags",
+            "order_total": "Order Total",
+            "additional_costs": "Additional Costs",
+            "additional_cost_amount": "Additional Cost Amount",
+            "total_cost": "Total Cost",
+            "total_products_cost": "Total Products Cost",
+            "total_weight": "Total Weight",
+            "comments": "Comments",
+            "waybill_id": "Waybill ID",
+            "date_created": "Date Created",
+        }
+
+        df.rename(columns=column_map, inplace=True)
+
+        file_name = f"Inflow_Orders_Export_{datetime.now().strftime('%Y-%m-%d_%H-%M')}.csv"
+        csv_buffer = StringIO()
+        df.to_csv(csv_buffer, index=False)
+        file_data = BytesIO(csv_buffer.getvalue().encode("utf-8"))
+
+        s3_url = upload_to_s3(file_data, file_name)
+
+        if not s3_url:
+            return
+
+        group_names = [f"user_{user.id}"]
+        message = {
+            "has_permission": True,
+            "results": s3_url,
+            "export_type": "inflow_export",
+        }
+        send_client_notification(
+            message=message, message_type="export_notification", group_names=group_names
+        )
+
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
+        logger.error(f"Inflow order export failed: {str(e)}")

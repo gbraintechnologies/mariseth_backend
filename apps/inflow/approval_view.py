@@ -6,7 +6,9 @@ from rest_framework.response import Response
 
 from apps.inflow.models import InflowOrder
 from apps.inflow.serializers import FullInflowOrderSerializer, InflowOrderSerializer
+from apps.inflow.utils import build_inflow_filter_q
 from apps.shared.literals import LIST_INFLOW_APPROVALS, VIEW_INFLOW_APPROVAL
+from apps.shared.tasks.export_tasks import process_inflow_export
 from apps.shared.utils.permissions import UserPermission
 
 
@@ -40,42 +42,30 @@ class InflowOrderApprovalViewSet(viewsets.GenericViewSet):
     def list(self, request):
         page = request.query_params.get('page', 1)
         page_size = request.query_params.get('page_size', 10)
-        status_filter = request.query_params.get('status')
-        warehouse = request.query_params.get('warehouse')
-        start_date = request.query_params.get('start_date')
-        end_date = request.query_params.get('end_date')
-        query = request.query_params.get('query')
-        completed = request.query_params.get('completed', 'false').lower()
-
-        filter_q = Q(is_active=True, organization=request.organization)
-
-        if completed == 'true':
-            filter_q &= Q(status='approved')
-        else:
-            filter_q &= ~Q(status='approved')
-        if status_filter:
-            filter_q &= Q(status=status_filter)
-        if warehouse:
-            filter_q &= Q(destination_warehouse=warehouse)
-        if start_date and end_date:
-            filter_q &= Q(date_created__date__gte=start_date, date_created__date__lte=end_date)
-        elif start_date:
-            filter_q &= Q(date_created__date__gte=start_date)
-        elif end_date:
-            filter_q &= Q(date_created__date__lte=end_date)
-        if query:
-            filter_q &= (
-                    Q(order_id__icontains=query) |
-                    Q(aggregator__first_name__icontains=query) |
-                    Q(aggregator__last_name__icontains=query)
-            )
+        export = request.query_params.get('export', 'false').lower()
+        
+        filter_q = build_inflow_filter_q(request.query_params, request.organization)
 
         orders = InflowOrder.objects.filter(filter_q).order_by("-order_creation_date")
+
+        export_response = None
+        if export == 'true':
+            if orders.count() == 0:
+                export_response = 'No Inbound Orders to Export'
+            else:
+                filter_params = {
+                    'user_id': request.user.id,
+                    'organization_id': request.organization.id,
+                    **request.query_params.dict(),
+                }
+                process_inflow_export.delay(filter_params)
+                export_response = 'Export started. You will receive a notification when it is done.'
 
         paginator = Paginator(orders, page_size)
         page_obj = paginator.get_page(page)
 
         return Response({
+            'export_response': export_response,
             'results': FullInflowOrderSerializer(page_obj.object_list, many=True).data,
             'pagination': {
                 'total': orders.count(),
