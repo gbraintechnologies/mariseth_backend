@@ -54,7 +54,12 @@ class JobTitle(BaseModel):
 
 
 class Employee(BaseModel):
-    EMP_STATUS = (('active', 'Active'), ('inactive', 'Inactive'), ('suspended', 'Suspended'))
+    EMP_STATUS = (
+        ('active', 'Active'),
+        ('inactive', 'Inactive'),
+        ('suspended', 'Suspended'),
+        ('dismissed', 'Dismissed'),
+    )
     GENDER = (('m', 'Male'), ('f', 'Female'))
     RELATIONSHIP_STATUS = (('single', 'Single'), ('married', 'Married'), ('widowed', 'Widowed'))
     NOTIFICATION_CHOICES = (('email', 'Email'), ('sms', 'SMS'))

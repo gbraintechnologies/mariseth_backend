@@ -95,7 +95,7 @@ class TrainingViewSet(viewsets.GenericViewSet):
                     Q(start_date__lte=now, end_date__gte=now)
             )
         elif status_param == 'completed':
-            filter_q &= Q(end_date__lt=now)
+            filter_q &= Q(end_date__date__lt=now.date())
 
         if training_date_from and training_date_to:
             filter_q &= Q(start_date__date__gte=training_date_from,  end_date__date__lte=training_date_to)

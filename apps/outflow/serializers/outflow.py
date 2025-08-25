@@ -640,3 +640,19 @@ class ShortOutflowOrderSerializer(serializers.ModelSerializer):
         fields = ('id', 'order_id', 'total_cost', 'status', 'total_weight')
 
 
+class OutflowOrderExportSerializer(serializers.ModelSerializer):
+    customer = serializers.CharField(source='customer.name', read_only=True)
+    procurement_officer = serializers.CharField(source='procurement_officer.get_full_name', read_only=True)
+    status = serializers.CharField(source='get_status_display', read_only=True)
+    date_created = serializers.DateTimeField(format="%d-%m-%Y %H:%M:%S", read_only=True, allow_null=True)
+
+    class Meta:
+        model = OutflowOrder
+        fields = (
+            'order_id', 'customer', 'procurement_officer', 'destination',
+            'expected_delivery_date', 'actual_delivery_date', 'status',
+            'total_quantity', 'total_cost', 'total_weight', 'additional_costs',
+            'additional_cost_amount', 'extra_comments', 'waybill_id', 'date_created',
+        )
+
+

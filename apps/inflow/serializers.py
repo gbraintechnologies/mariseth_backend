@@ -374,3 +374,21 @@ class OrderApprovalSerializer(serializers.Serializer):
             field_name='status',
             notes='Order finalized and warehouse stock updated'
         )
+
+
+class InflowOrderExportSerializer(serializers.ModelSerializer):
+    aggregator = serializers.CharField(source='aggregator.get_full_name', read_only=True)
+    procurement_officer = serializers.CharField(source='procurement_officer.get_full_name', read_only=True)
+    destination_warehouse = serializers.CharField(source='destination_warehouse.name', read_only=True)
+    status = serializers.CharField(source='get_status_display', read_only=True)
+    date_created = serializers.DateTimeField(format="%d-%m-%Y %H:%M:%S", read_only=True, allow_null=True)
+
+    class Meta:
+        model = InflowOrder
+        fields = (
+            'order_id', 'aggregator', 'procurement_officer', 'destination_warehouse',
+            'order_creation_date', 'expected_delivery_date', 'actual_delivery_date',
+            'status', 'total_bags', 'order_total', 'additional_costs',
+            'additional_cost_amount', 'total_cost', 'total_products_cost',
+            'total_weight', 'comments', 'waybill_id', 'date_created',
+        )

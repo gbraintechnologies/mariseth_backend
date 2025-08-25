@@ -57,4 +57,4 @@ class FullJobTitleSerializer(serializers.ModelSerializer):
         )
 
     def get_number_of_employees(self, obj):
-        return obj.employees.count()
+        return obj.employees.filter(employee__is_active=True).count()

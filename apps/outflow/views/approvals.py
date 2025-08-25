@@ -10,8 +10,10 @@ from apps.outflow.models import OutflowOrder, OutflowOrderWarehouse
 from apps.outflow.serializers.approvals import MarkOrderPickedSerializer, \
     OutflowOrderApprovalSerializer, OutflowWarehouseListSerializer, OutflowWarehouseOrderDetailSerializer, \
     WarehouseVerificationSerializer
+from apps.outflow.utils import build_outflow_filter_q
 from apps.shared.literals import LIST_OUTFLOW_APPROVAL, MARK_OUTFLOW_ORDER_PICKED, VERIFY_OUTFLOW_AVAILABILITY, \
     VIEW_OUTFLOW_APPROVAL
+from apps.shared.tasks.export_tasks import process_outflow_export
 from apps.shared.utils.permissions import UserPermission
 
 
@@ -62,37 +64,31 @@ class OutflowApprovalViewSet(viewsets.GenericViewSet):
     def list_outflow_orders(self, request):
         page = int(request.query_params.get('page', 1))
         page_size = int(request.query_params.get('page_size', 10))
-        status_filter = request.query_params.get('status')
-        completed = request.query_params.get('completed', 'false').lower()
-        warehouse = request.query_params.get('warehouse', None)
-        start_date = request.query_params.get('start_date')
-        end_date = request.query_params.get('end_date')
-
+        export = request.query_params.get('export', 'false').lower()
 
         qs = OutflowOrderWarehouse.objects.select_related(
             'outflow_order', 'warehouse',
             'outflow_order__customer',
             'outflow_order__procurement_officer'
         ).filter(
-            outflow_order__is_active=True,
-            outflow_order__organization=request.organization,
+            Q(outflow_order__in=OutflowOrder.objects.filter(
+                build_outflow_filter_q(request.query_params, request.organization)
+            )),
             warehouse__managers__in=[request.user]
         )
-        if completed == 'true':
-            qs = qs.filter(Q(status='order_pickup') | Q(status='completed'))
-        else:
-            qs = qs.exclude(Q(status='order_pickup') | Q(status='completed'))
-        if status_filter:
-            qs = qs.filter(status=status_filter)
-        if warehouse:
-            qs = qs.filter(warehouse=warehouse)
-        if start_date and end_date:
-            qs = qs.filter(outflow_order__date_created__date__gte=start_date,
-                           outflow_order__date_created__date__lte=end_date)
-        elif start_date:
-            qs = qs.filter(outflow_order__date_created__date__gte=start_date)
-        elif end_date:
-            qs = qs.filter(outflow_order__date_created__date__lte=end_date)
+
+        export_response = None
+        if export == 'true':
+            if qs.count() == 0:
+                export_response = 'No Outbound Orders to Export'
+            else:
+                filter_params = {
+                    'user_id': request.user.id,
+                    'organization_id': request.organization.id,
+                    **request.query_params.dict(),
+                }
+                process_outflow_export.delay(filter_params, approval=True)
+                export_response = 'Export started. You will receive a notification when it is done.'
 
         qs = qs.order_by('-outflow_order__date_created')
 
@@ -102,6 +98,7 @@ class OutflowApprovalViewSet(viewsets.GenericViewSet):
         serializer = OutflowWarehouseListSerializer(page_obj.object_list, many=True)
 
         return Response({
+            'export_response': export_response,
             'results': serializer.data,
             'pagination': {
                 'total': qs.count(),

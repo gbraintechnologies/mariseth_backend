@@ -57,7 +57,7 @@ class BaseModel(models.Model):
             key = f'{secret_key}{obj_id_str}'
             for field in fields_to_encrypt:
                 if hasattr(self, field):
-                    value = getattr(self, field)
+                    value = getattr(self, field) or ''
                     encrypted_value = base64_encode(xor_cipher(value + obj_id_str, key))
                     setattr(self, field, encrypted_value)
             if hasattr(self, 'user'):
