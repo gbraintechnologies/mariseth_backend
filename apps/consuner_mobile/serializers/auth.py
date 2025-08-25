@@ -28,7 +28,7 @@ class MobileRegisterSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         phone_number = validated_data['phone_number']
-        farmer = Farmer.objects.get(phone_number=phone_number)
+        farmer = Farmer.objects.get(phone_number=phone_number, is_active=True)
         user, created = User.objects.update_or_create(
             phone_number=phone_number,
             defaults={
