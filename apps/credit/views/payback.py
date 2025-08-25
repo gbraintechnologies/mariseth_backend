@@ -51,6 +51,7 @@ class PaybackViewSet(viewsets.GenericViewSet):
     def list(self, request):
         page = request.query_params.get('page', 1)
         page_size = request.query_params.get('page_size', 10)
+        query = request.query_params.get('query')
         credit_id = request.query_params.get('credit')
         payback_method = request.query_params.get('payback_method')
         start_date = request.query_params.get('start_date')
@@ -59,6 +60,14 @@ class PaybackViewSet(viewsets.GenericViewSet):
 
         filters = Q(credit__organization=request.organization, is_active=True)
 
+        if query:
+            filters &= (
+                Q(credit__farmer__first_name__icontains=query) |
+                Q(credit__farmer__last_name__icontains=query) |
+                Q(credit__farmer__farmer_id__icontains=query) |
+                Q(credit__credit_id__icontains=query) |
+                Q(credit__farmer__phone_number__icontains=query[1:])
+            )
         if credit_id:
             filters &= Q(credit_id=credit_id)
         if payback_method:
