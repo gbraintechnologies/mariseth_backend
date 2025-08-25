@@ -1,3 +1,4 @@
+from decimal import Decimal
 from rest_framework import serializers
 
 from apps.credit.models import Credit, CreditPayback
@@ -93,7 +94,8 @@ class MobileCreditApplicationSerializer(serializers.ModelSerializer):
         validated_data['created_by'] = request.user
         validated_data['organization'] = request.organization
         validated_data['credit_id'] = generate_credit_id(request.organization.id)
-        interest_amount = validated_data['credit_amount'] * (validated_data['interest_rate'] / 100)
+        interest_rate = validated_data.get('interest_rate', 0)
+        interest_amount = validated_data['credit_amount'] * (Decimal(interest_rate) / 100)
         validated_data['outstanding_amount'] = validated_data['credit_amount'] + interest_amount
         validated_data['self_application'] = True
 
