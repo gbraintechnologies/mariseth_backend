@@ -124,7 +124,7 @@ class FullTrainingSerializer(TrainingBaseSerializer):
     def get_status(self, obj):
         if obj.start_date > timezone.now():
             return 'upcoming'
-        elif obj.end_date < timezone.now():
+        elif obj.end_date.date() < timezone.now().date():
             return 'completed'
         else:
             return 'ongoing'
