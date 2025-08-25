@@ -33,6 +33,11 @@ from apps.warehouse.serializers import WarehouseExportSerializer
 from apps.warehouse.utils import build_warehouse_filter_q
 from mariseth.logging import logger
 
+# New imports for employee export
+from apps.hr.models import Employee
+from apps.hr.serializers.employee import EmployeeExportSerializer
+from apps.hr.utils import build_employee_filter_q
+
 User = get_user_model()
 
 
@@ -544,3 +549,68 @@ def process_outflow_export(filter_params, approval=False):
     except Exception as e:
         sentry_sdk.capture_exception(e)
         logger.error(f"Outflow order export failed: {str(e)}")
+
+
+@shared_task
+def process_employee_export(filter_params):
+    try:
+        user = User.objects.get(pk=filter_params["user_id"])
+        organization = Organization.objects.get(pk=filter_params["organization_id"])
+
+        filter_q = build_employee_filter_q(filter_params, organization)
+
+        employees = (
+            Employee.objects.select_related(
+                "created_by", "contract__department", "contract__job_title"
+            )
+            .filter(filter_q)
+            .order_by("-date_created")
+        )
+
+        serializer = EmployeeExportSerializer(employees, many=True)
+        export_data = serializer.data
+
+        df = pd.DataFrame(export_data)
+
+        column_map = {
+            "employee_id": "Employee ID",
+            "first_name": "First Name",
+            "last_name": "Last Name",
+            "gender": "Gender",
+            "relationship_status": "Relationship Status",
+            "email": "Email",
+            "phone_number": "Phone Number",
+            "date_of_birth": "Date of Birth",
+            "bank_account_number": "Bank Account Number",
+            "status": "Status",
+            "department": "Department",
+            "job_title": "Job Title",
+            "employment_type": "Employment Type",
+            "work_type": "Work Type",
+        }
+
+        df.rename(columns=column_map, inplace=True)
+
+        file_name = f"Employees_Export_{datetime.now().strftime('%Y-%m-%d_%H-%M')}.csv"
+        csv_buffer = StringIO()
+        df.to_csv(csv_buffer, index=False)
+        file_data = BytesIO(csv_buffer.getvalue().encode("utf-8"))
+
+        s3_url = upload_to_s3(file_data, file_name)
+
+        if not s3_url:
+            return
+
+        group_names = [f"user_{user.id}"]
+        message = {
+            "has_permission": True,
+            "results": s3_url,
+            "export_type": "employee_export",
+        }
+        send_client_notification(
+            message=message, message_type="export_notification", group_names=group_names
+        )
+
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
+        logger.error(f"Employee export failed: {str(e)}")

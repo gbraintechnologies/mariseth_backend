@@ -1,8 +1,7 @@
 from rest_framework import serializers
 
 from apps.accounts.serializers.users import ShortUserSerializer
-from apps.hr.models import Employee, EmployeeContract, EmployeeDisciplinaryAction, EmployeeEmergencyContact, \
-    EmployeeQualification
+from apps.hr.models import Employee, EmployeeContract, EmployeeDisciplinaryAction, EmployeeEmergencyContact,     EmployeeQualification
 from apps.hr.serializers.department import FullDepartmentSerializer
 from apps.hr.serializers.job_title import FullJobTitleSerializer
 from apps.hr.utils import generate_employee_id
@@ -177,4 +176,23 @@ class ListEmployeeSerializer(serializers.ModelSerializer):
             'relationship_status', 'email', 'phone_number', 'bank_account_number',
             'status', 'date_of_birth', 'date_created',
             'job_title', 'department', 'work_location'
+        )
+
+
+class EmployeeExportSerializer(serializers.ModelSerializer):
+    department = serializers.CharField(source='contract.department.name', read_only=True)
+    job_title = serializers.CharField(source='contract.job_title.name', read_only=True)
+    gender = serializers.CharField(source='get_gender_display', read_only=True)
+    status = serializers.CharField(source='get_status_display', read_only=True)
+    employment_type = serializers.CharField(source='contract.get_employment_type_display', read_only=True)
+    work_type = serializers.CharField(source='contract.get_work_type_display', read_only=True)
+    relationship_status = serializers.CharField(source='get_relationship_status_display', read_only=True)
+
+    class Meta:
+        model = Employee
+        fields = (
+            'employee_id', 'first_name', 'last_name', 'gender',
+            'relationship_status', 'email', 'phone_number', 'date_of_birth',
+            'bank_account_number', 'status', 'department', 'job_title',
+            'employment_type', 'work_type'
         )

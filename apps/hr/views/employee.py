@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from apps.hr.models import Employee, EmployeeQualification, LeaveRequest, TrainingAttendee
 from apps.hr.serializers.employee import DisciplinaryActionSerializer, EmployeeSerializer, FullEmployeeSerializer, \
     ListEmployeeSerializer, QualificationSerializer
+from apps.hr.utils import build_employee_filter_q
 from apps.hr.serializers.leave import ListEmployeeLeaveRequestSerializer
 from apps.hr.serializers.training import ListTrainingAttendeeSerializer
 from apps.shared.general_response import GENERAL_SUCCESS_RESPONSE
@@ -17,7 +18,7 @@ from apps.shared.literals import (ADD_EMPLOYEE_DISCIPLINARY_ACTION, ADD_EMPLOYEE
                                   LIST_LEAVE_REQUESTS, LIST_TRAININGS, REMOVE_EMPLOYEE_QUALIFICATION, UPDATE_EMPLOYEE,
                                   VIEW_EMPLOYEE)
 from apps.shared.utils.permissions import UserPermission
-
+from apps.shared.tasks.export_tasks import process_employee_export
 
 class EmployeeViewSet(viewsets.GenericViewSet):
     queryset = Employee.objects.filter(is_active=True)
@@ -72,33 +73,22 @@ class EmployeeViewSet(viewsets.GenericViewSet):
     def list(self, request):
         page = request.query_params.get('page', 1)
         page_size = request.query_params.get('page_size', 10)
-        query = request.query_params.get('query')
-        job_title = request.query_params.get('job_title')
-        department = request.query_params.get('department')
-        status_param = request.query_params.get('status')
-        gender = request.query_params.get('gender')
-
-        filter_q = Q(is_active=True, organization=request.organization)
-
-        if query:
-            filter_q &= (
-                Q(employee_id__icontains=query) |
-                Q(first_name__icontains=query) |
-                Q(last_name__icontains=query) |
-                Q(employee_id__icontains=query) |
-                Q(email__icontains=query) |
-                Q(phone_number__icontains=query[1:])
-            )
-        if job_title:
-            filter_q &= Q(contract__job_title=job_title)
-        if department:
-            filter_q &= Q(contract__department=department)
-        if status_param:
-            filter_q &= Q(status=status_param)
-        if gender:
-            filter_q &= Q(gender=gender)
+        export = request.query_params.get('export', 'false').lower()
+        filter_q = build_employee_filter_q(request.query_params, request.organization)
 
         employees = Employee.objects.filter(filter_q).order_by('-date_created')
+        export_response = None
+        if export == 'true':
+            if employees.count() == 0:
+                export_response = 'No farms to export'
+            else:
+                filter_params = {
+                    'user_id': request.user.id,
+                    'organization_id': request.organization.id,
+                    **request.query_params.dict(),
+                }
+                process_employee_export.delay(filter_params)
+                export_response = 'Export started. You will receive a notification when it is done.'
 
         paginator = Paginator(employees, page_size)
         page_obj = paginator.get_page(page)
@@ -106,6 +96,7 @@ class EmployeeViewSet(viewsets.GenericViewSet):
         results = ListEmployeeSerializer(instance=page_obj.object_list, many=True).data
 
         return Response({
+            'export_response': export_response,
             'results': results,
             'pagination': {
                 'total': employees.count(),
