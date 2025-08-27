@@ -7,9 +7,10 @@ from celery import shared_task
 from django.contrib.auth import get_user_model
 from django.db.models import Q
 
-from apps.credit.models import Credit
+from apps.credit.models import Credit, CreditPayback
 from apps.credit.serializers.credits import CreditExportSerializer
-from apps.credit.utils import build_credit_filter_q
+from apps.credit.serializers.payback import PaybackExportSerializer
+from apps.credit.utils import build_credit_filter_q, build_payback_filter_q
 from apps.farm.models import Farm, Farmer, Product
 from apps.farm.serializers.farm import FarmExportSerializer
 from apps.farm.serializers.farmer import FarmerExportSerializer
@@ -34,9 +35,10 @@ from apps.warehouse.utils import build_warehouse_filter_q
 from mariseth.logging import logger
 
 # New imports for employee export
-from apps.hr.models import Employee
+from apps.hr.models import Employee, Training
 from apps.hr.serializers.employee import EmployeeExportSerializer
-from apps.hr.utils import build_employee_filter_q
+from apps.hr.serializers.training import TrainingExportSerializer
+from apps.hr.utils import build_employee_filter_q, build_training_filter_q
 
 User = get_user_model()
 
@@ -614,3 +616,127 @@ def process_employee_export(filter_params):
     except Exception as e:
         sentry_sdk.capture_exception(e)
         logger.error(f"Employee export failed: {str(e)}")
+
+
+@shared_task
+def process_training_export(filter_params):
+    try:
+        user = User.objects.get(pk=filter_params["user_id"])
+        organization = Organization.objects.get(pk=filter_params["organization_id"])
+
+        filter_q = build_training_filter_q(filter_params, organization)
+
+        trainings = (
+            Training.objects.select_related("created_by")
+            .filter(filter_q)
+            .order_by("-date_created")
+        )
+
+        serializer = TrainingExportSerializer(trainings, many=True)
+        export_data = serializer.data
+
+        df = pd.DataFrame(export_data)
+
+        column_map = {
+            "training_id": "Training ID",
+            "title": "Title",
+            "description": "Description",
+            "training_type": "Training Type",
+            "training_mode": "Training Mode",
+            "start_date": "Start Date",
+            "end_date": "End Date",
+            "location": "Location",
+            "material_url": "Material URL",
+            "all_employees": "All Employees",
+            "attendance_status": "Attendance Status",
+            "created_by": "Created By",
+            "date_created": "Date Created",
+        }
+
+        df.rename(columns=column_map, inplace=True)
+
+        file_name = f"Trainings_Export_{datetime.now().strftime('%Y-%m-%d_%H-%M')}.csv"
+        csv_buffer = StringIO()
+        df.to_csv(csv_buffer, index=False)
+        file_data = BytesIO(csv_buffer.getvalue().encode("utf-8"))
+
+        s3_url = upload_to_s3(file_data, file_name)
+
+        if not s3_url:
+            return
+
+        group_names = [f"user_{user.id}"]
+        message = {
+            "has_permission": True,
+            "results": s3_url,
+            "export_type": "training_export",
+        }
+        send_client_notification(
+            message=message, message_type="export_notification", group_names=group_names
+        )
+
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
+        logger.error(f"Training export failed: {str(e)}")
+
+
+@shared_task
+def process_payback_export(filter_params):
+    try:
+        user = User.objects.get(pk=filter_params["user_id"])
+        organization = Organization.objects.get(pk=filter_params["organization_id"])
+
+        filter_q = build_payback_filter_q(filter_params, organization)
+
+        paybacks = (
+            CreditPayback.objects.select_related("credit__farmer", "credit", "product")
+            .filter(filter_q)
+            .order_by("-date_created")
+        )
+
+        serializer = PaybackExportSerializer(paybacks, many=True)
+        export_data = serializer.data
+
+        df = pd.DataFrame(export_data)
+
+        column_map = {
+            "credit": "Credit ID",
+            "farmer": "Farmer",
+            "payback_method": "Payback Method",
+            "amount": "Amount",
+            "outstanding_before": "Outstanding Before",
+            "outstanding_after": "Outstanding After",
+            "product": "Product",
+            "quantity_bags": "Quantity (Bags)",
+            "comments": "Comments",
+            "date_paid": "Date Paid",
+            "status": "Status",
+            "created_by": "Created By",
+            "date_created": "Date Created",
+        }
+
+        df.rename(columns=column_map, inplace=True)
+
+        file_name = f"Paybacks_Export_{datetime.now().strftime('%Y-%m-%d_%H-%M')}.csv"
+        csv_buffer = StringIO()
+        df.to_csv(csv_buffer, index=False)
+        file_data = BytesIO(csv_buffer.getvalue().encode("utf-8"))
+
+        s3_url = upload_to_s3(file_data, file_name)
+
+        if not s3_url:
+            return
+
+        group_names = [f"user_{user.id}"]
+        message = {
+            "has_permission": True,
+            "results": s3_url,
+            "export_type": "payback_export",
+        }
+        send_client_notification(
+            message=message, message_type="export_notification", group_names=group_names
+        )
+
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
+        logger.error(f"Payback export failed: {str(e)}")

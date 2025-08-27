@@ -157,3 +157,31 @@ class FullPaybackSerializer(serializers.ModelSerializer):
             'status', 'created_by', 'date_created'
         ]
         read_only_fields = fields
+
+
+class PaybackExportSerializer(serializers.ModelSerializer):
+    credit = serializers.SerializerMethodField()
+    farmer = serializers.SerializerMethodField()
+    payback_method = serializers.CharField(source='get_payback_method_display', read_only=True)
+    product = serializers.SerializerMethodField()
+    status = serializers.CharField(source='get_status_display', read_only=True)
+    created_by = serializers.CharField(source='created_by.get_full_name', read_only=True)
+    date_paid = serializers.DateField(format="%d-%m-%Y")
+    date_created = serializers.DateTimeField(format="%d-%m-%Y %H:%M:%S", read_only=True, allow_null=True)
+
+    class Meta:
+        model = CreditPayback
+        fields = (
+            'credit', 'farmer', 'payback_method', 'amount', 'outstanding_before',
+            'outstanding_after', 'product', 'quantity_bags', 'comments',
+            'date_paid', 'status', 'created_by', 'date_created'
+        )
+
+    def get_credit(self, obj):
+        return obj.credit.credit_id
+
+    def get_farmer(self, obj):
+        return f"{obj.credit.farmer.first_name} {obj.credit.farmer.last_name}"
+
+    def get_product(self, obj):
+        return obj.product.name if obj.product else ""

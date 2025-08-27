@@ -23,3 +23,4 @@ def send_client_notification(
                 'message': message,
             }
         )
+    print("CLIENT NOTIFICATION SENT")

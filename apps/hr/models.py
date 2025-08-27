@@ -244,6 +244,10 @@ class Training(BaseModel):
     def attendance_rate(self):
         return round((self.present_count / self.attendee_count * 100), 1) if self.attendee_count else 0
 
+    @property
+    def get_all_employees_display(self):
+        return "Yes" if self.all_employees else "No"
+
 
 class TrainingAttendee(BaseModel):
     ATTENDANCE_STATUS = (
