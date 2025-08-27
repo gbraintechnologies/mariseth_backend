@@ -56,3 +56,33 @@ def build_credit_filter_q(params, organization):
         filter_q &= Q(issue_date__range=[start_date, end_date])
 
     return filter_q
+
+
+def build_payback_filter_q(params, organization):
+    filter_q = Q(is_active=True, credit__organization=organization)
+
+    query = params.get('query')
+    credit_id = params.get('credit')
+    payback_method = params.get('payback_method')
+    start_date = params.get('start_date')
+    end_date = params.get('end_date')
+    status_filter = params.get('status')
+
+    if query:
+        filter_q &= (
+            Q(credit__farmer__first_name__icontains=query) |
+            Q(credit__farmer__last_name__icontains=query) |
+            Q(credit__farmer__farmer_id__icontains=query) |
+            Q(credit__credit_id__icontains=query) |
+            Q(credit__farmer__phone_number__icontains=query[1:])
+        )
+    if credit_id:
+        filter_q &= Q(credit_id=credit_id)
+    if payback_method:
+        filter_q &= Q(payback_method=payback_method)
+    if start_date and end_date:
+        filter_q &= Q(date_paid__range=[start_date, end_date])
+    if status_filter:
+        filter_q &= Q(status=status_filter)
+
+    return filter_q
