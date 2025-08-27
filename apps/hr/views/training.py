@@ -10,10 +10,12 @@ from rest_framework.response import Response
 from apps.hr.models import Employee, Training, TrainingAttendee
 from apps.hr.serializers.training import FullTrainingSerializer, TrainingAttendeeSerializer, \
     TrainingSerializer
+from apps.hr.utils import build_training_filter_q
 from apps.shared.general_response import GENERAL_SUCCESS_RESPONSE
 from apps.shared.literals import ADD_TRAINING_ATTENDEE, CREATE_TRAINING, DELETE_TRAINING, LIST_TRAININGS, \
     LIST_TRAINING_ATTENDEES, MARK_TRAINING_ATTENDEE_PRESENT, REMOVE_TRAINING_ATTENDEE, SET_ATTENDANCE_STATUS, \
     UPDATE_TRAINING, VIEW_TRAINING
+from apps.shared.tasks.export_tasks import process_training_export
 from apps.shared.utils.permissions import UserPermission
 
 
@@ -69,42 +71,23 @@ class TrainingViewSet(viewsets.GenericViewSet):
     def list(self, request):
         page = request.query_params.get('page', 1)
         page_size = request.query_params.get('page_size', 10)
-        query = request.query_params.get('query')
-        training_type = request.query_params.get('training_type')
-        training_mode = request.query_params.get('training_mode')
-        status_param = request.query_params.get('status', None)
-        training_date_from = request.query_params.get('training_date_from')
-        training_date_to = request.query_params.get('training_date_to')
-        now = timezone.now()
-        filter_q = Q(is_active=True, organization=request.organization)
+        export = request.query_params.get('export', 'false').lower()
 
-        if query:
-            filter_q &= (
-                    Q(title__icontains=query) |
-                    Q(description__icontains=query) |
-                    Q(training_id__icontains=query)
-            )
-        if training_type:
-            filter_q &= Q(training_type=training_type)
-        if training_mode:
-            filter_q &= Q(training_mode=training_mode)
-
-        if status_param in ['upcoming', 'ongoing']:
-            filter_q &= (
-                    Q(start_date__gt=now) |
-                    Q(start_date__lte=now, end_date__gte=now)
-            )
-        elif status_param == 'completed':
-            filter_q &= Q(end_date__date__lt=now.date())
-
-        if training_date_from and training_date_to:
-            filter_q &= Q(start_date__date__gte=training_date_from,  end_date__date__lte=training_date_to)
-        elif training_date_from:
-            filter_q &= Q(start_date__date__gte=training_date_from)
-        elif training_date_to:
-            filter_q &= Q(end_date__date__lte=training_date_to)
-
+        filter_q = build_training_filter_q(request.query_params, request.organization)
         trainings = Training.objects.filter(filter_q).order_by('-date_created')
+
+        export_response = None
+        if export == 'true':
+            if trainings.count() == 0:
+                export_response = 'No trainings to export'
+            else:
+                filter_params = {
+                    'user_id': request.user.id,
+                    'organization_id': request.organization.id,
+                    **request.query_params.dict(),
+                }
+                process_training_export.delay(filter_params)
+                export_response = 'Export started. You will receive a notification when it is done.'
 
         paginator = Paginator(trainings, page_size)
         page_obj = paginator.get_page(page)
@@ -112,6 +95,7 @@ class TrainingViewSet(viewsets.GenericViewSet):
         results = FullTrainingSerializer(instance=page_obj.object_list, many=True).data
 
         return Response({
+            'export_response': export_response,
             'results': results,
             'pagination': {
                 'total': trainings.count(),

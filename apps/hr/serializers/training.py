@@ -137,6 +137,24 @@ class FullTrainingSerializer(TrainingBaseSerializer):
         return f"{present_count}/{obj.attendee_count}"
 
 
+class TrainingExportSerializer(serializers.ModelSerializer):
+    created_by = serializers.CharField(source='created_by.get_full_name', read_only=True)
+    training_type = serializers.CharField(source='get_training_type_display', read_only=True)
+    training_mode = serializers.CharField(source='get_training_mode_display', read_only=True)
+    attendance_status = serializers.CharField(source='get_attendance_status_display', read_only=True)
+    all_employees = serializers.CharField(source='get_all_employees_display', read_only=True)
+    date_created = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S", read_only=True)
+
+    class Meta:
+        model = Training
+        fields = (
+            'training_id', 'title', 'description', 'training_type',
+            'training_mode', 'start_date', 'end_date', 'location',
+            'material_url', 'all_employees', 'attendance_status',
+            'created_by', 'date_created'
+        )
+
+
 class ListTrainingAttendeeSerializer(serializers.ModelSerializer):
     training = TrainingSerializer(read_only=True)
 

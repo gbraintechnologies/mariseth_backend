@@ -1,4 +1,6 @@
 from django.db.models import Q
+from django.utils import timezone
+
 
 def generate_department_id(organization_id, department_pk):
     return f"D-{organization_id}00{department_pk}"
@@ -48,5 +50,45 @@ def build_employee_filter_q(params, organization):
         filter_q &= Q(status=status_param)
     if gender:
         filter_q &= Q(gender=gender)
+
+    return filter_q
+
+
+def build_training_filter_q(params, organization):
+    query = params.get('query')
+    training_type = params.get('training_type')
+    training_mode = params.get('training_mode')
+    status_param = params.get('status', None)
+    training_date_from = params.get('training_date_from')
+    training_date_to = params.get('training_date_to')
+    now = timezone.now()
+    filter_q = Q(is_active=True, organization=organization)
+
+    if query:
+        filter_q &= (
+                Q(title__icontains=query) |
+                Q(description__icontains=query) |
+                Q(training_id__icontains=query)
+        )
+    if training_type:
+        filter_q &= Q(training_type=training_type)
+    if training_mode:
+        filter_q &= Q(training_mode=training_mode)
+
+    if status_param in ['upcoming', 'ongoing']:
+        filter_q &= (
+                Q(start_date__gt=now) |
+                Q(start_date__lte=now, end_date__gte=now)
+        )
+    elif status_param == 'completed':
+        filter_q &= Q(end_date__date__lt=now.date())
+
+    if training_date_from and training_date_to:
+        filter_q &= Q(start_date__date__gte=training_date_from, end_date__date__lte=training_date_to)
+    elif training_date_from:
+        filter_q &= Q(start_date__date__gte=training_date_from)
+    elif training_date_to:
+        filter_q &= Q(end_date__date__lte=training_date_to)
+
 
     return filter_q
