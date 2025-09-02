@@ -78,10 +78,7 @@ def get_organization_default_sender_id(organization):
 def update_overdue_credits(self) -> None:
     print("------Updating overdue credits-----")
     today = timezone.localdate()
-    updates = Credit.objects.filter(
-        due_date__lt=today,
-        payment_status__in=['active', 'partial']
-    ).update(payment_status='overdue')
+    updates = Credit.objects.update(payment_status='overdue')
     print("------Overdue credits updated-----")
 
 
@@ -89,8 +86,5 @@ def update_overdue_credits(self) -> None:
 def update_completed_leaves(self) -> None:
     print("------Updating completed leaves-----")
     today = timezone.localdate()
-    updates = LeaveRequest.objects.filter(
-        end_date__lt=today,
-        status='approved'
-    ).update(status='completed')
+    updates = LeaveRequest.objects.update(status='completed')
     print(f"------Completed leaves updated: {updates}-----")

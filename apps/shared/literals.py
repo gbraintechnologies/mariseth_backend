@@ -55,6 +55,17 @@ VIEW_CREDIT = 'credit|view_credit'
 LIST_CREDITS = 'credit|list_credits'
 UPLOAD_CREDITS = 'credit|upload_credits'
 APPROVE_OR_DENY_CREDIT = 'credit|approve_deny_credit'
+FULFILL_CREDIT_REQUEST = 'credit|fulfill_credit_request'
+WAREHOUSE_MANAGER_FULFILL_CREDIT = 'credit|warehouse_manager_fulfill_credit'
+LIST_CREDIT_FULFILL = 'credit|list_credit_fulfill'
+
+# Input Credits
+CREATE_INPUT_CREDIT = 'input_credit|create_input_credit'
+UPDATE_INPUT_CREDIT = 'input_credit|update_input_credit'
+DELETE_INPUT_CREDIT = 'input_credit|delete_input_credit'
+LIST_INPUT_CREDIT = 'input_credit|list_input_credit'
+CREATE_INPUT_CREDIT_PURCHASE = 'input_credit|create_input_credit_purchase'
+LIST_INPUT_CREDIT_PURCHASE = 'input_credit|list_input_credit_purchase'
 
 # PAYBACKS
 CREATE_PAYBACK = 'payback|create_payback'

@@ -1,19 +1,22 @@
 from decimal import Decimal
 from rest_framework import serializers
 
-from apps.credit.models import Credit, CreditPayback
+from apps.credit.models import Credit, CreditPayback, InputCredit
 from apps.credit.utils import generate_credit_id
+from apps.shared.models import CustomType
 
 
 class MobileCreditSerializer(serializers.ModelSerializer):
     quantity_metric_name = serializers.CharField(source='quantity_metric.name', read_only=True)
     days_overdue = serializers.SerializerMethodField()
+    input_credit_category = serializers.CharField(source='input_credit_category.name', read_only=True)
+    input_credit = serializers.CharField(source='input_credit.name', read_only=True)
 
     class Meta:
         model = Credit
         fields = [
             'id', 'credit_id',
-            'input_credits', 'type', 'quantity', 'quantity_metric_name', 'notes',
+            'input_credit_category', 'input_credit', 'quantity', 'quantity_metric_name', 'notes',
             'credit_amount', 'issue_date', 'due_date', 'interest_rate',
             'outstanding_amount', 'payment_status', 'approval_status',
             'days_overdue', 'date_created'
@@ -49,11 +52,13 @@ class MobileActiveCreditSerializer(serializers.ModelSerializer):
     days_overdue = serializers.SerializerMethodField()
     total_paid = serializers.SerializerMethodField()
     recent_paybacks = MobileCreditPaybackSerializer(source='paybacks', many=True, read_only=True)
+    input_credit_category = serializers.CharField(source='input_credit_category.name', read_only=True)
+    input_credit = serializers.CharField(source='input_credit.name', read_only=True)
 
     class Meta:
         model = Credit
         fields = [
-            'id', 'credit_id', 'input_credits', 'type', 'quantity',
+            'id', 'credit_id', 'input_credit_category', 'input_credit', 'quantity',
             'quantity_metric_name', 'notes',
             'credit_amount', 'issue_date', 'due_date', 'interest_rate',
             'outstanding_amount', 'payment_status', 'approval_status',
@@ -73,14 +78,15 @@ class MobileActiveCreditSerializer(serializers.ModelSerializer):
 
 
 class MobileCreditApplicationSerializer(serializers.ModelSerializer):
+    input_credit_category = serializers.PrimaryKeyRelatedField(queryset=CustomType.objects.filter(is_active=True))
+    input_credit = serializers.PrimaryKeyRelatedField(queryset=InputCredit.objects.filter(is_active=True).all())
+
     class Meta:
         model = Credit
         fields = (
-            'id', 'farmer', 'input_credits', 'type', 'quantity',
-            'quantity_metric', 'credit_amount', 'issue_date', 'due_date',
-            'interest_rate', 'payment_status', 'approval_status', 'notes'
+            'input_credit_category', 'input_credit', 'quantity',
+            'quantity_metric', 'notes', 'self_application',
         )
-        read_only_fields = ('id', 'farmer', 'approval_status', 'issue_date', 'payment_status', 'approval_status',)
 
     def validate(self, data):
         if data.get('due_date') and data.get('issue_date'):
@@ -94,9 +100,27 @@ class MobileCreditApplicationSerializer(serializers.ModelSerializer):
         validated_data['created_by'] = request.user
         validated_data['organization'] = request.organization
         validated_data['credit_id'] = generate_credit_id(request.organization.id)
-        interest_rate = validated_data.get('interest_rate', 0)
-        interest_amount = validated_data['credit_amount'] * (Decimal(interest_rate) / 100)
-        validated_data['outstanding_amount'] = validated_data['credit_amount'] + interest_amount
         validated_data['self_application'] = True
+
+        # Get input_credit and quantity
+        input_credit = validated_data.get('input_credit')
+        quantity = validated_data.get('quantity')
+
+        # Calculate credit_amount based on input_credit price and quantity
+        if input_credit and quantity is not None:
+            # Ensure input_credit.price is Decimal for calculation
+            input_credit_price = Decimal(str(input_credit.price))
+            calculated_credit_amount = input_credit_price * Decimal(str(quantity))
+            validated_data['credit_amount'] = calculated_credit_amount
+        else:
+            # If input_credit or quantity is missing, use 0 or raise error if credit_amount is required
+            validated_data['credit_amount'] = Decimal('0.00') # Or handle as an error if credit_amount is mandatory
+
+        # Calculate outstanding_amount
+        credit_amount = validated_data.get('credit_amount', Decimal('0.00'))
+        interest_rate = validated_data.get('interest_rate', Decimal('0.00'))
+
+        interest_amount = credit_amount * (interest_rate / Decimal('100.00'))
+        validated_data['outstanding_amount'] = credit_amount + interest_amount
 
         return super().create(validated_data)

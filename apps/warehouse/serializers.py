@@ -3,12 +3,14 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 
 from apps.accounts.serializers.users import ShortUserSerializer
+
+from apps.credit.serializers.input_credit import FullInputCreditSerializer
 from apps.customers.serializers import ShortCustomerSerializer
 from apps.farm.serializers.products import FullProductSerializer, ShortProductSerializer
 from apps.inflow.serializers import ShortInflowOrderSerializer
 from apps.outflow.models import OutflowOrder
 from apps.shared.serializers.regions import DistrictSerializer, ShortRegionSerializer
-from apps.warehouse.models import Warehouse, WarehouseProduct, WarehouseProductMovement
+from apps.warehouse.models import Warehouse, WarehouseProduct, WarehouseProductMovement, InputCreditWarehouse, InputCreditWarehouseMovement
 from apps.warehouse.utils import generate_warehouse_id
 
 User = get_user_model()
@@ -215,4 +217,41 @@ class WarehouseProductMovementSerializer(serializers.ModelSerializer):
             self.fields.pop('outflow_order')
         elif order_type == 'outflow':
             self.fields.pop('inflow_order')
+
+
+class FullInputCreditWarehouseSerializer(serializers.ModelSerializer):
+    input_credit = FullInputCreditSerializer()
+
+    class Meta:
+        model = InputCreditWarehouse
+        fields = ('input_credit', 'weight', 'quantity')
+
+
+class InputCreditWarehouseMovementSerializer(serializers.ModelSerializer):
+    inflow_source = ShortInflowOrderSerializer(read_only=True)
+    outflow_source = serializers.SerializerMethodField()
+    warehouse = ShortWarehouseSerializer(read_only=True)
+
+    class Meta:
+        model = InputCreditWarehouseMovement
+        fields = (
+            'date_created', 'weight', 'quantity', 'amount',
+            'warehouse', 'inflow_source', 'outflow_source',
+        )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        order_type = self.context.get('order_type')
+
+        # Include only relevant source field
+        if order_type == 'inflow':
+            self.fields.pop('outflow_source')
+        elif order_type == 'outflow':
+            self.fields.pop('inflow_source')
+
+    def get_outflow_source(self, obj):
+        from apps.credit.serializers.credits import ShortCreditSerializer
+        if obj.outflow_source:
+            return ShortCreditSerializer(obj.outflow_source).data
+        return None
 

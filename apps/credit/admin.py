@@ -43,9 +43,9 @@ class CreditAdmin(admin.ModelAdmin):
         'approval_status', 'is_active'
     )
     search_fields = ('farmer__name', 'id', 'main_crops')
-    list_filter = ('approval_status', 'payment_status', 'type')
+    list_filter = ('approval_status', 'payment_status')
     fieldsets = (
-        ('Basic Info', {'fields': ('farmer', 'type', 'input_credits', 'quantity', 'quantity_metric')}),
+        ('Basic Info', {'fields': ('farmer', 'input_credit', 'quantity', 'quantity_metric')}),
         ('Financials', {'fields': ('credit_amount', 'interest_rate', 'outstanding_amount', 'issue_date', 'due_date')}),
         ('Status', {'fields': ('payment_status', 'approval_status', 'denial_notes', 'main_crops')}),
         ('Notes', {'fields': ('notes',), 'classes': ('collapse',)}),

@@ -232,7 +232,7 @@ class TrainingViewSet(viewsets.GenericViewSet):
             return Response({'error': 'Training not found'}, status=status.HTTP_404_NOT_FOUND)
 
         if mark_all:
-            attendees_qs = TrainingAttendee.objects.filter(training=training)
+            attendees_qs = TrainingAttendee.objects
         else:
             if not isinstance(employee_ids, list) or not employee_ids:
                 return Response({'error': 'Provide a non-empty employees list or set mark_all=true.'},
