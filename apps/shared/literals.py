@@ -63,9 +63,11 @@ LIST_CREDIT_FULFILL = 'credit|list_credit_fulfill'
 CREATE_INPUT_CREDIT = 'input_credit|create_input_credit'
 UPDATE_INPUT_CREDIT = 'input_credit|update_input_credit'
 DELETE_INPUT_CREDIT = 'input_credit|delete_input_credit'
+VIEW_INPUT_CREDIT = 'input_credit|view_input_credit'
 LIST_INPUT_CREDIT = 'input_credit|list_input_credit'
 CREATE_INPUT_CREDIT_PURCHASE = 'input_credit|create_input_credit_purchase'
 LIST_INPUT_CREDIT_PURCHASE = 'input_credit|list_input_credit_purchase'
+DELETE_INPUT_CREDIT_PURCHASE = 'input_credit|delete_input_credit_purchase'
 
 # PAYBACKS
 CREATE_PAYBACK = 'payback|create_payback'

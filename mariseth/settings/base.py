@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     'storages',
     'drf_yasg',
     'channels',
+    'django_extensions',
 
     # local apps
     'apps.accounts.apps.AccountsConfig',

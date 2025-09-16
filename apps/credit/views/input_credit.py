@@ -1,4 +1,5 @@
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.db.models import Q
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -9,8 +10,10 @@ from apps.credit.models import InputCredit, InputCreditPurchase
 from apps.credit.serializers.input_credit import CreateInputCreditSerializer, FullInputCreditSerializer, \
     InputCreditPurchaseListSerializer, InputCreditPurchaseSerializer
 from apps.shared.general_response import GENERAL_SUCCESS_RESPONSE
-from apps.shared.literals import CREATE_INPUT_CREDIT, CREATE_INPUT_CREDIT_PURCHASE, DELETE_INPUT_CREDIT, \
-    LIST_INPUT_CREDIT, LIST_INPUT_CREDIT_PURCHASE, UPDATE_INPUT_CREDIT
+from apps.shared.literals import (
+    CREATE_INPUT_CREDIT, CREATE_INPUT_CREDIT_PURCHASE, DELETE_INPUT_CREDIT, DELETE_INPUT_CREDIT_PURCHASE,
+    LIST_INPUT_CREDIT, LIST_INPUT_CREDIT_PURCHASE, UPDATE_INPUT_CREDIT, VIEW_INPUT_CREDIT
+)
 from apps.shared.utils.permissions import UserPermission
 
 
@@ -24,8 +27,10 @@ class InputCreditViewSet(viewsets.GenericViewSet):
             'update': UPDATE_INPUT_CREDIT,
             'destroy': DELETE_INPUT_CREDIT,
             'list': LIST_INPUT_CREDIT,
+            'retrieve': VIEW_INPUT_CREDIT,
             'input_credit_purchase': CREATE_INPUT_CREDIT_PURCHASE,
             'list_input_credit_purchases': LIST_INPUT_CREDIT_PURCHASE,
+            'delete_input_credit_purchase': DELETE_INPUT_CREDIT_PURCHASE,
         }
         user_permission = permissions.get(self.action, None)
         if user_permission:
@@ -44,7 +49,14 @@ class InputCreditViewSet(viewsets.GenericViewSet):
             return Response(FullInputCreditSerializer(input_credit).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def update(request, pk=None):
+    def retrieve(self, request, pk=None):
+        try:
+            input_credit = InputCredit.objects.get(pk=pk, organization=request.organization)
+        except InputCredit.DoesNotExist:
+            return Response({'error': 'InputCredit not found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(FullInputCreditSerializer(input_credit).data)
+
+    def update(self, request, pk=None):
         try:
             input_credit = InputCredit.objects.get(pk=pk, organization=request.organization)
         except InputCredit.DoesNotExist:
@@ -55,7 +67,6 @@ class InputCreditViewSet(viewsets.GenericViewSet):
             input_credit = serializer.save()
             return Response(FullInputCreditSerializer(input_credit).data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
     def destroy(self, request, pk=None):
         try:
@@ -77,6 +88,20 @@ class InputCreditViewSet(viewsets.GenericViewSet):
             purchase = serializer.save()
             return Response(InputCreditPurchaseListSerializer(purchase).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['DELETE'], url_path='delete-purchase/(?P<purchase_id>[^/.]+)')
+    def delete_input_credit_purchase(self, request, purchase_id=None):
+        """
+        Deletes an input credit purchase and reverses the associated stock movements.
+        """
+        try:
+            purchase = InputCreditPurchase.objects.get(pk=purchase_id, is_active=True, organization=request.organization)
+            purchase.soft_delete(request.user)
+            with transaction.atomic():
+                purchase.reverse_input_purchase()
+            return Response(GENERAL_SUCCESS_RESPONSE, status=status.HTTP_200_OK)
+        except InputCreditPurchase.DoesNotExist:
+            return Response({'error': 'InputCreditPurchase not found'}, status=status.HTTP_404_NOT_FOUND)
 
     @action(detail=False, methods=['GET'], url_path='input-credit-purchases')
     def list_input_credit_purchases(self, request, *args, **kwargs):

@@ -4,7 +4,6 @@ from django.core.validators import MinValueValidator
 from django.db import models
 from django.utils import timezone
 
-
 from apps.shared.models import BaseModel
 
 
@@ -87,6 +86,21 @@ class InputCreditPurchase(BaseModel):
             notes=self.notes
         )
 
+    def reverse_input_purchase(self):
+        """
+        Decreases the quantity of a product in the warehouse and in the input credit.
+        """
+        from apps.warehouse.models import InputCreditWarehouse, InputCreditWarehouseMovement
+        input_credit_warehouse = InputCreditWarehouse.objects.get(
+            input_credit=self.input_credit,
+            warehouse=self.warehouse
+        )
+        input_credit_warehouse.decrease_quantity(self.quantity, self.total_weight)
+        self.input_credit.quantity -= self.quantity
+        self.input_credit.save()
+        #find the record tied to the input credit purchase and delete it
+        movement = InputCreditWarehouseMovement.objects.get(inflow_source=self)
+        movement.soft_delete(owner=self.deleted_by)
 
 class Credit(BaseModel):
     PAYMENT_STATUS_CHOICES = [

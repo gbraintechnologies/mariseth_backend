@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Credit, CreditChangeLog, CreditPayback
+from .models import Credit, CreditChangeLog, CreditPayback, InputCredit, InputCreditPurchase
 
 
 class CreditPaybackInline(admin.TabularInline):
@@ -38,7 +38,7 @@ class CreditChangeLogInline(admin.TabularInline):
 class CreditAdmin(admin.ModelAdmin):
     inlines = [CreditPaybackInline, CreditChangeLogInline]
     list_display = (
-        'id', 'credit_id', 'farmer', 'credit_amount',
+        'id', 'credit_id', 'input_credit', 'farmer', 'credit_amount',
         'issue_date', 'due_date', 'payment_status',
         'approval_status', 'is_active'
     )
@@ -50,3 +50,17 @@ class CreditAdmin(admin.ModelAdmin):
         ('Status', {'fields': ('payment_status', 'approval_status', 'denial_notes', 'main_crops')}),
         ('Notes', {'fields': ('notes',), 'classes': ('collapse',)}),
     )
+
+
+@admin.register(InputCredit)
+class InputCreditAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'category', 'price', 'quantity', 'weight', 'is_active')
+    search_fields = ('name',)
+    list_filter = ('category',)
+
+
+@admin.register(InputCreditPurchase)
+class InputCreditPurchaseAdmin(admin.ModelAdmin):
+    list_display = ('id', 'input_credit', 'purchase_date', 'quantity', 'total_price', 'total_weight', 'is_active')
+    search_fields = ('input_credit__name',)
+    list_filter = ('purchase_date',)

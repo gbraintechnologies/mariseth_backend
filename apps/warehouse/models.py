@@ -55,7 +55,7 @@ class InputCreditWarehouse(BaseModel):
         """Handle outflow of input credits"""
         if self.quantity >= quantity:
             self.quantity -= quantity
-            self.weight -= weight
+            self.weight -= float(weight)
             self.save()
         else:
             raise ValueError("Insufficient stock for this operation")
