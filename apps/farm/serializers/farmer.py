@@ -1,3 +1,4 @@
+from django.db import transaction
 from rest_framework import serializers
 
 from apps.accounts.serializers.users import ShortUserSerializer
@@ -148,3 +149,40 @@ class FarmerExportSerializer(serializers.ModelSerializer):
         if obj.farm:
             return obj.farm.name
         return ""
+
+
+class ReassignSmallholderFarmerSerializer(serializers.Serializer):
+    lead_farmer_id = serializers.IntegerField(required=True)
+    smallholder_farmer_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        min_length=1,
+        required=True
+    )
+
+    def validate_lead_farmer_id(self, value):
+        try:
+            lead_farmer = Farmer.objects.get(id=value, type='lead', is_active=True)
+        except Farmer.DoesNotExist:
+            raise serializers.ValidationError("Lead farmer with this ID does not exist or is not a lead farmer.")
+        return lead_farmer
+
+    def validate_smallholder_farmer_ids(self, values):
+        smallholder_farmers = Farmer.objects.filter(id__in=values, type='smallholder', is_active=True)
+        if len(smallholder_farmers) != len(values):
+            raise serializers.ValidationError("One or more smallholder farmer IDs are invalid or do not exist.")
+        return smallholder_farmers
+
+    def save(self):
+        lead_farmer = self.validated_data['lead_farmer_id']
+        smallholder_farmers = self.validated_data['smallholder_farmer_ids']
+
+        updated_count = 0
+        with transaction.atomic():
+            for smallholder in smallholder_farmers:
+                if smallholder.lead_farmer != lead_farmer:
+                    smallholder.lead_farmer = lead_farmer
+                    smallholder.save(update_fields=['lead_farmer'])
+                    updated_count += 1
+        return {
+            'message': f'{updated_count} Smallholder farmers re-assigned successfully.',
+        }

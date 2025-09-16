@@ -143,10 +143,10 @@ def build_farmer_filter_q(params, organization):
         filter_q &= Q(country__iexact=country)
 
     if region:
-        filter_q &= Q(farm__region=region)
+        filter_q &= Q(region=region)
 
     if district:
-        filter_q &= Q(farm__district=district)
+        filter_q &= Q(district=district)
 
     if lead:
         filter_q &= Q(lead_farmer__id=lead)

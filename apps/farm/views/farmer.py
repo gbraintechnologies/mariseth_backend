@@ -10,7 +10,7 @@ from apps.credit.models import Credit
 from apps.credit.serializers.credits import FullCreditSerializer
 from apps.farm.models import Farm, Farmer
 from apps.farm.serializers.farm import FarmSerializer, FullFarmSerializer
-from apps.farm.serializers.farmer import FarmerSerializer, FullFarmerSerializer
+from apps.farm.serializers.farmer import FarmerSerializer, FullFarmerSerializer, ReassignSmallholderFarmerSerializer
 from apps.farm.swaagger import add_swagger_to_farmer_viewset
 from apps.farm.utils import build_farmer_filter_q
 from apps.shared.general_response import GENERAL_SUCCESS_RESPONSE
@@ -224,3 +224,11 @@ class FarmerViewSet(viewsets.GenericViewSet):
                 'has_previous': page_obj.has_previous(),
             }
         })
+
+    @action(detail=False, methods=['POST'], url_path='reassign-smallholder-farmer')
+    def reassign_smallholder_farmer(self, request):
+        serializer = ReassignSmallholderFarmerSerializer(data=request.data)
+        if serializer.is_valid():
+            result = serializer.save()
+            return Response(result, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
