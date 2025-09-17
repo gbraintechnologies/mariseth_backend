@@ -326,13 +326,13 @@ class CreditExportSerializer(serializers.ModelSerializer):
 
 class CreditWarehouseSerializer(serializers.ModelSerializer):
     warehouse = ShortWarehouseSerializer()
-    input_credit = FullInputCreditSerializer()
     warehouse_input_credit_quantity = serializers.SerializerMethodField()
+    credit = serializers.SerializerMethodField()  # This now contains full credit details
 
     class Meta:
         model = CreditWarehouse
         fields = (
-            'id', 'input_credit', 'warehouse', 'quantity', 'is_fulfilled',
+            'id', 'credit', 'warehouse', 'quantity', 'is_fulfilled',
             'warehouse_input_credit_quantity'
         )
         read_only_fields = fields
@@ -347,35 +347,9 @@ class CreditWarehouseSerializer(serializers.ModelSerializer):
         except InputCreditWarehouse.DoesNotExist:
             return 0
 
-
-class CreditWarehouseFulfillSerializer(serializers.ModelSerializer):
-    created_by = ShortUserSerializer()
-    farmer = ShortFarmerSerializer()
-    payment_status = serializers.CharField(source='get_payment_status_display')
-    quantity_metric = CustomTypeSerializer()
-    input_credit = FullInputCreditSerializer()
-    warehouse_allocations = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Credit
-        fields = (
-            'id', 'credit_id', 'farmer', 'input_credit', 'quantity',
-            'quantity_metric', 'credit_amount', 'issue_date', 'due_date',
-            'interest_rate', 'payment_status', 'approval_status', 'notes',
-            'created_by', 'outstanding_amount', 'denial_notes',
-            'self_application', 'warehouse_allocations'
-        )
-        read_only_fields = fields
-
-    def get_warehouse_allocations(self, obj):
-        user = self.context['request'].user
-
-        credit_warehouses = obj.creditwarehouse_set.filter(is_fulfilled=False)
-
-        if not user.is_superuser:
-            credit_warehouses = credit_warehouses.filter(warehouse__managers=user)
-
-        return CreditWarehouseSerializer(credit_warehouses, many=True).data
+    def get_credit(self, obj):
+        # Include more credit details as needed
+        return ShortCreditSerializer(obj.credit).data
 
 
 class WarehouseManagerFulfillCreditSerializer(serializers.Serializer):
@@ -389,7 +363,7 @@ class WarehouseManagerFulfillCreditSerializer(serializers.Serializer):
             raise serializers.ValidationError("You are not a manager of this warehouse.")
 
         # Credit status check
-        if credit.approval_status != 'approved':
+        if credit.approval_status not in ['approved']:  # Only approved credits can be fulfilled
             raise serializers.ValidationError("Credit must be approved before fulfillment.")
 
         # Check if already fulfilled for this warehouse
@@ -401,12 +375,26 @@ class WarehouseManagerFulfillCreditSerializer(serializers.Serializer):
     def save(self):
         credit = self.context['credit']
         warehouse = self.context['warehouse']
+        user = self.context['request'].user
 
+        # Fulfill the warehouse allocation
         credit.decrease_input_credit_for_warehouse(warehouse)
 
-        # Check if all allocations are fulfilled
+        # Check if all allocations are now fulfilled
         if not credit.creditwarehouse_set.filter(is_fulfilled=False).exists():
-            credit.payment_status = 'fulfilled'
+            old_status = credit.approval_status
+            credit.approval_status = 'fulfilled'  # Changed from payment_status to approval_status
             credit.save()
+
+            # Log the status change
+            CreditChangeLog.objects.create(
+                credit=credit,
+                event='status_change',
+                field_name='approval_status',  # Changed from payment_status
+                old_value=old_status,
+                new_value='fulfilled',
+                created_by=None,
+                notes='Credit automatically marked as fulfilled after all warehouse allocations were completed.'
+            )
 
         return credit

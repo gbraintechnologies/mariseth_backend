@@ -8,7 +8,7 @@ from rest_framework.response import Response
 
 from apps.credit.models import Credit, CreditChangeLog, CreditWarehouse
 from apps.credit.serializers.credits import CreditApprovalSerializer, CreditDeleteSerializer, CreditSerializer, \
-    CreditWarehouseFulfillSerializer, FullCreditSerializer, WarehouseManagerFulfillCreditSerializer
+    CreditWarehouseSerializer, FullCreditSerializer, WarehouseManagerFulfillCreditSerializer
 from apps.credit.swagger import add_swagger_to_credit_viewset
 from apps.credit.utils import build_credit_filter_q
 from apps.shared.literals import APPROVE_OR_DENY_CREDIT, CREATE_CREDIT, DELETE_CREDIT, FULFILL_CREDIT_REQUEST, \
@@ -138,39 +138,6 @@ class CreditViewSet(viewsets.GenericViewSet):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=True, methods=['POST'], url_path='fulfill')
-    @transaction.atomic
-    def fulfill_credit_request(self, request, pk=None):
-
-        try:
-            credit = Credit.objects.get(pk=pk, is_active=True, organization=request.organization)
-        except Credit.DoesNotExist:
-            return Response({'error': 'Credit not found'}, status=status.HTTP_404_NOT_FOUND)
-
-        if credit.approval_status != 'approved':
-            return Response({'error': 'Credit must be approved before fulfillment'},
-                            status=status.HTTP_400_BAD_REQUEST)
-
-        # Check if all allocations are fulfilled
-        if credit.creditwarehouse_set.filter(is_fulfilled=False).exists():
-            return Response({'error': 'All warehouse allocations must be fulfilled before marking the credit as '
-                                      'fulfilled.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        old_status = credit.payment_status
-        credit.payment_status = 'fulfilled'
-        credit.save()
-
-        CreditChangeLog.objects.create(
-            credit=credit,
-            event='status_change',
-            field_name='payment_status',
-            old_value=old_status,
-            new_value='fulfilled',
-            created_by=request.user,
-            notes='Credit status changed to fulfilled by superadmin.'
-        )
-
-        return Response({'message': 'Credit request fulfilled successfully'}, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['POST'], url_path=r'warehouse-fulfill/(?P<warehouse_id>\d+)')
     @transaction.atomic
@@ -187,9 +154,14 @@ class CreditViewSet(viewsets.GenericViewSet):
         )
         if serializer.is_valid():
             try:
-                serializer.save()
-                return Response({'message': f'Credit fulfilled for warehouse {warehouse.name}'},
-                                status=status.HTTP_200_OK)
+                credit = serializer.save()
+
+                # Check if credit is now fully fulfilled
+                message = f'Credit fulfilled for warehouse {warehouse.name}'
+                if credit.is_fulfilled:
+                    # TODO: Send notification
+                    pass
+                return Response({'message': message}, status=status.HTTP_200_OK)
             except ValueError as e:
                 return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
             except Exception as e:
@@ -200,37 +172,31 @@ class CreditViewSet(viewsets.GenericViewSet):
 
     @action(detail=False, methods=['GET'], url_path='warehouse-fulfill-list')
     def list_credit_fulfill(self, request):
+        """
+        Get a paginated list of warehouse allocations to be fulfilled
+        """
         page = request.query_params.get('page', 1)
         page_size = request.query_params.get('page_size', 10)
 
         # Get warehouses managed by the requesting user
         managed_warehouses = request.user.managed_warehouses.all()
 
-        # Get CreditWarehouse entries associated with these managed warehouses
-        # and filter for credits that are approved and NOT YET FULFILLED
+        # Get CreditWarehouse entries directly - these are our main objects now
         credit_warehouses_qs = CreditWarehouse.objects.filter(
             warehouse__in=managed_warehouses,
-            is_fulfilled=False
-        ).select_related('credit')
+            is_fulfilled=False,
+            credit__approval_status='approved',
+            credit__payment_status__in=['active', 'partial']
+        ).select_related('credit', 'warehouse').order_by('-credit__issue_date')
 
-        # Get distinct Credit IDs from these CreditWarehouse entries
-        credit_ids = credit_warehouses_qs.values_list('credit_id', flat=True).distinct()
-
-        # Filter Credits based on these IDs and approval status
-        credits_to_fulfill = Credit.objects.filter(
-            id__in=credit_ids,
-            approval_status='approved',
-            payment_status__in=['active', 'partial']
-        ).order_by('-issue_date')
-
-        paginator = Paginator(credits_to_fulfill, page_size)
+        paginator = Paginator(credit_warehouses_qs, page_size)
         page_obj = paginator.get_page(page)
 
         return Response({
-            'results': CreditWarehouseFulfillSerializer(page_obj.object_list, many=True,
-                                                        context={'request': request}).data,
+            'results': CreditWarehouseSerializer(page_obj.object_list, many=True,
+                                                 context={'request': request}).data,
             'pagination': {
-                'total': credits_to_fulfill.count(),
+                'total': credit_warehouses_qs.count(),
                 'page': page_obj.number,
                 'pages': paginator.num_pages,
                 'has_next': page_obj.has_next(),

@@ -1,6 +1,15 @@
 from django.contrib import admin
 
-from .models import Credit, CreditChangeLog, CreditPayback, InputCredit, InputCreditPurchase
+from .models import Credit, CreditChangeLog, CreditPayback, InputCredit, InputCreditPurchase, CreditWarehouse
+
+
+class CreditWarehouseInline(admin.TabularInline):
+    model = CreditWarehouse
+    extra = 0
+    fields = ('input_credit', 'warehouse', 'quantity', 'is_fulfilled')
+    readonly_fields = ('is_fulfilled',)
+
+
 
 
 class CreditPaybackInline(admin.TabularInline):
@@ -36,7 +45,7 @@ class CreditChangeLogInline(admin.TabularInline):
 
 @admin.register(Credit)
 class CreditAdmin(admin.ModelAdmin):
-    inlines = [CreditPaybackInline, CreditChangeLogInline]
+    inlines = [CreditPaybackInline, CreditChangeLogInline, CreditWarehouseInline]
     list_display = (
         'id', 'credit_id', 'input_credit', 'farmer', 'credit_amount',
         'issue_date', 'due_date', 'payment_status',

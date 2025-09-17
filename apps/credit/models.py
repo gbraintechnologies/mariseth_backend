@@ -109,12 +109,12 @@ class Credit(BaseModel):
         ('overdue', 'Overdue'),
         ('active', 'Active'),
         ('inactive', 'Inactive'),
-        ('fulfilled', 'Fulfilled'),
     ]
     APPROVAL_STATUS_CHOICES = [
         ('approved', 'Approved'),
         ('denied', 'Denied'),
         ('pending', 'Pending'),
+        ('fulfilled', 'Fulfilled'),
     ]
 
     organization = models.ForeignKey('organizations.Organization', on_delete=models.CASCADE)
