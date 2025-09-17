@@ -25,7 +25,7 @@ class InputCreditPurchaseSerializer(serializers.ModelSerializer):
         queryset=InputCredit.objects.filter(is_active=True), required=True
     )
     quantity = serializers.IntegerField(required=True)
-    notes = serializers.CharField(required=False, allow_blank=True)
+    notes = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     purchase_date = serializers.DateField(required=True)
     warehouse = serializers.PrimaryKeyRelatedField(
         queryset=Warehouse.objects.filter(is_active=True), required=True

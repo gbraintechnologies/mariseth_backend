@@ -124,7 +124,7 @@ class WarehouseProductMovement(BaseModel):
     procurement_officer = models.ForeignKey(User, on_delete=models.SET_NULL, null=True,
                                             related_name='procurement_activities')
     description = models.TextField(blank=True, null=True)
-    notes = models.TextField(blank=True)
+    notes = models.TextField(blank=True, null=True)
 
     class Meta:
         ordering = ['-record_date']
@@ -153,7 +153,7 @@ class InputCreditWarehouseMovement(BaseModel):
                                        null=True, blank=True, related_name='input_credit_movements')
     amount = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
-    notes = models.TextField(blank=True)
+    notes = models.TextField(blank=True, null=True)
 
     class Meta:
         ordering = ['-record_date']
