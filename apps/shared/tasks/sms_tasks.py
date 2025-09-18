@@ -5,7 +5,6 @@ from apps.shared.tasks.utils import get_organization_default_sender_id
 from apps.shared.utils.sms_client import SMSClient
 
 
-@shared_task
 def send_verification_sms(user_id, phone_number, verification_code):
     organization = OrganizationUser.objects.get(user_id=user_id).organization
     message = (

@@ -52,7 +52,7 @@ class MobileRegisterSerializer(serializers.Serializer):
         user.verification_code = verification_code
         user.save()
         transaction.on_commit(
-            lambda: send_verification_sms.delay(
+            lambda: send_verification_sms(
                 user_id=user.id,
                 phone_number=phone_number,
                 verification_code=verification_code
@@ -171,7 +171,7 @@ class MobileResendVerificationCodeSerializer(serializers.Serializer):
             verification_code = random.randint(1000, 9999)
             user.verification_code = verification_code
             user.save()
-            send_verification_sms.delay(
+            send_verification_sms(
                 user_id=user.id,
                 phone_number=phone_number,
                 verification_code=verification_code
