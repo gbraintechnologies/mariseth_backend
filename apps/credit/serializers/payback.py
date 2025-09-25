@@ -17,12 +17,18 @@ class CreditPaybackSerializer(serializers.ModelSerializer):
         required=False,
         allow_null=True
     )
+    payment_status = serializers.ChoiceField(
+        choices=[('full', 'Full Payment'), ('partial', 'Partial Payment')],
+        write_only=True,
+        required=True
+    )
 
     class Meta:
         model = CreditPayback
         fields = [
             'id', 'credit', 'payback_method', 'amount',
-            'product', 'quantity_bags', 'comments', 'date_paid', 'status'
+            'product', 'quantity_bags', 'comments', 'date_paid', 'status',
+            'payment_status'
         ]
         read_only_fields = ['id', 'outstanding', 'date_paid', 'status']
 
@@ -48,6 +54,10 @@ class CreditPaybackSerializer(serializers.ModelSerializer):
 
         credit = validated_data['credit']
         amount = validated_data['amount']
+        input_payment_status = validated_data.pop('payment_status')
+
+        # Map input_payment_status to model's status field
+        status = 'paid' if input_payment_status == 'full' else 'partial'
 
         old_status = credit.payment_status
         old_outstanding = credit.outstanding_amount
@@ -55,7 +65,6 @@ class CreditPaybackSerializer(serializers.ModelSerializer):
         with transaction.atomic():
             outstanding_before = credit.outstanding_amount
             new_outstanding = max(outstanding_before - amount, Decimal('0.00'))
-            status = 'paid' if new_outstanding == 0 else 'partial'
 
             # Create payback with both values
             payback = CreditPayback.objects.create(
@@ -101,6 +110,13 @@ class CreditPaybackSerializer(serializers.ModelSerializer):
         old_outstanding = credit.outstanding_amount
         adjustment = old_amount - new_amount
 
+        # Handle payment_status if provided in validated_data
+        input_payment_status = validated_data.pop('payment_status', None)
+        if input_payment_status:
+            status = 'paid' if input_payment_status == 'full' else 'partial'
+        else:
+            status = instance.status # Keep existing status if not provided
+
         with transaction.atomic():
             # Lock related records
             credit = Credit.objects.select_for_update().get(pk=credit.id)
@@ -111,18 +127,17 @@ class CreditPaybackSerializer(serializers.ModelSerializer):
 
             # Apply new payment
             new_outstanding = max(credit.outstanding_amount - new_amount, Decimal('0.00'))
-            new_status = 'paid' if new_outstanding == 0 else 'partial'
 
             # Update payback
             instance.amount = new_amount
             instance.outstanding_before = credit.outstanding_amount
             instance.outstanding_after = new_outstanding
-            instance.status = new_status
+            instance.status = status
             instance.save()
 
             # Update credit
             credit.outstanding_amount = new_outstanding
-            credit.payment_status = new_status
+            credit.payment_status = status
             credit.save()
 
             # Log changes
