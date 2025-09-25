@@ -8,9 +8,9 @@ from rest_framework.response import Response
 
 from apps.credit.models import Credit
 from apps.credit.serializers.credits import FullCreditSerializer
-from apps.farm.models import Farm, Farmer
+from apps.farm.models import Farm, Farmer, FarmerDocument
 from apps.farm.serializers.farm import FarmSerializer, FullFarmSerializer
-from apps.farm.serializers.farmer import FarmerSerializer, FullFarmerSerializer, ReassignSmallholderFarmerSerializer
+from apps.farm.serializers.farmer import FarmerSerializer, FullFarmerSerializer, ReassignSmallholderFarmerSerializer, FarmerDocumentSerializer
 from apps.farm.swaagger import add_swagger_to_farmer_viewset
 from apps.farm.utils import build_farmer_filter_q
 from apps.shared.general_response import GENERAL_SUCCESS_RESPONSE
@@ -35,7 +35,9 @@ class FarmerViewSet(viewsets.GenericViewSet):
             'get_smallholders_by_lead': GET_SMALLHOLDERS_BY_LEAD,
             'upload_farmers': UPLOAD_FARMERS,
             'get_farmer_credit_history': GET_FARMER_CREDIT_HISTORY,
-            'get_farmer_farms': LIST_FARMS
+            'get_farmer_farms': LIST_FARMS,
+            'remove_document': VIEW_FARMER,
+            'add_document': VIEW_FARMER
         }
         user_permission = permissions.get(self.action, None)
         if user_permission:
@@ -232,3 +234,29 @@ class FarmerViewSet(viewsets.GenericViewSet):
             result = serializer.save()
             return Response(result, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['POST'], url_path='add-document')
+    @transaction.atomic
+    def add_document(self, request, pk=None):
+        try:
+            farmer = Farmer.objects.get(pk=pk, is_active=True, organization=request.organization)
+        except Farmer.DoesNotExist:
+            return Response({'error': 'Farmer not found'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = FarmerDocumentSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(farmer=farmer)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['DELETE'], url_path='remove-document/(?P<document_id>[^/.]+)')
+    @transaction.atomic
+    def remove_document(self, request, pk=None, document_id=None):
+        try:
+            farmer = Farmer.objects.get(pk=pk, is_active=True, organization=request.organization)
+            document = farmer.documents.get(pk=document_id)
+            document.soft_delete(owner=request.user)
+            return Response(GENERAL_SUCCESS_RESPONSE, status=status.HTTP_200_OK)
+        except Farmer.DoesNotExist:
+            return Response({'error': 'Farmer not found'}, status=status.HTTP_404_NOT_FOUND)
+        except FarmerDocument.DoesNotExist:
+            return Response({'error': 'Document not found.'}, status=status.HTTP_404_NOT_FOUND)

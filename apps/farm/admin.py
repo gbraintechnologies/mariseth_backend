@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from apps.farm.models import Farm, FarmProduct, FarmProductChangeLog, Farmer, Product, ProductChangeLog
+from apps.farm.models import Farm, FarmProduct, FarmProductChangeLog, Farmer, FarmerDocument, Product, ProductChangeLog
 
 
 class ProductChangeLogInline(admin.TabularInline):
@@ -49,6 +49,13 @@ class FarmProductChangeLogInline(admin.TabularInline):
 #         """Disable adding new log entries."""
 #         return False
 
+class FarmerDocumentInline(admin.TabularInline):
+    model = FarmerDocument
+    fields = ('title', 'description', 'document', 'date_created', 'created_by')
+    readonly_fields = ('date_created', 'created_by')
+    extra = 1
+
+
 # Admin classes for main models
 
 @admin.register(Product)
@@ -77,7 +84,7 @@ class FarmAdmin(admin.ModelAdmin):
 
 @admin.register(Farmer)
 class FarmerAdmin(admin.ModelAdmin):
-    # inlines = [FarmerChangeLogInline]  # Uncomment when FarmerChangeLog is enabled
+    inlines = [FarmerDocumentInline]  # Uncomment when FarmerChangeLog is enabled
     list_display = (
         'id', 'farmer_id', 'first_name', 'last_name', 'user', 'type',
         'gender', 'farm', 'phone_number', 'is_active'
