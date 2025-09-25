@@ -3,11 +3,14 @@ from decimal import Decimal
 from django.contrib.auth import get_user_model
 from django.db import models
 
+from decimal import Decimal
+
+from django.contrib.auth import get_user_model
+from django.db import models
+
+from apps.credit.models import InputCredit, InputCreditPurchase, Credit
 from apps.customers.models import Customer
 from apps.shared.models import BaseModel
-
-# Create your models here.
-# TODO: MAKE SURE TO UPDATE THE PRODUCT QUANTITY IN THE WAREHOUSE AND THE OVERALL PRODUCT TABLE
 
 User = get_user_model()
 
@@ -24,6 +27,38 @@ class Warehouse(BaseModel):
 
     def __str__(self):
         return f"{self.name} ({self.warehouse_id})"
+
+
+class InputCreditWarehouse(BaseModel):
+    """
+    Represents the stock of an input credit in a warehouse.
+    """
+    organization = models.ForeignKey('organizations.Organization', on_delete=models.CASCADE)
+    input_credit = models.ForeignKey(InputCredit, on_delete=models.CASCADE)
+    warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE)
+    weight = models.FloatField()
+    quantity = models.PositiveIntegerField()
+
+    class Meta:
+        unique_together = ('input_credit', 'warehouse')
+
+    def __str__(self):
+        return f"{self.quantity} of {self.input_credit.name} in {self.warehouse.name}"
+
+    def increase_quantity(self, quantity: int, weight: float):
+        """Handle inflow of input credits"""
+        self.quantity += quantity
+        self.weight += weight
+        self.save()
+
+    def decrease_quantity(self, quantity: int, weight: float):
+        """Handle outflow of input credits"""
+        if self.quantity >= quantity:
+            self.quantity -= quantity
+            self.weight -= float(weight)
+            self.save()
+        else:
+            raise ValueError("Insufficient stock for this operation")
 
 
 class WarehouseProduct(BaseModel):
@@ -89,10 +124,36 @@ class WarehouseProductMovement(BaseModel):
     procurement_officer = models.ForeignKey(User, on_delete=models.SET_NULL, null=True,
                                             related_name='procurement_activities')
     description = models.TextField(blank=True, null=True)
-    notes = models.TextField(blank=True)
+    notes = models.TextField(blank=True, null=True)
 
     class Meta:
         ordering = ['-record_date']
 
     # def __str__(self):
     #     return f"{self.movement_type} of {self.quantity} {self.warehouse_product.warehouse}"
+
+
+class InputCreditWarehouseMovement(BaseModel):
+    MOVEMENT_CHOICES = [
+        ('inflow', 'Inflow'),
+        ('outflow', 'Outflow'),
+    ]
+    warehouse = models.ForeignKey(Warehouse, on_delete=models.CASCADE, related_name='input_credit_warehouse_movements')
+    input_credit_warehouse = models.ForeignKey(InputCreditWarehouse, on_delete=models.CASCADE,
+                                               related_name='input_credit_warehouse_movements')
+    input_credit = models.ForeignKey(InputCredit, on_delete=models.CASCADE,
+                                     related_name='input_credit_warehouse_movements')
+    movement_type = models.CharField(max_length=7, choices=MOVEMENT_CHOICES)
+    quantity = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    weight = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    record_date = models.DateField(null=True, blank=True)
+    inflow_source = models.ForeignKey('credit.InputCreditPurchase', on_delete=models.CASCADE,
+                                      null=True, blank=True, related_name='input_credit_movements')
+    outflow_source = models.ForeignKey('credit.Credit', on_delete=models.CASCADE,
+                                       null=True, blank=True, related_name='input_credit_movements')
+    amount = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    notes = models.TextField(blank=True, null=True)
+
+    class Meta:
+        ordering = ['-record_date']

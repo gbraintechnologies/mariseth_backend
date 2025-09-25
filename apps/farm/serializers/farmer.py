@@ -1,11 +1,20 @@
+from django.db import transaction
 from rest_framework import serializers
 
 from apps.accounts.serializers.users import ShortUserSerializer
-from apps.farm.models import Farm, Farmer
+from apps.farm.models import Farm, Farmer, FarmerDocument
 from apps.farm.serializers.farm import FullFarmSerializer
 from apps.farm.utils import generate_farmer_id
 from apps.shared.models import District, Region
 from apps.shared.serializers.regions import DistrictSerializer, ShortRegionSerializer
+
+
+class FarmerDocumentSerializer(serializers.ModelSerializer):
+    document = serializers.FileField(required=False, allow_null=True)
+
+    class Meta:
+        model = FarmerDocument
+        fields = ('id', 'title', 'description', 'document')
 
 
 class ShortFarmerSerializer(serializers.ModelSerializer):
@@ -37,22 +46,24 @@ class FarmerSerializer(serializers.ModelSerializer):
         allow_null=True,
     )
 
+    documents = FarmerDocumentSerializer(many=True, required=False)
+
     class Meta:
         model = Farmer
         fields = (
             'id', 'type', 'first_name', 'last_name', 'other_names', 'gender',
             'date_of_birth', 'id_number', 'phone_number', 'email', 'address',
             'village', 'region', 'district', 'country', 'farm', 'lead_farmer',
-            'leadership_experience', 'support_assistance', 'id_type',
+            'leadership_experience', 'support_assistance', 'id_type', 'documents'
         )
         read_only_fields = ('id',)
 
     def validate(self, data):
         if data.get('type') == 'smallholder':
-            if not data.get('lead_farmer'):
-                raise serializers.ValidationError(
-                    {'lead_farmer': 'Smallholder farmers must have a lead farmer assigned'}
-                )
+            # if not data.get('lead_farmer'):
+            #     raise serializers.ValidationError(
+            #         {'lead_farmer': 'Smallholder farmers must have a lead farmer assigned'}
+            #     )
 
             if data.get('lead_farmer') and data['lead_farmer'].type != 'lead':
                 raise serializers.ValidationError(
@@ -69,7 +80,11 @@ class FarmerSerializer(serializers.ModelSerializer):
         validated_data['created_by'] = request.user
         validated_data['organization'] = request.organization
         validated_data['farmer_id'] = generate_farmer_id(request.organization.id)
-        return super().create(validated_data)
+        documents_data = validated_data.pop('documents', [])
+        farmer = super().create(validated_data)
+        for document_data in documents_data:
+            FarmerDocument.objects.create(farmer=farmer, **document_data)
+        return farmer
 
     def update(self, instance, validated_data):
         for attr, value in validated_data.items():
@@ -86,6 +101,8 @@ class FullFarmerSerializer(serializers.ModelSerializer):
     region = ShortRegionSerializer()
     district = DistrictSerializer()
     number_of_smallholders = serializers.SerializerMethodField()
+    documents = serializers.SerializerMethodField()
+
 
     class Meta:
         model = Farmer
@@ -94,7 +111,7 @@ class FullFarmerSerializer(serializers.ModelSerializer):
             'date_of_birth', 'id_number', 'phone_number', 'email', 'address',
             'village', 'region', 'district', 'country', 'farm', 'lead_farmer',
             'leadership_experience', 'support_assistance', 'created_by',
-            'date_created', 'farm', 'id_type', 'number_of_smallholders'
+            'date_created', 'farm', 'id_type', 'number_of_smallholders', 'documents'
         )
         read_only_fields = ('id', 'created_by', 'date_created')
 
@@ -107,6 +124,9 @@ class FullFarmerSerializer(serializers.ModelSerializer):
         if obj.type == 'lead':
             return Farmer.objects.filter(lead_farmer=obj).count()
         return None
+
+    def get_documents(self, obj):
+        return FarmerDocumentSerializer(obj.documents.filter(is_active=True), many=True).data
 
 
 class FarmerExportSerializer(serializers.ModelSerializer):
@@ -148,3 +168,40 @@ class FarmerExportSerializer(serializers.ModelSerializer):
         if obj.farm:
             return obj.farm.name
         return ""
+
+
+class ReassignSmallholderFarmerSerializer(serializers.Serializer):
+    lead_farmer_id = serializers.IntegerField(required=True)
+    smallholder_farmer_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        min_length=1,
+        required=True
+    )
+
+    def validate_lead_farmer_id(self, value):
+        try:
+            lead_farmer = Farmer.objects.get(id=value, type='lead', is_active=True)
+        except Farmer.DoesNotExist:
+            raise serializers.ValidationError("Lead farmer with this ID does not exist or is not a lead farmer.")
+        return lead_farmer
+
+    def validate_smallholder_farmer_ids(self, values):
+        smallholder_farmers = Farmer.objects.filter(id__in=values, type='smallholder', is_active=True)
+        if len(smallholder_farmers) != len(values):
+            raise serializers.ValidationError("One or more smallholder farmer IDs are invalid or do not exist.")
+        return smallholder_farmers
+
+    def save(self):
+        lead_farmer = self.validated_data['lead_farmer_id']
+        smallholder_farmers = self.validated_data['smallholder_farmer_ids']
+
+        updated_count = 0
+        with transaction.atomic():
+            for smallholder in smallholder_farmers:
+                if smallholder.lead_farmer != lead_farmer:
+                    smallholder.lead_farmer = lead_farmer
+                    smallholder.save(update_fields=['lead_farmer'])
+                    updated_count += 1
+        return {
+            'message': f'{updated_count} Smallholder farmers re-assigned successfully.',
+        }

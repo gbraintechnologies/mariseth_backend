@@ -8,7 +8,28 @@ from rest_framework.response import Response
 
 from apps.farm.models import Product
 from django.contrib.auth import get_user_model
-from apps.shared.literals import CREATE_WAREHOUSE, DELETE_WAREHOUSE, GET_PRODUCT_WAREHOUSE_MOVEMENT,     GET_WAREHOUSE_INVENTORY, LIST_WAREHOUSES, UPDATE_WAREHOUSE, UPLOAD_WAREHOUSES, VIEW_WAREHOUSE,     ADD_REMOVE_WAREHOUSE_MANAGER
+from django.core.paginator import Paginator
+from django.db import transaction
+from django.db.models import Sum
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+
+from apps.farm.models import Product
+from apps.credit.models import InputCredit
+from django.contrib.auth import get_user_model
+from apps.shared.literals import APPROVE_OR_DENY_CREDIT, CREATE_WAREHOUSE, DELETE_WAREHOUSE, GET_PRODUCT_WAREHOUSE_MOVEMENT,     GET_WAREHOUSE_INVENTORY, LIST_WAREHOUSES, UPDATE_WAREHOUSE, UPLOAD_WAREHOUSES, VIEW_WAREHOUSE,     ADD_REMOVE_WAREHOUSE_MANAGER
+from apps.warehouse.utils import build_warehouse_filter_q
+
+User = get_user_model()
+from apps.shared.tasks.export_tasks import process_warehouse_export
+from apps.shared.utils.permissions import UserPermission
+from apps.warehouse.models import Warehouse, WarehouseProduct, WarehouseProductMovement, InputCreditWarehouse, InputCreditWarehouseMovement
+from apps.warehouse.serializers import (FullWarehouseProductSerializer, FullWarehouseSerializer,
+                                        ManageManagerSerializer, WarehouseProductMovementSerializer,
+                                        FullInputCreditWarehouseSerializer, InputCreditWarehouseMovementSerializer)
+from apps.warehouse.swagger import add_swagger_to_warehouse_viewset
 from apps.warehouse.utils import build_warehouse_filter_q
 
 User = get_user_model()
@@ -198,6 +219,68 @@ class WarehouseViewSet(viewsets.GenericViewSet):
             'results': results,
             'pagination': {
                 'total': warehouse_movements.count(),
+                'page': page_obj.number,
+                'pages': paginator.num_pages,
+                'has_next': page_obj.has_next(),
+                'has_previous': page_obj.has_previous(),
+            }
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['GET'], url_path='input-credits')
+    def get_input_credit_inventory(self, request, pk=None):
+        page = request.query_params.get('page', 1)
+        page_size = request.query_params.get('page_size', 10)
+        try:
+            warehouse = Warehouse.objects.get(pk=pk, is_active=True, organization=request.organization)
+        except Warehouse.DoesNotExist:
+            return Response({'error': 'Warehouse not found'}, status=status.HTTP_404_NOT_FOUND)
+        input_credit_warehouses = InputCreditWarehouse.objects.filter(warehouse=warehouse).order_by('-date_created')
+        paginator = Paginator(input_credit_warehouses, page_size)
+        page_obj = paginator.get_page(page)
+
+        return Response({
+            'results': FullInputCreditWarehouseSerializer(page_obj.object_list, many=True).data,
+            'pagination': {
+                'total': input_credit_warehouses.count(),
+                'page': page_obj.number,
+                'pages': paginator.num_pages,
+                'has_next': page_obj.has_next(),
+                'has_previous': page_obj.has_previous(),
+            }
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['GET'], url_path='input-credit/(?P<input_credit_id>[^/.]+)')
+    def get_input_credit_warehouse_movement(self, request, pk=None, input_credit_id=None):
+        page = request.query_params.get('page', 1)
+        page_size = request.query_params.get('page_size', 10)
+        order_type = request.query_params.get('order_type', 'inflow')
+        try:
+            warehouse = Warehouse.objects.get(pk=pk, is_active=True, organization=request.organization)
+            input_credit = InputCredit.objects.get(pk=input_credit_id, is_active=True, organization=request.organization)
+        except Warehouse.DoesNotExist:
+            return Response({'error': 'Warehouse not found'}, status=status.HTTP_404_NOT_FOUND)
+        except InputCredit.DoesNotExist:
+            return Response({'error': 'Input Credit not found'}, status=status.HTTP_404_NOT_FOUND)
+        input_credit_movements = InputCreditWarehouseMovement.objects.filter(
+            warehouse=warehouse,
+            input_credit=input_credit,
+            movement_type=order_type
+        )
+
+        paginator = Paginator(input_credit_movements, page_size)
+        page_obj = paginator.get_page(page)
+        results = InputCreditWarehouseMovementSerializer(
+            page_obj.object_list, many=True, context={'order_type': order_type}
+        ).data
+
+        return Response({
+            'totals': {
+                'total_quantity': input_credit_movements.aggregate(Sum('quantity'))['quantity__sum'],
+                'total_weight': input_credit_movements.aggregate(Sum('weight'))['weight__sum'],
+            },
+            'results': results,
+            'pagination': {
+                'total': input_credit_movements.count(),
                 'page': page_obj.number,
                 'pages': paginator.num_pages,
                 'has_next': page_obj.has_next(),

@@ -65,10 +65,8 @@ class NewUserSerializer(serializers.ModelSerializer):
         if group:
             user.groups.set([group])
 
-        transaction.on_commit(
-            lambda: send_verification_email.delay(
-                code, template_name=VERIFICATION_EMAIL_TEMPLATE, user_id=user.id
-            )
+        send_verification_email(
+            code, template_name=VERIFICATION_EMAIL_TEMPLATE, user_id=user.id
         )
         return user
 

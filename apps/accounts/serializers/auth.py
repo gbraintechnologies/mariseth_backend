@@ -102,10 +102,8 @@ class ResendVerificationCodeSerializer(serializers.Serializer):
             code = user.set_email_verification_code()
             template_name = VERIFICATION_EMAIL_TEMPLATE
             user.save()
-            transaction.on_commit(
-                lambda: send_verification_email.delay(
-                    code, template_name=template_name, user_id=user.id
-                )
+            send_verification_email(
+                code, template_name=template_name, user_id=user.id
             )
 
         except User.DoesNotExist:
@@ -153,10 +151,8 @@ class ForgotPasswordSerializer(serializers.Serializer):
             template_name = FORGOTTEN_PASSWORD_EMAIL_TEMPLATE
             user.save()
 
-            transaction.on_commit(
-                lambda: send_verification_email.delay(
-                    code, template_name=template_name, user_id=user.id
-                )
+            send_verification_email(
+                code, template_name=template_name, user_id=user.id
             )
         except User.DoesNotExist:
             raise serializers.ValidationError(

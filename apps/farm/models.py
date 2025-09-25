@@ -113,6 +113,20 @@ class Farmer(BaseModel):
         return f"{self.id} - {self.first_name} {self.last_name}"
 
 
+class FarmerDocument(BaseModel):
+    farmer = models.ForeignKey('Farmer', related_name='documents', on_delete=models.CASCADE)
+    title = models.CharField(max_length=100)
+    description = models.TextField(blank=True, null=True)
+    document = models.FileField(upload_to='farmer_documents/', null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Farmer Document"
+        verbose_name_plural = "Farmer Documents"
+
+    def __str__(self):
+        return f"{self.title} for {self.farmer.first_name} {self.farmer.last_name}"
+
+
 # class FarmerChangeLog(BaseModel):
 #     farmer = models.ForeignKey(Farmer, on_delete=models.CASCADE, related_name='change_logs')
 #     organization = models.ForeignKey('organizations.Organization', on_delete=models.SET_NULL, null=True, blank=True,

@@ -4,11 +4,11 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.consuner_mobile.serializers.credit import MobileActiveCreditSerializer, \
-    MobileCreditApplicationSerializer, MobileCreditPaybackSerializer, \
-    MobileCreditSerializer
+from apps.consuner_mobile.serializers.credit import MobileActiveCreditSerializer, MobileCreditApplicationSerializer, \
+    MobileCreditPaybackSerializer, MobileCreditSerializer
+from apps.credit.serializers.input_credit import FullInputCreditSerializer
 from apps.consuner_mobile.swagger import add_swagger_to_mobile_credit_viewset
-from apps.credit.models import Credit, CreditPayback
+from apps.credit.models import Credit, CreditPayback, InputCredit
 
 
 @add_swagger_to_mobile_credit_viewset
@@ -51,7 +51,6 @@ class MobileCreditViewSet(viewsets.GenericViewSet):
         farmer = request.user.farmer
         queryset = Credit.objects.filter(
             farmer=farmer,
-            approval_status='approved'
         ).order_by('-date_created')
         if status_filter:
             queryset = queryset.filter(payment_status=status_filter)
@@ -79,7 +78,6 @@ class MobileCreditViewSet(viewsets.GenericViewSet):
         farmer = request.user.farmer
         paybacks = CreditPayback.objects.filter(
             credit__farmer=farmer,
-            credit__approval_status='approved'
         ).order_by('-date_created')
 
         credit_id = request.query_params.get('credit_id')
@@ -112,3 +110,28 @@ class MobileCreditViewSet(viewsets.GenericViewSet):
             credit_app = serializer.save()
             return Response(MobileCreditSerializer(credit_app).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['GET'], url_path='list-input-credits')
+    def list_input_credits(self, request):
+        page = request.query_params.get('page', 1)
+        page_size = request.query_params.get('page_size', 10)
+        category_id = request.query_params.get('category')
+
+        queryset = InputCredit.objects.filter(is_active=True, organization=request.organization)
+
+        if category_id:
+            queryset = queryset.filter(category_id=category_id)
+
+        paginator = Paginator(queryset, page_size)
+        page_obj = paginator.get_page(page)
+
+        return Response({
+            'results': FullInputCreditSerializer(page_obj.object_list, many=True).data,
+            'pagination': {
+                'total': queryset.count(),
+                'page': page_obj.number,
+                'pages': paginator.num_pages,
+                'has_next': page_obj.has_next(),
+                'has_previous': page_obj.has_previous(),
+            }
+        }, status=status.HTTP_200_OK)

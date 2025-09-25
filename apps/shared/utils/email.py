@@ -1,5 +1,4 @@
 import sentry_sdk
-from celery import shared_task
 from django.contrib.auth import get_user_model
 from django.template.loader import get_template
 
@@ -11,7 +10,6 @@ from mariseth.logging import logger
 User = get_user_model()
 
 
-@shared_task
 def send_verification_email(verification_code, template_name, user_id):
     try:
         user = User.objects.get(pk=user_id)

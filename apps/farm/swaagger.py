@@ -3,7 +3,7 @@ from drf_yasg.utils import swagger_auto_schema
 
 from apps.farm.serializers.farm import FarmDeleteSerializer, FarmProductDeleteSerializer, FarmSerializer, \
     FullFarmSerializer
-from apps.farm.serializers.farmer import FarmerSerializer, FullFarmerSerializer
+from apps.farm.serializers.farmer import FarmerDocumentSerializer, FarmerSerializer, FullFarmerSerializer
 from apps.farm.serializers.products import FullProductSerializer, ProductSerializer
 
 
@@ -380,6 +380,36 @@ def add_swagger_to_farmer_viewset(viewset_cls):
         security=[{'Bearer': []}]
     )(viewset_cls.get_smallholders_by_lead)
 
+    viewset_cls.add_document = swagger_auto_schema(
+        tags=['Farmers'],
+        operation_summary="Add a document to a farmer",
+        operation_description="Upload a new document for a specific farmer.",
+        request_body=FarmerDocumentSerializer,
+        responses={
+            201: openapi.Response(
+                description="Document added successfully",
+                schema=FarmerDocumentSerializer()
+            ),
+            400: openapi.Response(
+                description="Invalid document data provided",
+                schema=openapi.Schema(type=openapi.TYPE_OBJECT)
+            ),
+            404: openapi.Response(description="Farmer not found")
+        },
+        security=[{'Bearer': []}]
+    )(viewset_cls.add_document)
+
+    viewset_cls.remove_document = swagger_auto_schema(
+        tags=['Farmers'],
+        operation_summary="Remove a farmer document",
+        operation_description="Soft-delete a specific document associated with a farmer.",
+        responses={
+            200: openapi.Response(description="Document removed successfully"),
+            404: openapi.Response(description="Farmer or Document not found")
+        },
+        security=[{'Bearer': []}]
+    )(viewset_cls.remove_document)
+
     return viewset_cls
     # # Bulk Upload Farmers
     # viewset_cls.upload_farmers = swagger_auto_schema(
@@ -402,7 +432,7 @@ def add_swagger_to_farmer_viewset(viewset_cls):
     #     },
     #     security=[{'Bearer': []}]
     # )(viewset_cls.upload_farmers)
-    #
+    # 
     return viewset_cls
 
 

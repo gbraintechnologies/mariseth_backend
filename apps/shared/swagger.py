@@ -4,6 +4,7 @@ from drf_yasg.utils import swagger_auto_schema
 from apps.shared.serializers.app_settings import AppSettingSerializer
 from apps.shared.serializers.custom_types import CustomTypeSerializer
 from apps.shared.serializers.regions import RegionSerializer
+from apps.shared.serializers.help import HelpSerializer, FullHelpSerializer
 
 
 def add_swagger_to_custom_type_viewset(viewset_cls):
@@ -274,5 +275,110 @@ def add_swagger_to_dashboard_viewset(viewset_cls):
         },
         security=[{'Bearer': []}]
     )(viewset_cls.farmer_analysis)
+
+    return viewset_cls
+
+
+def add_swagger_to_help_viewset(viewset_cls):
+    # Create Help
+    viewset_cls.create = swagger_auto_schema(
+        tags=['Help'],
+        operation_summary="Create a new help topic",
+        operation_description="Create a new help topic for your organization.",
+        request_body=HelpSerializer,
+        responses={
+            201: openapi.Response(
+                description="Help topic created successfully",
+                schema=FullHelpSerializer()
+            ),
+            400: openapi.Response(
+                description="Validation error",
+                schema=openapi.Schema(type=openapi.TYPE_OBJECT)
+            )
+        },
+        security=[{'Bearer': []}]
+    )(viewset_cls.create)
+
+    # Update Help
+    viewset_cls.update = swagger_auto_schema(
+        tags=['Help'],
+        operation_summary="Update an existing help topic",
+        operation_description="Update an existing help topic for your organization.",
+        request_body=HelpSerializer,
+        responses={
+            200: openapi.Response(
+                description="Help topic updated successfully",
+                schema=HelpSerializer()
+            ),
+            400: openapi.Response(
+                description="Validation error",
+                schema=openapi.Schema(type=openapi.TYPE_OBJECT)
+            ),
+            404: openapi.Response(description="Help topic not found")
+        },
+        security=[{'Bearer': []}]
+    )(viewset_cls.update)
+
+    # Retrieve Help
+    viewset_cls.retrieve = swagger_auto_schema(
+        tags=['Help'],
+        operation_summary="Retrieve a specific help topic",
+        operation_description="Get the details of a specific help topic by its ID.",
+        responses={
+            200: openapi.Response(
+                description="The requested help topic.",
+                schema=FullHelpSerializer()
+            ),
+            404: openapi.Response(description="Help topic not found.")
+        },
+        security=[{'Bearer': []}]
+    )(viewset_cls.retrieve)
+
+    # List Help
+    viewset_cls.list = swagger_auto_schema(
+        tags=['Help'],
+        operation_summary="List all help topics",
+        operation_description="Retrieve a list of available help topics.",
+        manual_parameters=[
+            openapi.Parameter('query', openapi.IN_QUERY, "Filter by title or description", type=openapi.TYPE_STRING),
+            openapi.Parameter('page', openapi.IN_QUERY, "Page number", type=openapi.TYPE_INTEGER, default=1),
+            openapi.Parameter('page_size', openapi.IN_QUERY, "Items per page", type=openapi.TYPE_INTEGER, default=10),
+        ],
+        responses={
+            200: openapi.Response(
+                description="Paginated list of help",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'results': openapi.Schema(type=openapi.TYPE_ARRAY,
+                                                  items=openapi.Items(type=openapi.TYPE_OBJECT)),
+                        'pagination': openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'total': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'page': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'pages': openapi.Schema(type=openapi.TYPE_INTEGER),
+                                'has_next': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                                'has_previous': openapi.Schema(type=openapi.TYPE_BOOLEAN),
+                            }
+                        )
+                    }
+                )
+            )
+        },
+        security=[{'Bearer': []}]
+    )(viewset_cls.list)
+
+    # Delete Help
+    viewset_cls.destroy = swagger_auto_schema(
+        tags=['Help'],
+        operation_summary="Delete a help topic",
+        operation_description="Soft-delete a help topic, marking it inactive.",
+        responses={
+            200: openapi.Response(description="Help deleted successfully"),
+            404: openapi.Response(description="Help not found")
+        },
+        security=[{'Bearer': []}]
+    )(viewset_cls.destroy)
 
     return viewset_cls

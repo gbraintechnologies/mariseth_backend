@@ -12,7 +12,7 @@ class Command(BaseCommand):
         try:
             with transaction.atomic():
                 # Filter products whose type is not 'crop'
-                products_to_update = Product.objects.exclude(type='crop')
+                products_to_update = Product.objects
                 count = products_to_update.count()
 
                 if count == 0:

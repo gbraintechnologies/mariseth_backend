@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth import get_user_model
 
-from .models import Warehouse, WarehouseProduct, WarehouseProductMovement
+from .models import Warehouse, WarehouseProduct, WarehouseProductMovement, InputCreditWarehouse, InputCreditWarehouseMovement
 
 User = get_user_model()
 
@@ -66,6 +66,44 @@ class WarehouseProductAdmin(admin.ModelAdmin):
     fieldsets = (
         (None, {
             'fields': ('organization', 'product', 'warehouse', 'quantity', 'weight', 'is_active')
+        }),
+        ('Audit Info', {
+            'fields': ('date_created', 'date_modified', 'created_by', 'date_deleted', 'deleted_by'),
+        }),
+    )
+    readonly_fields = ('date_created', 'date_modified', 'created_by', 'date_deleted', 'deleted_by')
+
+
+class InputCreditWarehouseMovementInline(admin.TabularInline):
+    model = InputCreditWarehouseMovement
+    extra = 0
+    fields = (
+        'movement_type', 'quantity', 'weight', 'record_date',
+        'amount', 'description', 'notes','is_active', 'date_created')
+    readonly_fields = (
+        'movement_type', 'quantity', 'weight', 'record_date',
+        'amount', 'description', 'notes','is_active', 'date_created')
+    ordering = ('-date_created',)
+
+    def has_add_permission(self, request, obj):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(InputCreditWarehouse)
+class InputCreditWarehouseAdmin(admin.ModelAdmin):
+    list_display = ('id', 'input_credit_id', 'warehouse_id', 'input_credit', 'warehouse', 'quantity', 'weight', 'is_active')
+    list_filter = ('warehouse', 'input_credit', 'is_active', 'organization')
+    search_fields = ('input_credit__name', 'warehouse__name', 'warehouse__warehouse_id')
+    inlines = [InputCreditWarehouseMovementInline]
+    fieldsets = (
+        (None, {
+            'fields': ('organization', 'input_credit', 'warehouse', 'quantity', 'weight', 'is_active')
         }),
         ('Audit Info', {
             'fields': ('date_created', 'date_modified', 'created_by', 'date_deleted', 'deleted_by'),
