@@ -5,6 +5,7 @@ from apps.hr.models import Employee, EmployeeContract, EmployeeDisciplinaryActio
 from apps.hr.serializers.department import FullDepartmentSerializer
 from apps.hr.serializers.job_title import FullJobTitleSerializer
 from apps.hr.utils import generate_employee_id
+from apps.shared.utils.helpers import base64_to_image
 
 
 class ShortEmployeeSerializer(serializers.ModelSerializer):
@@ -65,6 +66,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
     emergency_contacts = EmergencyContactSerializer(many=True, required=False)
     qualifications = QualificationSerializer(many=True, required=False)
     contract = EmployeeContractSerializer(required=False)
+    profile_picture = serializers.CharField(write_only=True, required=False, allow_blank=True)
 
     class Meta:
         model = Employee
@@ -73,7 +75,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
             'gender', 'relationship_status', 'email', 'phone_number',
             'date_of_birth', 'bank_account_number', 'status',
             'emergency_contacts', 'qualifications', 'contract',
-            'notification'
+            'notification', 'ghana_card_number', 'profile_picture'
         )
         read_only_fields = ('employee_id',)
 
@@ -84,9 +86,14 @@ class EmployeeSerializer(serializers.ModelSerializer):
         emergency_contacts_data = validated_data.pop('emergency_contacts', [])
         qualifications_data = validated_data.pop('qualifications', [])
         contract_data = validated_data.pop('contract', {})
+        profile_picture_data = validated_data.pop('profile_picture', None)
 
         employee = Employee.objects.create(**validated_data)
         employee.employee_id = generate_employee_id(request.organization.id, employee.id)
+        
+        if profile_picture_data:
+            employee.profile_picture = base64_to_image(profile_picture_data)
+
         employee.save()
 
         for contact_data in emergency_contacts_data:
@@ -105,9 +112,14 @@ class EmployeeSerializer(serializers.ModelSerializer):
         emergency_contacts_data = validated_data.pop('emergency_contacts', None)
         qualifications_data = validated_data.pop('qualifications', None)
         contract_data = validated_data.pop('contract', None)
+        profile_picture_data = validated_data.pop('profile_picture', None)
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
+        
+        if profile_picture_data:
+            instance.profile_picture = base64_to_image(profile_picture_data)
+
         instance.updated_by = request.user
         instance.save()
 
@@ -152,6 +164,7 @@ class FullEmployeeSerializer(serializers.ModelSerializer):
     qualifications = serializers.SerializerMethodField()
     contract = FullEmployeeContractSerializer(read_only=True)
     leave_days_left = serializers.SerializerMethodField()
+    profile_picture = serializers.ImageField(read_only=True)
 
     class Meta:
         model = Employee
@@ -160,7 +173,7 @@ class FullEmployeeSerializer(serializers.ModelSerializer):
             'relationship_status', 'email', 'phone_number', 'bank_account_number',
             'status', 'date_of_birth', 'emergency_contacts', 'notification',
             'qualifications', 'contract', 'created_by', 'date_created',
-            'leave_days_left'
+            'leave_days_left', 'ghana_card_number', 'profile_picture'
         )
         read_only_fields = ('id', 'employee_id', 'created_by', 'date_created', 'updated_by', 'date_updated')
 
