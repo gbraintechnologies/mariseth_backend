@@ -119,6 +119,10 @@ class EmployeeContract(BaseModel):
     )
     employee = models.OneToOneField('Employee', on_delete=models.CASCADE, related_name='contract')
     start_date = models.DateField()  # Employment Start Date
+    ssnit_number = models.CharField(max_length=100, unique=True, null=True, blank=True)
+    bank_name = models.CharField(max_length=100, null=True, blank=True)
+    bank_branch = models.CharField(max_length=100, null=True, blank=True)
+    account_number = models.CharField(max_length=100, null=True, blank=True)
     job_title = models.ForeignKey('JobTitle', on_delete=models.SET_NULL, null=True, blank=True,
                                   related_name='employees')
     department = models.ForeignKey('Department', on_delete=models.SET_NULL, null=True, blank=True,

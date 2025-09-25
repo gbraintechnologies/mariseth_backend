@@ -36,7 +36,8 @@ class EmployeeContractSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmployeeContract
         fields = (
-            'id', 'start_date', 'job_title',
+            'id', 'start_date', 'ssnit_number', 'bank_name',
+            'bank_branch', 'account_number', 'job_title',
             'department', 'employment_type', 'work_type',
             'annual_leave_days', 'sick_leave_days', 'leave_rollover'
         )
@@ -138,7 +139,8 @@ class FullEmployeeContractSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmployeeContract
         fields = (
-            'id', 'start_date', 'job_title',
+            'id', 'start_date', 'ssnit_number', 'bank_name',
+            'bank_branch', 'account_number', 'job_title',
             'department', 'employment_type', 'work_type',
             'annual_leave_days', 'sick_leave_days', 'leave_rollover'
         )

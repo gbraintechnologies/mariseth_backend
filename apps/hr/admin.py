@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from apps.hr.models import Department, Employee, EmployeeContract, EmployeeDisciplinaryAction, EmployeeEmergencyContact, \
-    EmployeeQualification, JobTitle, Training, TrainingAttendee, LeaveType, LeaveRequest
+    EmployeeQualification, JobTitle, LeaveRequest, LeaveType, Training, TrainingAttendee
 
 
 class EmergencyContactInline(admin.StackedInline):
@@ -17,6 +17,12 @@ class QualificationInline(admin.StackedInline):
 class EmployeeContractInline(admin.StackedInline):
     model = EmployeeContract
     extra = 1
+    fields = (
+        'start_date', 'ssnit_number', 'bank_name',
+        'bank_branch', 'account_number', 'job_title',
+        'department', 'employment_type', 'work_type',
+        'annual_leave_days', 'sick_leave_days', 'leave_rollover'
+    )
 
 
 class EmployeeDisciplinaryActionInline(admin.StackedInline):
