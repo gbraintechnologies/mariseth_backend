@@ -13,6 +13,8 @@ class InvoiceSerializer(serializers.ModelSerializer):
     quantity = serializers.CharField(source='outflow_order.total_quantity', read_only=True)
     total_cost = serializers.CharField(source='outflow_order.total_cost', read_only=True)
     total_weight = serializers.CharField(source='outflow_order.total_weight', read_only=True)
+    expected_amount = serializers.CharField(source='outflow_order.expected_amount', read_only=True)
+    actual_amount = serializers.CharField(source='outflow_order.actual_amount', read_only=True)
 
     class Meta:
         model = OutflowOrderPayments
@@ -20,6 +22,6 @@ class InvoiceSerializer(serializers.ModelSerializer):
             'id', 'invoice_id', 'outflow_order', 'amount_paid',
             'payment_type', 'payment_method', 'paid_to', 'customer',
             'date_created', 'created_by', 'amount_due', 'quantity',
-            'total_cost', 'total_weight'
+            'total_cost', 'total_weight', 'expected_amount', 'actual_amount'
         )
         read_only_fields = fields

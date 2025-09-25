@@ -30,6 +30,8 @@ class InflowOrder(BaseModel):
     additional_costs = models.TextField(blank=True)
     additional_cost_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     total_cost = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    expected_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    actual_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     total_products_cost = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     total_weight = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     comments = models.TextField(blank=True)
