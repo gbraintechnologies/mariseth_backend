@@ -218,7 +218,7 @@ class MobileResetPasswordSerializer(serializers.Serializer):
             validated_data['user'] = user
             return validated_data
         except User.DoesNotExist:
-            raise serializers.ValidationError("Invalid email or verification code")
+            raise serializers.ValidationError("Invalid phone number or verification code")
 
     def create(self, validated_data):
         user = validated_data['user']

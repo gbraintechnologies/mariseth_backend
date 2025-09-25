@@ -51,7 +51,6 @@ class MobileCreditViewSet(viewsets.GenericViewSet):
         farmer = request.user.farmer
         queryset = Credit.objects.filter(
             farmer=farmer,
-            approval_status='approved'
         ).order_by('-date_created')
         if status_filter:
             queryset = queryset.filter(payment_status=status_filter)
@@ -79,7 +78,6 @@ class MobileCreditViewSet(viewsets.GenericViewSet):
         farmer = request.user.farmer
         paybacks = CreditPayback.objects.filter(
             credit__farmer=farmer,
-            credit__approval_status='approved'
         ).order_by('-date_created')
 
         credit_id = request.query_params.get('credit_id')
