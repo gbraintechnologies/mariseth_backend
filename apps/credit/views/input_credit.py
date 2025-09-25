@@ -142,11 +142,16 @@ class InputCreditViewSet(viewsets.GenericViewSet):
         page = request.query_params.get('page', 1)
         page_size = request.query_params.get('page_size', 10)
         category_id = request.query_params.get('category')
+        query = request.query_params.get('query')
 
         queryset = InputCredit.objects.filter(is_active=True, organization=request.organization)
 
         if category_id:
             queryset = queryset.filter(category_id=category_id)
+        if query:
+            queryset = queryset.filter(
+                Q(name__icontains=query)
+            )
 
         paginator = Paginator(queryset, page_size)
         page_obj = paginator.get_page(page)
