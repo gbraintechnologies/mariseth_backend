@@ -199,3 +199,9 @@ SET_ATTENDANCE_STATUS = 'training|set_attendee_status'
 # AUDIT TRAIL
 LIST_OUTFLOW_HISTORY = 'audit_trail|list_outflow_history'
 LIST_INFLOW_HISTORY = 'audit_trail|list_inflow_history'
+
+# Help
+CREATE_HELP = 'shared_help|create_help'
+UPDATE_HELP = 'shared_help|update_help'
+DELETE_HELP = 'shared_help|delete_help'
+
