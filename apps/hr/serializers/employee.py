@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.validators import UniqueValidator
 
 from apps.accounts.serializers.users import ShortUserSerializer
 from apps.hr.models import Employee, EmployeeContract, EmployeeDisciplinaryAction, EmployeeEmergencyContact,     EmployeeQualification, LeaveRequest, LeaveType
