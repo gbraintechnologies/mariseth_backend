@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from apps.accounts.serializers.users import ShortUserSerializer
-from apps.hr.models import Employee, EmployeeContract, EmployeeDisciplinaryAction, EmployeeEmergencyContact,     EmployeeQualification
+from apps.hr.models import Employee, EmployeeContract, EmployeeDisciplinaryAction, EmployeeEmergencyContact,     EmployeeQualification, LeaveRequest, LeaveType
 from apps.hr.serializers.department import FullDepartmentSerializer
 from apps.hr.serializers.job_title import FullJobTitleSerializer
 from apps.hr.utils import generate_employee_id
@@ -149,6 +149,7 @@ class FullEmployeeSerializer(serializers.ModelSerializer):
     emergency_contacts = EmergencyContactSerializer(many=True, read_only=True)
     qualifications = serializers.SerializerMethodField()
     contract = FullEmployeeContractSerializer(read_only=True)
+    leave_days_left = serializers.SerializerMethodField()
 
     class Meta:
         model = Employee
@@ -157,17 +158,38 @@ class FullEmployeeSerializer(serializers.ModelSerializer):
             'relationship_status', 'email', 'phone_number', 'bank_account_number',
             'status', 'date_of_birth', 'emergency_contacts', 'notification',
             'qualifications', 'contract', 'created_by', 'date_created',
+            'leave_days_left'
         )
         read_only_fields = ('id', 'employee_id', 'created_by', 'date_created', 'updated_by', 'date_updated')
 
     def get_qualifications(self, obj):
         return QualificationSerializer(obj.qualifications.filter(is_active=True), many=True).data
 
+    def get_leave_days_left(self, obj):
+        if not hasattr(obj, 'contract'):
+            return {'annual': 0, 'sick': 0}
+
+        annual_allowance = obj.contract.annual_leave_days
+        sick_allowance = obj.contract.sick_leave_days
+
+        approved_leave_requests = obj.leave_requests.filter(status='approved')
+
+        for lr in approved_leave_requests:
+            if lr.leave_type.deducts_from_allowance:
+                if lr.leave_type.deduct_from == 'annual':
+                    annual_allowance -= lr.leave_days
+                elif lr.leave_type.deduct_from == 'sick':
+                    sick_allowance -= lr.leave_days
+
+        return {'annual': max(0, annual_allowance), 'sick': max(0, sick_allowance)}
+
 
 class ListEmployeeSerializer(serializers.ModelSerializer):
     job_title = serializers.CharField(source='contract.job_title.name', read_only=True)
     department = serializers.CharField(source='contract.department.name', read_only=True)
     work_location = serializers.CharField(source='contract.work_location', read_only=True)
+    annual_leave_days_left = serializers.SerializerMethodField()
+    sick_leave_days_left = serializers.SerializerMethodField()
 
     class Meta:
         model = Employee
@@ -175,8 +197,32 @@ class ListEmployeeSerializer(serializers.ModelSerializer):
             'id', 'employee_id', 'first_name', 'last_name', 'gender',
             'relationship_status', 'email', 'phone_number', 'bank_account_number',
             'status', 'date_of_birth', 'date_created',
-            'job_title', 'department', 'work_location'
+            'job_title', 'department', 'work_location', 'annual_leave_days_left', 'sick_leave_days_left'
         )
+
+    def get_annual_leave_days_left(self, obj):
+        if not hasattr(obj, 'contract'):
+            return 0
+
+        annual_allowance = obj.contract.annual_leave_days
+        approved_leave_requests = obj.leave_requests.filter(status='approved')
+
+        for lr in approved_leave_requests:
+            if lr.leave_type.deducts_from_allowance and lr.leave_type.deduct_from == 'annual':
+                annual_allowance -= lr.leave_days
+        return max(0, annual_allowance)
+
+    def get_sick_leave_days_left(self, obj):
+        if not hasattr(obj, 'contract'):
+            return 0
+
+        sick_allowance = obj.contract.sick_leave_days
+        approved_leave_requests = obj.leave_requests.filter(status='approved')
+
+        for lr in approved_leave_requests:
+            if lr.leave_type.deducts_from_allowance and lr.leave_type.deduct_from == 'sick':
+                sick_allowance -= lr.leave_days
+        return max(0, sick_allowance)
 
 
 class EmployeeExportSerializer(serializers.ModelSerializer):

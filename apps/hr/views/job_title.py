@@ -60,7 +60,7 @@ class JobTitleViewSet(viewsets.GenericViewSet):
         try:
             job_title = JobTitle.objects.get(pk=pk, is_active=True, organization=request.organization)
             if job_title.employees.exists():
-                return Response({"error": "Cannot delete job title with employees"},
+                return Response({"error": "Cannot delete job title with employees, reassign employees first"},
                                 status=status.HTTP_400_BAD_REQUEST)
             job_title.soft_delete(owner=request.user)
             return Response({"message": "Job Title deleted successfully"}, status=status.HTTP_200_OK)
