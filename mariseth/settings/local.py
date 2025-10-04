@@ -26,7 +26,8 @@ CSRF_TRUSTED_ORIGINS = [
     "https://v48ws000c8wg0gcgg880sg4o.65.109.122.43.sslip.io",
     "https://s4ckwk8g4cc88k8sgww084ko.65.109.122.43.sslip.io",
     "https://aok8g0c8kcg8gk448kgkcoww.135.181.238.146.sslip.io",
-    "https://yww8w4kc4okg404sw4wo4ggc.135.181.238.146.sslip.io"
+    "https://yww8w4kc4okg404sw4wo4ggc.135.181.238.146.sslip.io",
+    "https://qcoo0o4w0co8g8s0cgc08goc.135.181.238.146.sslip.io"
 ]
 # # MinIO Configuration
 # MINIO_ENDPOINT = env('MINIO_ENDPOINT_URL')  # e.g. http://minio:9000
