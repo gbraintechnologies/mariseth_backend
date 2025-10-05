@@ -9,14 +9,16 @@ DEBUG = False
 CORS_ALLOWED_ORIGINS = [
     "https://mariseth.scaleforge.farm",
     "https://v48ws000c8wg0gcgg880sg4o.65.109.122.43.sslip.io",
-    "https://s4ckwk8g4cc88k8sgww084ko.65.109.122.43.sslip.io"
+    "https://s4ckwk8g4cc88k8sgww084ko.65.109.122.43.sslip.io",
+    "https://sw0k8ooc0cwws0wgg8kgcos8.65.109.108.54.sslip.io"
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     "http://*",
     "https://*",
     "https://v48ws000c8wg0gcgg880sg4o.65.109.122.43.sslip.io",
-    "https://s4ckwk8g4cc88k8sgww084ko.65.109.122.43.sslip.io"
+    "https://s4ckwk8g4cc88k8sgww084ko.65.109.122.43.sslip.io",
+    "https://z4k0ks808s84sw044s8kogww.65.109.122.43.sslip.io"
 ]
 
 SIMPLE_JWT = {
