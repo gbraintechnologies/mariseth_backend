@@ -20,6 +20,7 @@ class InflowOrderListRetrieveSerializer(serializers.ModelSerializer):
             'id', 'order_id', 'waybill_id', 'status', 'date_created',
             'destination_warehouse', 'total_bags', 'order_total',
             'total_cost', 'total_weight', 'date_created', 'aggregator', 'procurement_officer',
+            'expected_amount', 'actual_amount'
         )
 
 

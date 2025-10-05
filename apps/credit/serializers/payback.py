@@ -39,12 +39,10 @@ class CreditPaybackSerializer(serializers.ModelSerializer):
         return value
 
     def validate_credit(self, value):
-        if self.initial_data['amount'] > value.outstanding_amount:
-            raise serializers.ValidationError("Amount exceeds outstanding amount.")
         if value.payment_status == 'paid':
             raise serializers.ValidationError("This credit has already been fully paid.")
-        if value.approval_status != 'approved':
-            raise serializers.ValidationError("This credit has not been approved.")
+        if value.approval_status != 'fulfilled':
+            raise serializers.ValidationError("This credit has not been fulfilled.")
         return value
 
     def create(self, validated_data):

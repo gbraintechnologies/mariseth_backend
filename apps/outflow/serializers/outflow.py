@@ -74,9 +74,9 @@ class OutflowOrderSerializer(serializers.ModelSerializer):
             'customer', 'procurement_officer', 'destination',
             'expected_delivery_date', 'products', 'total_quantity',
             'total_cost', 'extra_comments', 'additional_costs',
-            'additional_cost_amount', 'total_weight',
+            'additional_cost_amount', 'total_weight', 'expected_amount', 'actual_amount',
         )
-        read_only_fields = ('total_quantity', 'total_cost', 'order_id', 'total_weight')
+        read_only_fields = ('total_quantity', 'total_cost', 'order_id', 'total_weight', 'expected_amount', 'actual_amount')
 
     @transaction.atomic
     def create(self, validated_data):
@@ -134,6 +134,7 @@ class OutflowOrderSerializer(serializers.ModelSerializer):
         order.total_cost = total_cost
         order.total_weight = total_weight
         order.amount_due = total_cost
+        order.expected_amount = total_cost # Set expected_amount here
         order.save()
         return order
 
@@ -227,6 +228,7 @@ class OutflowOrderSerializer(serializers.ModelSerializer):
         instance.total_cost = total_cost + instance.additional_cost_amount
         instance.total_weight = total_weight
         instance.amount_due = total_cost
+        instance.expected_amount = instance.total_cost # Set expected_amount here
         instance.save()
 
         return instance
@@ -524,6 +526,19 @@ class MarkCompleteSerializer(serializers.Serializer):
             )
 
         # Mark order complete
+        total_problematic_cost = Decimal('0.00')
+        for complaint in complaints:
+            try:
+                order_product = OutflowOrderWarehouseProduct.objects.get(
+                    outflow_order_warehouse__outflow_order=self.order,
+                    product=complaint['product']
+                )
+                total_problematic_cost += order_product.price_per_unit * complaint['problematic_quantity']
+            except OutflowOrderWarehouseProduct.DoesNotExist:
+                pass
+
+        self.order.actual_amount = self.order.expected_amount - total_problematic_cost
+
         old_status = self.order.status
         self.order.status = 'complete'
         self.order.save()
@@ -567,7 +582,7 @@ class FullOutflowOrderSerializer(serializers.ModelSerializer):
             'additional_costs', 'additional_cost_amount', 'total_quantity',
             'total_cost', 'total_weight', 'amount_paid', 'amount_due', 'products', 'warehouses',
             'delivery_information', 'payments', 'logs', 'recipient_complaints',
-            'waybill_id'
+            'waybill_id', 'expected_amount', 'actual_amount'
         )
 
     def to_representation(self, instance):
@@ -624,6 +639,7 @@ class ListOutflowOrderSerializer(serializers.ModelSerializer):
             'id', 'order_id', 'customer', 'procurement_officer',
             'destination', 'expected_delivery_date', 'status', 'products',
             'total_quantity', 'total_cost', 'total_weight',
+            'expected_amount', 'actual_amount'
         )
 
     def get_products(self, obj):
@@ -637,7 +653,7 @@ class ListOutflowOrderSerializer(serializers.ModelSerializer):
 class ShortOutflowOrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = OutflowOrder
-        fields = ('id', 'order_id', 'total_cost', 'status', 'total_weight')
+        fields = ('id', 'order_id', 'total_cost', 'status', 'total_weight', 'expected_amount', 'actual_amount')
 
 
 class OutflowOrderExportSerializer(serializers.ModelSerializer):
@@ -653,6 +669,7 @@ class OutflowOrderExportSerializer(serializers.ModelSerializer):
             'expected_delivery_date', 'actual_delivery_date', 'status',
             'total_quantity', 'total_cost', 'total_weight', 'additional_costs',
             'additional_cost_amount', 'extra_comments', 'waybill_id', 'date_created',
+            'expected_amount', 'actual_amount'
         )
 
 

@@ -19,7 +19,7 @@ from apps.warehouse.models import Warehouse, WarehouseProduct, WarehouseProductM
 class ShortInflowOrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = InflowOrder
-        fields = ('id', 'order_id', 'total_cost', 'status')
+        fields = ('id', 'order_id', 'total_cost', 'status', 'expected_amount', 'actual_amount')
 
 
 class InflowOrderProductSerializer(serializers.ModelSerializer):
@@ -50,9 +50,9 @@ class InflowOrderSerializer(serializers.ModelSerializer):
             'order_creation_date', 'destination_warehouse',
             'expected_delivery_date', 'status', 'total_bags',
             'additional_costs', 'additional_cost_amount', 'comments',
-            'products', 'total_weight',
+            'products', 'total_weight', 'expected_amount', 'actual_amount',
         )
-        read_only_fields = ('id', 'order_id', 'total_cost', 'status', 'total_weight')
+        read_only_fields = ('id', 'order_id', 'total_cost', 'status', 'total_weight', 'expected_amount', 'actual_amount')
 
     def create(self, validated_data):
         request = self.context['request']
@@ -91,7 +91,8 @@ class InflowOrderSerializer(serializers.ModelSerializer):
         order.total_cost = total_products_costs + order.additional_cost_amount
         order.total_bags = total_bags
         order.total_weight = total_weight
-        order.save(update_fields=['total_products_cost', 'total_cost', 'total_bags', 'total_weight'])
+        order.expected_amount = order.total_cost
+        order.save(update_fields=['total_products_cost', 'total_cost', 'total_bags', 'total_weight', 'expected_amount'])
 
         return order
 
@@ -157,6 +158,7 @@ class InflowOrderSerializer(serializers.ModelSerializer):
         instance.total_cost = total_products_costs + instance.additional_cost_amount
         instance.total_bags = total_bag
         instance.total_weight = total_weight
+        instance.expected_amount = instance.total_cost
         instance.save()
 
         return instance
@@ -212,9 +214,10 @@ class FullInflowOrderSerializer(serializers.ModelSerializer):
             'expected_delivery_date', 'actual_delivery_date',
             'status', 'total_bags', 'additional_costs', 'total_products_cost',
             'additional_cost_amount', 'total_cost', 'comments', 'products',
-            'media_files', 'history', 'waybill_id', 'total_weight'
+            'media_files', 'history', 'waybill_id', 'total_weight',
+            'expected_amount', 'actual_amount'
         )
-        read_only_fields = ('id', 'order_id', 'total_cost', 'status', 'total_products_cost', 'total_weight')
+        read_only_fields = ('id', 'order_id', 'total_cost', 'status', 'total_products_cost', 'total_weight', 'expected_amount', 'actual_amount')
 
     def get_products(self, obj):
         return InflowOrderProductAggregateSerializer(
@@ -361,6 +364,10 @@ class OrderApprovalSerializer(serializers.Serializer):
             order_product.product.add_quantity(order_product.quantity)
 
     def finalize_order(self, order, user):
+        problematic_cost = sum(
+            p.problematic_quantity * p.unit_price for p in order.products.all()
+        )
+        order.actual_amount = order.expected_amount - problematic_cost
         order.status = 'approved'
         order.actual_delivery_date = timezone.now().date()
         order.save()
@@ -391,4 +398,5 @@ class InflowOrderExportSerializer(serializers.ModelSerializer):
             'status', 'total_bags', 'order_total', 'additional_costs',
             'additional_cost_amount', 'total_cost', 'total_products_cost',
             'total_weight', 'comments', 'waybill_id', 'date_created',
+            'expected_amount', 'actual_amount'
         )

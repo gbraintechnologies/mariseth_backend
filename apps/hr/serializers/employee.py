@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.validators import UniqueValidator
 
 from apps.accounts.serializers.users import ShortUserSerializer
 from apps.hr.models import Employee, EmployeeContract, EmployeeDisciplinaryAction, EmployeeEmergencyContact,     EmployeeQualification, LeaveRequest, LeaveType
@@ -205,6 +206,7 @@ class ListEmployeeSerializer(serializers.ModelSerializer):
     work_location = serializers.CharField(source='contract.work_location', read_only=True)
     annual_leave_days_left = serializers.SerializerMethodField()
     sick_leave_days_left = serializers.SerializerMethodField()
+    profile_picture = serializers.ImageField(read_only=True)
 
     class Meta:
         model = Employee
@@ -212,7 +214,8 @@ class ListEmployeeSerializer(serializers.ModelSerializer):
             'id', 'employee_id', 'first_name', 'last_name', 'gender',
             'relationship_status', 'email', 'phone_number', 'bank_account_number',
             'status', 'date_of_birth', 'date_created',
-            'job_title', 'department', 'work_location', 'annual_leave_days_left', 'sick_leave_days_left'
+            'job_title', 'department', 'work_location',  'profile_picture',
+            'annual_leave_days_left', 'sick_leave_days_left'
         )
 
     def get_annual_leave_days_left(self, obj):
