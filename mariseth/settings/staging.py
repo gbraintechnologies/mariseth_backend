@@ -10,11 +10,13 @@ CORS_ALLOWED_ORIGINS = [
     "https://s4ckwk8g4cc88k8sgww084ko.65.109.122.43.sslip.io",
     "https://aok8g0c8kcg8gk448kgkcoww.135.181.238.146.sslip.io",
     "https://agkw8c444g840o408s4so0ow.135.181.238.146.sslip.io",
+    "https://sw0k8ooc0cwws0wgg8kgcos8.65.109.108.54.sslip.io"
 ]
 CSRF_TRUSTED_ORIGINS = [
     "http://*",
     "https://*",
-    "https://qcoo0o4w0co8g8s0cgc08goc.135.181.238.146.sslip.io"
+    "https://qcoo0o4w0co8g8s0cgc08goc.135.181.238.146.sslip.io",
+    "https://z4k0ks808s84sw044s8kogww.65.109.122.43.sslip.io"
 ]
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
