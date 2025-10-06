@@ -50,6 +50,14 @@ class Farm(BaseModel):
     land_ownership = models.CharField(max_length=20, choices=LAND_OWNERSHIP_CHOICES)
     other_specification = models.CharField(max_length=255, blank=True, null=True)
 
+    # -- Manager.io Integration Fields --
+    manager_id = models.CharField(max_length=255, blank=True, null=True, unique=True,
+                                  help_text="The unique key from the external Manager.io system."
+                                  )
+    manager_json_data = models.JSONField(
+        null=True, blank=True, help_text="A cached copy of the last known data from Manager.io."
+    )
+
     def __str__(self):
         return f"{self.id} - {self.name}"
 
@@ -177,6 +185,18 @@ class Product(BaseModel):
     description = models.TextField(blank=True, null=True)
     breed = models.CharField(max_length=100, blank=True, null=True)
     color = models.CharField(max_length=100, blank=True, null=True)
+
+    # -- Manager.io Integration Fields --
+    manager_id = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        unique=True,
+        help_text="The unique key from the external Manager.io system."
+    )
+    manager_json_data = models.JSONField(
+        null=True, blank=True, help_text="A cached copy of the last known data from Manager.io."
+    )
 
     def __str__(self):
         return f"{self.id} - {self.name}"

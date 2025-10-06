@@ -46,14 +46,22 @@ class ProductSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        request = self.context['request']
-        product_type = validated_data.get('type', 'crops')
-        validated_data.update({
-            'created_by': request.user,
-            'organization': request.organization,
-            'product_id': generate_product_id(validated_data.get('name'))
-        })
-        return super().create(validated_data)
+        validated_data['created_by'] = self.context['request'].user
+        validated_data['organization'] = self.context['request'].organization
+        product = Product.objects.create(**validated_data)
+        product.product_id = generate_product_id(product.name)
+        product.save()
+
+        # --- Trigger Manager.io Integration ---
+        from apps.shared.models import IntegrationLog
+        from apps.shared.tasks.manager_tasks import sync_inventory_item_to_manager
+
+        if not IntegrationLog.objects.filter(object_id=product.id, content_type__model='product').exists():
+            log = IntegrationLog.objects.create(content_object=product, created_by=self.context['request'].user)
+            sync_inventory_item_to_manager.delay(log.id)
+        # --- End Integration Trigger ---
+
+        return product
 
     def update(self, instance, validated_data):
         for attr, value in validated_data.items():

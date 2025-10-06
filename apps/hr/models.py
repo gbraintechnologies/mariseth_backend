@@ -85,6 +85,14 @@ class Employee(BaseModel):
     profile_picture = models.ImageField(upload_to='employee_profile_pics/', null=True, blank=True)
     ghana_card_number = models.CharField(unique=True, null=True, blank=True)
 
+    # -- Manager.io Integration Fields --
+    manager_id = models.CharField(max_length=255,blank=True,null=True,unique=True,
+        help_text="The unique key from the external Manager.io system."
+    )
+    manager_json_data = models.JSONField(
+        null=True, blank=True, help_text="A cached copy of the last known data from Manager.io."
+    )
+
     def __str__(self):
         return f"{self.id} - {self.first_name} {self.last_name}"
 

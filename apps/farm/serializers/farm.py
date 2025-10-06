@@ -70,6 +70,16 @@ class FarmSerializer(serializers.ModelSerializer):
         if crops:
             for crop_data in crops:
                 FarmProduct.objects.create(farm=farm, product=crop_data, is_main_product=True)
+
+        # --- Trigger Manager.io Integration ---
+        from apps.shared.models import IntegrationLog
+        from apps.shared.tasks.manager_tasks import sync_supplier_to_manager
+
+        if not IntegrationLog.objects.filter(object_id=farm.id, content_type__model='farm').exists():
+            log = IntegrationLog.objects.create(content_object=farm, created_by=request.user)
+            sync_supplier_to_manager.delay(log.id)
+        # --- End Integration Trigger ---
+
         return farm
 
     def update(self, instance, validated_data):

@@ -106,6 +106,15 @@ class EmployeeSerializer(serializers.ModelSerializer):
         if contract_data:
             EmployeeContract.objects.create(employee=employee, **contract_data)
 
+        # --- Trigger Manager.io Integration ---
+        from apps.shared.models import IntegrationLog
+        from apps.shared.tasks.manager_tasks import sync_employee_to_manager
+
+        if not IntegrationLog.objects.filter(object_id=employee.id, content_type__model='employee').exists():
+            log = IntegrationLog.objects.create(content_object=employee, created_by=request.user)
+            sync_employee_to_manager.delay(log.id)
+        # --- End Integration Trigger ---
+
         return employee
 
     def update(self, instance, validated_data):

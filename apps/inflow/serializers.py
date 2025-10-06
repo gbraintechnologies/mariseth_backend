@@ -88,7 +88,7 @@ class InflowOrderSerializer(serializers.ModelSerializer):
         total_bags = sum(product.quantity for product in order.products.all())
         total_weight = sum(product.total_weight for product in order.products.all())
         order.total_products_cost = total_products_costs
-        order.total_cost = total_products_costs + order.additional_cost_amount
+        order.total_cost = total_products_costs + (order.additional_cost_amount or 0)
         order.total_bags = total_bags
         order.total_weight = total_weight
         order.expected_amount = order.total_cost
@@ -142,7 +142,7 @@ class InflowOrderSerializer(serializers.ModelSerializer):
                                                                            product_data['product'].product_id,
                                                                            product_data['quantity'])
                     product_data['total_cost'] = product_data['unit_price'] * product_data['quantity']
-                    product_data['total_weight'] = product_data['product'].weight * product_data['quantity']
+                    product_data['total_weight'] = (product_data['product'].weight or 0) * product_data['quantity']
                     if not FarmProduct.objects.filter(farm=product_data['farm'], product=product_data['product'],
                                                       is_active=True).exists():
                         raise ValidationError(
@@ -155,7 +155,7 @@ class InflowOrderSerializer(serializers.ModelSerializer):
         # Recalculate total_weight for the InflowOrder after product updates
         total_weight = sum(product.total_weight for product in instance.products.all())
         instance.total_products_cost = total_products_costs
-        instance.total_cost = total_products_costs + instance.additional_cost_amount
+        instance.total_cost = total_products_costs + (instance.additional_cost_amount or 0)
         instance.total_bags = total_bag
         instance.total_weight = total_weight
         instance.expected_amount = instance.total_cost
@@ -371,6 +371,15 @@ class OrderApprovalSerializer(serializers.Serializer):
         order.status = 'approved'
         order.actual_delivery_date = timezone.now().date()
         order.save()
+
+        # --- Trigger Manager.io Integration ---
+        from apps.shared.models import IntegrationLog
+        from apps.shared.tasks.manager_tasks import sync_purchase_invoice_to_manager
+
+        if not IntegrationLog.objects.filter(object_id=order.id, content_type__model='infloworder').exists():
+            log = IntegrationLog.objects.create(content_object=order, created_by=user)
+            sync_purchase_invoice_to_manager.delay(log.id)
+        # --- End Integration Trigger ---
 
         InflowOrderHistory.objects.create(
             order=order,

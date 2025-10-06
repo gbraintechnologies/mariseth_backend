@@ -3,6 +3,8 @@ import base64
 from decouple import config as env
 from django.db import models
 from django.utils import timezone
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 
 
 def xor_cipher(input_str, key):
@@ -134,3 +136,28 @@ class Help(BaseModel):
 
     def __str__(self):
         return self.title
+
+
+class IntegrationLog(BaseModel):
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "Pending"
+        SUCCESS = "SUCCESS", "Success"
+        FAILED = "FAILED", "Failed"
+
+    # A generic link to ANY model in our project (Customer, Supplier, etc.)
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    content_object = GenericForeignKey("content_type", "object_id")
+
+    # Status and debugging info
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.PENDING, db_index=True
+    )
+    payload_sent = models.JSONField(null=True, blank=True, help_text="The exact JSON payload sent to the API.")
+    response_received = models.JSONField(null=True, blank=True, help_text="The full response from the API.")
+    error_message = models.TextField(blank=True, null=True, help_text="Details of the last error.")
+    retry_count = models.PositiveSmallIntegerField(default=0)
+
+
+    def __str__(self):
+        return f"Integration for {self.content_type.model} #{self.object_id} - {self.status}"

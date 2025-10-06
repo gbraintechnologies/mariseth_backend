@@ -37,6 +37,14 @@ class InflowOrder(BaseModel):
     comments = models.TextField(blank=True)
     waybill_id = models.CharField(max_length=50, unique=True, blank=True, null=True)
 
+    # -- Manager.io Integration Fields --
+    manager_id = models.CharField(max_length=255, blank=True, null=True, unique=True,
+                                  help_text="The unique key from the external Manager.io system."
+                                  )
+    manager_json_data = models.JSONField(
+        null=True, blank=True, help_text="A cached copy of the last known data from Manager.io."
+    )
+
     def __str__(self):
         return f"{self.order_id} - {self.get_status_display()}"
 
