@@ -70,7 +70,7 @@ class IntegrationLogAdmin(admin.ModelAdmin):
         'status', 
         'content_object_link', 
         'retry_count', 
-        'created_at' # Assumes you have a 'created_at' field from BaseModel
+        'date_created' # Assumes you have a 'created_at' field from BaseModel
     )
     
     # Fields to filter the list view by
@@ -98,8 +98,8 @@ class IntegrationLogAdmin(admin.ModelAdmin):
         'response_received', 
         'error_message', 
         'retry_count', 
-        'created_at', # Assumes this field exists
-        'updated_at'  # Assumes this field exists
+        'date_created', # Assumes this field exists
+        'date_modified'  # Assumes this field exists
     )
 
     # How fields are grouped in the detail view
