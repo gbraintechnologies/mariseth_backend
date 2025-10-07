@@ -3,6 +3,7 @@ import requests
 import csv
 from io import StringIO
 from django.core.management.base import BaseCommand
+from django.db import transaction
 from apps.farm.models import Farmer
 from apps.farm.utils import generate_farmer_id
 from apps.organizations.models import Organization
@@ -59,56 +60,62 @@ class Command(BaseCommand):
             return
 
         for row in reader:
-            phone_number = row.get('Phone No.')
-            if not phone_number:
-                self.stdout.write(self.style.WARNING(f"Skipping row due to missing phone number."))
-                continue
-
-            if Farmer.objects.filter(phone_number=phone_number).exists():
-                self.stdout.write(self.style.WARNING(f"Farmer with phone number {phone_number} already exists. Skipping."))
-                continue
-
             try:
-                region_id = row.get('REGION')
-                district_id = row.get('District_ID')
+                with transaction.atomic():
+                    phone_number = row.get('Phone No.')
+                    if not phone_number:
+                        self.stdout.write(self.style.WARNING(f"Skipping row due to missing phone number."))
+                        continue
 
-                region = Region.objects.get(id=region_id) if region_id else None
-                district = District.objects.get(id=district_id) if district_id else None
+                    # Lock the table for update to prevent race conditions
+                    _ = list(Farmer.objects.filter(organization_id=organization.id).select_for_update())
 
-                dob = None
-                if row.get('DOB'):
+                    if Farmer.objects.filter(phone_number=phone_number).exists():
+                        self.stdout.write(self.style.WARNING(f"Farmer with phone number {phone_number} already exists. Skipping."))
+                        continue
+
                     try:
-                        dob = datetime.strptime(row.get('DOB'), '%Y-%m-%d').date()
-                    except ValueError:
-                        self.stdout.write(self.style.WARNING(f"Could not parse date '{row.get('DOB')}'. Setting to null."))
+                        region_id = row.get('REGION')
+                        district_id = row.get('District_ID')
 
-                farmer_id = generate_farmer_id(organization.id)
+                        region = Region.objects.get(id=region_id) if region_id else None
+                        district = District.objects.get(id=district_id) if district_id else None
 
-                Farmer.objects.create(
-                    organization=organization,
-                    farmer_id=farmer_id,
-                    first_name=row.get('First Name'),
-                    last_name=row.get('Last Name'),
-                    other_names=row.get('Other Name'),
-                    phone_number=phone_number,
-                    gender=row.get('Gender', '').lower(),
-                    date_of_birth=dob,
-                    country=row.get('COUNTRY'),
-                    region=region,
-                    district=district,
-                    village=row.get('Community'),
-                    id_type=row.get('ID_TYPE'),
-                    id_number=row.get('ID_NUMBER'),
-                    address=row.get('ADDRESS'),
-                    type='smallholder',
-                    lead_farmer=lead_farmer
-                )
-                self.stdout.write(self.style.SUCCESS(f"Successfully created farmer: {row.get('First Name')} {row.get('Last Name')}"))
+                        dob = None
+                        if row.get('DOB'):
+                            try:
+                                dob = datetime.strptime(row.get('DOB'), '%Y-%m-%d').date()
+                            except ValueError:
+                                self.stdout.write(self.style.WARNING(f"Could not parse date '{row.get('DOB')}'. Setting to null."))
 
-            except Region.DoesNotExist:
-                self.stderr.write(self.style.ERROR(f"Region with ID {region_id} not found. Skipping row."))
-            except District.DoesNotExist:
-                self.stderr.write(self.style.ERROR(f"District with ID {district_id} not found. Skipping row."))
+                        farmer_id = generate_farmer_id(organization.id)
+
+                        Farmer.objects.create(
+                            organization=organization,
+                            farmer_id=farmer_id,
+                            first_name=row.get('First Name'),
+                            last_name=row.get('Last Name'),
+                            other_names=row.get('Other Name'),
+                            phone_number=phone_number,
+                            gender=row.get('Gender', '').lower(),
+                            date_of_birth=dob,
+                            country=row.get('COUNTRY'),
+                            region=region,
+                            district=district,
+                            village=row.get('Community'),
+                            id_type=row.get('ID_TYPE'),
+                            id_number=row.get('ID_NUMBER'),
+                            address=row.get('ADDRESS'),
+                            type='smallholder',
+                            lead_farmer=lead_farmer
+                        )
+                        self.stdout.write(self.style.SUCCESS(f"Successfully created farmer: {row.get('First Name')} {row.get('Last Name')}"))
+
+                    except Region.DoesNotExist:
+                        self.stderr.write(self.style.ERROR(f"Region with ID {region_id} not found. Skipping row."))
+                    except District.DoesNotExist:
+                        self.stderr.write(self.style.ERROR(f"District with ID {district_id} not found. Skipping row."))
+
             except Exception as e:
                 self.stderr.write(self.style.ERROR(f"An error occurred: {e}"))
 
