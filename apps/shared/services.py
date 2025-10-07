@@ -45,7 +45,7 @@ class MeshManagerAPIClient:
             customer_data: A dictionary representing the customer payload.
         """
         endpoint = self._get_endpoint("customer-form", "customers")
-        response = self._post(endpoint, customer_data)
+        response = self._post("/api2/customer-form", customer_data)
         return response.json()
 
     def create_employee(self, employee_data: dict) -> dict:
