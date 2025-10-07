@@ -245,5 +245,5 @@ SWAGGER_SETTINGS = {
 # ------------------------------------------------------------------------------
 # MANAGER.IO INTEGRATION SETTINGS
 # ------------------------------------------------------------------------------
-MANAGER_IO_BASE_URL = env("MANAGER_IO_BASE_URL", "https://meshsuites.manager.io")
+MANAGER_IO_BASE_URL = "https://meshsuites.manager.io"
 MANAGER_IO_API_KEY = env("MANAGER_IO_API_KEY")
