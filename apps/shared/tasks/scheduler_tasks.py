@@ -23,7 +23,7 @@ TASK_DISPATCHER = {
 }
 
 # A cap on how many times the scheduler will try to re-queue a task
-MAX_SCHEDULER_RETRIES = 5
+MAX_SCHEDULER_RETRIES = 10
 
 
 @shared_task(bind=True)

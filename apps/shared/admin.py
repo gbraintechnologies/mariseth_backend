@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib import admin
+from apps.shared.tasks import manager_tasks
 
 from apps.shared.models import AppSetting, CustomType, District, Region, IntegrationLog
 
@@ -62,8 +63,54 @@ class RegionAdmin(admin.ModelAdmin):
     district_count.short_description = 'Districts'
 
 
+def resend_integration_logs(modeladmin, request, queryset):
+    # Mapping of model names to their corresponding Celery sync tasks
+    TASK_MAP = {
+        'customer': manager_tasks.sync_customer_to_manager,
+        'product': manager_tasks.sync_inventory_item_to_manager,
+        'employee': manager_tasks.sync_employee_to_manager,
+        'farm': manager_tasks.sync_supplier_to_manager,
+        'infloworder': manager_tasks.sync_purchase_invoice_to_manager,
+        'outfloworder': manager_tasks.sync_sales_invoice_to_manager,
+    }
+
+    logs_resent = 0
+    for log in queryset:
+        model_name = log.content_type.model
+        task_to_run = TASK_MAP.get(model_name)
+
+        if task_to_run:
+            # Reset the log's status to PENDING before retrying
+            log.status = IntegrationLog.Status.PENDING
+            log.retry_count = 0  # Reset retry count
+            log.error_message = "Manually resent from admin."
+            log.save()
+
+            # Asynchronously call the Celery task
+            task_to_run.delay(log.id)
+            logs_resent += 1
+        else:
+            # Handle cases where the model is not in our map
+            modeladmin.message_user(
+                request,
+                f"Don't know how to resend log for model: {model_name}. No task mapped.",
+                level='WARNING',
+            )
+
+    if logs_resent > 0:
+        modeladmin.message_user(
+            request,
+            f"Successfully resent {logs_resent} integration log(s). They will be processed shortly.",
+            level='SUCCESS',
+        )
+resend_integration_logs.short_description = "Resend selected integration logs for processing"
+
+
+print("Loading IntegrationLogAdmin...")
+
 @admin.register(IntegrationLog)
 class IntegrationLogAdmin(admin.ModelAdmin):
+    actions = [resend_integration_logs]
     # What to show in the list view (changelist)
     list_display = (
         '__str__', 

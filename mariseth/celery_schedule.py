@@ -7,7 +7,7 @@ queue = env('CELERY_DEFAULT_QUEUE')
 CELERY_BEAT_SCHEDULES = {
     'retry_failed_integrations': {
         'task': 'apps.shared.tasks.scheduler_tasks.retry_failed_integrations',
-        'schedule': crontab(minute=0, hour='*'),
+        'schedule': crontab(minute='*/30'),
         'options': {
             'queue': queue
         }
