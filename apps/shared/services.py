@@ -9,29 +9,31 @@ class MeshManagerAPIClient:
     """
 
     def __init__(self):
+        self.base_url = settings.MANAGER_IO_BASE_URL
         self.api_key = settings.MANAGER_IO_API_KEY
         self.headers = {
             "X-API-KEY": self.api_key,
             "Content-Type": "application/json",
         }
+        # The staging server uses a different endpoint naming convention.
+        self.use_plural_endpoints = "af-south-1" in self.base_url
+
+    def _get_endpoint(self, singular_form: str, plural_form: str) -> str:
+        """
+        Selects the correct API endpoint based on the environment.
+        - Production/Local uses singular forms (e.g., 'customer-form').
+        - Staging uses plural forms (e.g., 'customers').
+        """
+        if self.use_plural_endpoints:
+            return f"/api2/{plural_form}"
+        return f"/api2/{singular_form}"
 
     def _post(self, endpoint: str, payload: dict) -> Response:
         """
         Internal method to handle POST requests.
         """
-        print("--- Manager.io POST Request ---")
-        print(f"URL: {endpoint}")
-        print(f"Payload: {payload}")
-        print("-----------------------------")
-        response = requests.post(endpoint, headers=self.headers, json=payload, timeout=30, allow_redirects=False)
-        print("--- Manager.io POST Response ---")
-        print(f"Status Code: {response.status_code}")
-        print(f"Response Headers: {response.headers}")
-        try:
-            print(f"Response JSON: {response.json()}")
-        except requests.exceptions.JSONDecodeError:
-            print(f"Response Text: {response.text}")
-        print("------------------------------")
+        url = f"{self.base_url}{endpoint}"
+        response = requests.post(url, headers=self.headers, json=payload, timeout=30)
         response.raise_for_status()  # Raise an exception for bad status codes (4xx or 5xx)
         return response
 
@@ -41,18 +43,8 @@ class MeshManagerAPIClient:
 
         Args:
             customer_data: A dictionary representing the customer payload.
-                         Example:
-                         {
-                             "code": "C-01006",
-                             "name": "Spektra Global Limited",
-                             "billingAddress": "Tumu",
-                             ...
-                         }
-
-        Returns:
-            The JSON response from the API.
         """
-        endpoint = "https://meshsuites.manager.io/api2/customer-form"
+        endpoint = self._get_endpoint("customer-form", "customers")
         response = self._post(endpoint, customer_data)
         return response.json()
 
@@ -62,11 +54,8 @@ class MeshManagerAPIClient:
 
         Args:
             employee_data: A dictionary representing the employee payload.
-
-        Returns:
-            The JSON response from the API.
         """
-        endpoint = "https://meshsuites.manager.io/api2/employee-form"
+        endpoint = self._get_endpoint("employee-form", "employees")
         response = self._post(endpoint, employee_data)
         return response.json()
 
@@ -76,11 +65,8 @@ class MeshManagerAPIClient:
 
         Args:
             item_data: A dictionary representing the inventory item payload.
-
-        Returns:
-            The JSON response from the API.
         """
-        endpoint = "https://meshsuites.manager.io/api2/inventory-item-form"
+        endpoint = self._get_endpoint("inventory-item-form", "inventory-items")
         response = self._post(endpoint, item_data)
         return response.json()
 
@@ -90,11 +76,8 @@ class MeshManagerAPIClient:
 
         Args:
             supplier_data: A dictionary representing the supplier payload.
-
-        Returns:
-            The JSON response from the API.
         """
-        endpoint = "https://meshsuites.manager.io/api2/supplier-form"
+        endpoint = self._get_endpoint("supplier-form", "suppliers")
         response = self._post(endpoint, supplier_data)
         return response.json()
 
@@ -104,11 +87,8 @@ class MeshManagerAPIClient:
 
         Args:
             invoice_data: A dictionary representing the purchase invoice payload.
-
-        Returns:
-            The JSON response from the API.
         """
-        endpoint = "https://meshsuites.manager.io/api2/purchase-invoice-form"
+        endpoint = self._get_endpoint("purchase-invoice-form", "purchase-invoices")
         response = self._post(endpoint, invoice_data)
         return response.json()
 
@@ -118,11 +98,8 @@ class MeshManagerAPIClient:
 
         Args:
             invoice_data: A dictionary representing the sales invoice payload.
-
-        Returns:
-            The JSON response from the API.
         """
-        endpoint = "https://meshsuites.manager.io/api2/sales-invoice-form"
+        endpoint = self._get_endpoint("sales-invoice-form", "sales-invoices")
         response = self._post(endpoint, invoice_data)
         return response.json()
 
