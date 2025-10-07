@@ -15,18 +15,6 @@ class MeshManagerAPIClient:
             "X-API-KEY": self.api_key,
             "Content-Type": "application/json",
         }
-        # The staging server uses a different endpoint naming convention.
-        self.use_plural_endpoints = "af-south-1" in self.base_url
-
-    def _get_endpoint(self, singular_form: str, plural_form: str) -> str:
-        """
-        Selects the correct API endpoint based on the environment.
-        - Production/Local uses singular forms (e.g., 'customer-form').
-        - Staging uses plural forms (e.g., 'customers').
-        """
-        if self.use_plural_endpoints:
-            return f"/api2/{plural_form}"
-        return f"/api2/{singular_form}"
 
     def _post(self, endpoint: str, payload: dict) -> Response:
         """
@@ -43,9 +31,19 @@ class MeshManagerAPIClient:
 
         Args:
             customer_data: A dictionary representing the customer payload.
+                         Example:
+                         {
+                             "code": "C-01006",
+                             "name": "Spektra Global Limited",
+                             "billingAddress": "Tumu",
+                             ...
+                         }
+
+        Returns:
+            The JSON response from the API.
         """
-        endpoint = self._get_endpoint("customer-form", "customers")
-        response = self._post("/api2/customer-form", customer_data)
+        endpoint = "/api2/customer-form"
+        response = self._post(endpoint, customer_data)
         return response.json()
 
     def create_employee(self, employee_data: dict) -> dict:
@@ -54,8 +52,11 @@ class MeshManagerAPIClient:
 
         Args:
             employee_data: A dictionary representing the employee payload.
+
+        Returns:
+            The JSON response from the API.
         """
-        endpoint = self._get_endpoint("employee-form", "employees")
+        endpoint = "/api2/employee-form"
         response = self._post(endpoint, employee_data)
         return response.json()
 
@@ -65,8 +66,11 @@ class MeshManagerAPIClient:
 
         Args:
             item_data: A dictionary representing the inventory item payload.
+
+        Returns:
+            The JSON response from the API.
         """
-        endpoint = self._get_endpoint("inventory-item-form", "inventory-items")
+        endpoint = "/api2/inventory-item-form"
         response = self._post(endpoint, item_data)
         return response.json()
 
@@ -76,8 +80,11 @@ class MeshManagerAPIClient:
 
         Args:
             supplier_data: A dictionary representing the supplier payload.
+
+        Returns:
+            The JSON response from the API.
         """
-        endpoint = self._get_endpoint("supplier-form", "suppliers")
+        endpoint = "/api2/supplier-form"
         response = self._post(endpoint, supplier_data)
         return response.json()
 
@@ -87,8 +94,11 @@ class MeshManagerAPIClient:
 
         Args:
             invoice_data: A dictionary representing the purchase invoice payload.
+
+        Returns:
+            The JSON response from the API.
         """
-        endpoint = self._get_endpoint("purchase-invoice-form", "purchase-invoices")
+        endpoint = "/api2/purchase-invoice-form"
         response = self._post(endpoint, invoice_data)
         return response.json()
 
@@ -98,8 +108,10 @@ class MeshManagerAPIClient:
 
         Args:
             invoice_data: A dictionary representing the sales invoice payload.
+
+        Returns:
+            The JSON response from the API.
         """
-        endpoint = self._get_endpoint("sales-invoice-form", "sales-invoices")
+        endpoint = "/api2/sales-invoice-form"
         response = self._post(endpoint, invoice_data)
         return response.json()
-
