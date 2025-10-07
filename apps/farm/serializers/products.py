@@ -1,4 +1,5 @@
 
+from django.db import transaction
 from rest_framework import serializers
 
 from apps.accounts.serializers.users import ShortUserSerializer
@@ -56,9 +57,12 @@ class ProductSerializer(serializers.ModelSerializer):
         from apps.shared.models import IntegrationLog
         from apps.shared.tasks.manager_tasks import sync_inventory_item_to_manager
 
-        if not IntegrationLog.objects.filter(object_id=product.id, content_type__model='product').exists():
-            log = IntegrationLog.objects.create(content_object=product, created_by=self.context['request'].user)
-            sync_inventory_item_to_manager.delay(log.id)
+        def trigger_sync():
+            if not IntegrationLog.objects.filter(object_id=product.id, content_type__model='product').exists():
+                log = IntegrationLog.objects.create(content_object=product, created_by=self.context['request'].user)
+                sync_inventory_item_to_manager.delay(log.id)
+
+        transaction.on_commit(trigger_sync)
         # --- End Integration Trigger ---
 
         return product

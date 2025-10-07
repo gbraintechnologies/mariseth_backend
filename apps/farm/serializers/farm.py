@@ -1,3 +1,4 @@
+from django.db import transaction
 from rest_framework import serializers
 
 from apps.accounts.serializers.users import ShortUserSerializer
@@ -75,9 +76,12 @@ class FarmSerializer(serializers.ModelSerializer):
         from apps.shared.models import IntegrationLog
         from apps.shared.tasks.manager_tasks import sync_supplier_to_manager
 
-        if not IntegrationLog.objects.filter(object_id=farm.id, content_type__model='farm').exists():
-            log = IntegrationLog.objects.create(content_object=farm, created_by=request.user)
-            sync_supplier_to_manager.delay(log.id)
+        def trigger_sync():
+            if not IntegrationLog.objects.filter(object_id=farm.id, content_type__model='farm').exists():
+                log = IntegrationLog.objects.create(content_object=farm, created_by=request.user)
+                sync_supplier_to_manager.delay(log.id)
+
+        transaction.on_commit(trigger_sync)
         # --- End Integration Trigger ---
 
         return farm

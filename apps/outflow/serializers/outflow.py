@@ -544,12 +544,16 @@ class MarkCompleteSerializer(serializers.Serializer):
         self.order.save()
 
         # --- Trigger Manager.io Integration ---
+        from django.db import transaction
         from apps.shared.models import IntegrationLog
         from apps.shared.tasks.manager_tasks import sync_sales_invoice_to_manager
 
-        if not IntegrationLog.objects.filter(object_id=self.order.id, content_type__model='outfloworder').exists():
-            log = IntegrationLog.objects.create(content_object=self.order, created_by=self.user)
-            sync_sales_invoice_to_manager.delay(log.id)
+        def trigger_sync():
+            if not IntegrationLog.objects.filter(object_id=self.order.id, content_type__model='outfloworder').exists():
+                log = IntegrationLog.objects.create(content_object=self.order, created_by=self.user)
+                sync_sales_invoice_to_manager.delay(log.id)
+
+        transaction.on_commit(trigger_sync)
         # --- End Integration Trigger ---
 
         self.order.log_status_change(old_status, 'complete', self.user)

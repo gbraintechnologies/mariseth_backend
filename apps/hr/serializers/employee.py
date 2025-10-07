@@ -1,3 +1,4 @@
+from django.db import transaction
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
@@ -110,9 +111,12 @@ class EmployeeSerializer(serializers.ModelSerializer):
         from apps.shared.models import IntegrationLog
         from apps.shared.tasks.manager_tasks import sync_employee_to_manager
 
-        if not IntegrationLog.objects.filter(object_id=employee.id, content_type__model='employee').exists():
-            log = IntegrationLog.objects.create(content_object=employee, created_by=request.user)
-            sync_employee_to_manager.delay(log.id)
+        def trigger_sync():
+            if not IntegrationLog.objects.filter(object_id=employee.id, content_type__model='employee').exists():
+                log = IntegrationLog.objects.create(content_object=employee, created_by=request.user)
+                sync_employee_to_manager.delay(log.id)
+
+        transaction.on_commit(trigger_sync)
         # --- End Integration Trigger ---
 
         return employee

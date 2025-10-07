@@ -376,9 +376,12 @@ class OrderApprovalSerializer(serializers.Serializer):
         from apps.shared.models import IntegrationLog
         from apps.shared.tasks.manager_tasks import sync_purchase_invoice_to_manager
 
-        if not IntegrationLog.objects.filter(object_id=order.id, content_type__model='infloworder').exists():
-            log = IntegrationLog.objects.create(content_object=order, created_by=user)
-            sync_purchase_invoice_to_manager.delay(log.id)
+        def trigger_sync():
+            if not IntegrationLog.objects.filter(object_id=order.id, content_type__model='infloworder').exists():
+                log = IntegrationLog.objects.create(content_object=order, created_by=user)
+                sync_purchase_invoice_to_manager.delay(log.id)
+
+        transaction.on_commit(trigger_sync)
         # --- End Integration Trigger ---
 
         InflowOrderHistory.objects.create(
