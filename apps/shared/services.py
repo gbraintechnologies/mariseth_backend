@@ -23,9 +23,10 @@ class MeshManagerAPIClient:
         print(f"URL: {endpoint}")
         print(f"Payload: {payload}")
         print("-----------------------------")
-        response = requests.post(endpoint, headers=self.headers, json=payload, timeout=30)
+        response = requests.post(endpoint, headers=self.headers, json=payload, timeout=30, allow_redirects=False)
         print("--- Manager.io POST Response ---")
         print(f"Status Code: {response.status_code}")
+        print(f"Response Headers: {response.headers}")
         try:
             print(f"Response JSON: {response.json()}")
         except requests.exceptions.JSONDecodeError:
