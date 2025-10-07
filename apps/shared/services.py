@@ -9,7 +9,6 @@ class MeshManagerAPIClient:
     """
 
     def __init__(self):
-        self.base_url = settings.MANAGER_IO_BASE_URL
         self.api_key = settings.MANAGER_IO_API_KEY
         self.headers = {
             "X-API-KEY": self.api_key,
@@ -20,8 +19,18 @@ class MeshManagerAPIClient:
         """
         Internal method to handle POST requests.
         """
-        url = f"{self.base_url}{endpoint}"
-        response = requests.post(url, headers=self.headers, json=payload, timeout=30)
+        print("--- Manager.io POST Request ---")
+        print(f"URL: {endpoint}")
+        print(f"Payload: {payload}")
+        print("-----------------------------")
+        response = requests.post(endpoint, headers=self.headers, json=payload, timeout=30)
+        print("--- Manager.io POST Response ---")
+        print(f"Status Code: {response.status_code}")
+        try:
+            print(f"Response JSON: {response.json()}")
+        except requests.exceptions.JSONDecodeError:
+            print(f"Response Text: {response.text}")
+        print("------------------------------")
         response.raise_for_status()  # Raise an exception for bad status codes (4xx or 5xx)
         return response
 
@@ -42,7 +51,7 @@ class MeshManagerAPIClient:
         Returns:
             The JSON response from the API.
         """
-        endpoint = "/api2/customer-form"
+        endpoint = "https://meshsuites.manager.io/api2/customer-form"
         response = self._post(endpoint, customer_data)
         return response.json()
 
@@ -56,7 +65,7 @@ class MeshManagerAPIClient:
         Returns:
             The JSON response from the API.
         """
-        endpoint = "/api2/employee-form"
+        endpoint = "https://meshsuites.manager.io/api2/employee-form"
         response = self._post(endpoint, employee_data)
         return response.json()
 
@@ -70,7 +79,7 @@ class MeshManagerAPIClient:
         Returns:
             The JSON response from the API.
         """
-        endpoint = "/api2/inventory-item-form"
+        endpoint = "https://meshsuites.manager.io/api2/inventory-item-form"
         response = self._post(endpoint, item_data)
         return response.json()
 
@@ -84,7 +93,7 @@ class MeshManagerAPIClient:
         Returns:
             The JSON response from the API.
         """
-        endpoint = "/api2/supplier-form"
+        endpoint = "https://meshsuites.manager.io/api2/supplier-form"
         response = self._post(endpoint, supplier_data)
         return response.json()
 
@@ -98,7 +107,7 @@ class MeshManagerAPIClient:
         Returns:
             The JSON response from the API.
         """
-        endpoint = "/api2/purchase-invoice-form"
+        endpoint = "https://meshsuites.manager.io/api2/purchase-invoice-form"
         response = self._post(endpoint, invoice_data)
         return response.json()
 
@@ -112,7 +121,7 @@ class MeshManagerAPIClient:
         Returns:
             The JSON response from the API.
         """
-        endpoint = "/api2/sales-invoice-form"
+        endpoint = "https://meshsuites.manager.io/api2/sales-invoice-form"
         response = self._post(endpoint, invoice_data)
         return response.json()
 
