@@ -20,23 +20,26 @@ def generate_farm_id(name):
 def generate_farmer_id(organization_id):
     """
     Generates farmer ID in format: F-{org_id:02}{sequence:03}
-    Example: F-0200001
+    Example: F-02001
     """
-    max_id = Farmer.objects.filter(
+    farmer_ids = Farmer.objects.filter(
         organization_id=organization_id
-    ).aggregate(
-        max_farmer_id=Max('farmer_id')
-    )['max_farmer_id']
+    ).values_list('farmer_id', flat=True)
 
-    if max_id:
-        try:
-            sequence = int(max_id[-3:]) + 1
-        except (ValueError, IndexError):
-            sequence = 1
-    else:
-        sequence = 1
+    max_sequence = 0
+    org_prefix = f"F-{int(organization_id):02}"
 
-    return f"F-{int(organization_id):02}{sequence:03}"
+    for fid in farmer_ids:
+        if fid.startswith(org_prefix):
+            try:
+                sequence = int(fid[len(org_prefix):])
+                if sequence > max_sequence:
+                    max_sequence = sequence
+            except (ValueError, IndexError):
+                continue
+    
+    new_sequence = max_sequence + 1
+    return f"{org_prefix}{new_sequence:03}"
 
 
 def generate_product_id(product_name):

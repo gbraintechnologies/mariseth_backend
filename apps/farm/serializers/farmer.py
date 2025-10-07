@@ -77,14 +77,25 @@ class FarmerSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         request = self.context['request']
-        validated_data['created_by'] = request.user
-        validated_data['organization'] = request.organization
-        validated_data['farmer_id'] = generate_farmer_id(request.organization.id)
         documents_data = validated_data.pop('documents', [])
-        farmer = super().create(validated_data)
-        for document_data in documents_data:
-            FarmerDocument.objects.create(farmer=farmer, **document_data)
-        return farmer
+
+        with transaction.atomic():
+            # Lock the Farmer table for this organization to prevent race conditions
+            _ = list(Farmer.objects.filter(organization=request.organization).select_for_update())
+
+            # Safely generate the ID
+            farmer_id = generate_farmer_id(request.organization.id)
+
+            validated_data['created_by'] = request.user
+            validated_data['organization'] = request.organization
+            validated_data['farmer_id'] = farmer_id
+            
+            farmer = Farmer.objects.create(**validated_data)
+
+            for document_data in documents_data:
+                FarmerDocument.objects.create(farmer=farmer, **document_data)
+            
+            return farmer
 
     def update(self, instance, validated_data):
         for attr, value in validated_data.items():
