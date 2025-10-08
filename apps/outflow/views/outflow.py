@@ -193,8 +193,8 @@ class OutflowOrderViewSet(viewsets.GenericViewSet):
         except OutflowOrder.DoesNotExist:
             return Response({'error': 'Outflow order not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        if order.status != 'full_payment':
-            return Response({'error': 'Order must be fully paid before completion.'},
+        if order.status not in ['full_payment', 'delivered']:
+            return Response({'error': 'Order must be fully paid or delivered before completion.'},
                             status=status.HTTP_400_BAD_REQUEST)
 
         serializer = MarkCompleteSerializer(data=request.data, order=order, user=request.user)

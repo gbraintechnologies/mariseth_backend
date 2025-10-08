@@ -446,10 +446,12 @@ class OutflowOrderPaymentRequestSerializer(serializers.ModelSerializer):
         payment.amount_due = order.amount_due
         payment.invoice_id = generate_invoice_id(payment.pk)
         payment.save()
-        if order.amount_paid >= order.total_cost:
-            order.status = 'full_payment'
-        elif order.amount_paid > 0:
-            order.status = 'partial_payment'
+
+        if order.status != 'complete':
+            if order.amount_paid >= order.total_cost:
+                order.status = 'full_payment'
+            elif order.amount_paid > 0:
+                order.status = 'partial_payment'
 
         order.save()
         return payment
