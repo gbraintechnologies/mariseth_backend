@@ -146,7 +146,7 @@ class InputCreditViewSet(viewsets.GenericViewSet):
 
         queryset = InputCredit.objects.filter(is_active=True, organization=request.organization)
 
-        if category_id:
+        if category_id and category_id.isdigit():
             queryset = queryset.filter(category_id=category_id)
         if query:
             queryset = queryset.filter(
