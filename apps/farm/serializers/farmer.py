@@ -1,5 +1,6 @@
 from django.db import transaction
 from rest_framework import serializers
+from rest_framework.validators import UniqueValidator
 
 from apps.accounts.serializers.users import ShortUserSerializer
 from apps.farm.models import Farm, Farmer, FarmerDocument
@@ -45,8 +46,16 @@ class FarmerSerializer(serializers.ModelSerializer):
         required=False,
         allow_null=True,
     )
-
     documents = FarmerDocumentSerializer(many=True, required=False)
+    phone_number = serializers.CharField(
+        validators=[
+            UniqueValidator(
+                queryset=Farmer.objects.filter(is_active=True),
+                message="A farmer with this phone number already exists."
+            )
+        ],
+        required=True
+    )
 
     class Meta:
         model = Farmer
