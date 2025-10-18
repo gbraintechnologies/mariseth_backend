@@ -86,7 +86,7 @@ class UserAccountViewSet(viewsets.GenericViewSet):
         queryset = User.objects.filter(
             is_active=True,
             organization_users__organization=organization
-        )
+        ).prefetch_related('groups')
         if query:
             queryset = queryset.filter(
                 Q(first_name__icontains=query) |

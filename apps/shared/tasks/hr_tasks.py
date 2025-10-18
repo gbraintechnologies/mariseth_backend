@@ -81,7 +81,7 @@ def send_training_notification(training_id):
                     sentry_sdk.capture_exception(e)
 
     except Training.DoesNotExist:
-        logger.error(f"Training with ID {training_id} does not exist")
+        logger.warning(f"Training with ID {training_id} does not exist. Notification not sent.")
     except Exception as e:
         logger.error(f"Error in send_training_sms_notification for training ID {training_id}: {str(e)}")
         sentry_sdk.capture_exception(e)
@@ -133,7 +133,7 @@ def send_leave_status_notification(leave_id):
         # Send EMAIL if preferred
         elif employee.notification == 'email' and employee.email:
             try:
-                template = get_template("leave_status_notification.html")
+                template = get_template("leave_email.html")
                 body_html = template.render(context)
                 body_text = sms_message
                 subject = f"Your Leave Request has been {status_text}"
