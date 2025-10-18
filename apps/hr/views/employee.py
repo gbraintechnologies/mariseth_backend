@@ -1,6 +1,6 @@
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Prefetch
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -76,7 +76,15 @@ class EmployeeViewSet(viewsets.GenericViewSet):
         export = request.query_params.get('export', 'false').lower()
         filter_q = build_employee_filter_q(request.query_params, request.organization)
 
-        employees = Employee.objects.filter(filter_q).order_by('-date_created')
+        approved_leave_requests_prefetch = Prefetch(
+            'leave_requests',
+            queryset=LeaveRequest.objects.filter(status='approved').select_related('leave_type'),
+            to_attr='approved_leave_requests'
+        )
+        employees = Employee.objects.filter(
+            filter_q).select_related(
+            'contract__job_title', 'contract__department'
+        ).prefetch_related(approved_leave_requests_prefetch).order_by('-date_created')
         export_response = None
         if export == 'true':
             if employees.count() == 0:

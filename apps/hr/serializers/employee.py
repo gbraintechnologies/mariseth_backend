@@ -236,7 +236,7 @@ class ListEmployeeSerializer(serializers.ModelSerializer):
             return 0
 
         annual_allowance = obj.contract.annual_leave_days
-        approved_leave_requests = obj.leave_requests.filter(status='approved')
+        approved_leave_requests = obj.approved_leave_requests
 
         for lr in approved_leave_requests:
             if lr.leave_type.deducts_from_allowance and lr.leave_type.deduct_from == 'annual':
@@ -248,7 +248,7 @@ class ListEmployeeSerializer(serializers.ModelSerializer):
             return 0
 
         sick_allowance = obj.contract.sick_leave_days
-        approved_leave_requests = obj.leave_requests.filter(status='approved')
+        approved_leave_requests = obj.approved_leave_requests
 
         for lr in approved_leave_requests:
             if lr.leave_type.deducts_from_allowance and lr.leave_type.deduct_from == 'sick':
