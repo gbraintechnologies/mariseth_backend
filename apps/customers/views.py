@@ -86,7 +86,7 @@ class CustomerViewSet(viewsets.GenericViewSet):
                     Q(customer_id__icontains=query)
             )
 
-        customers = Customer.objects.filter(filter_q).order_by('name')
+        customers = Customer.objects.select_related('created_by').filter(filter_q).order_by('name')
         paginator = Paginator(customers, page_size)
         page_obj = paginator.get_page(page)
 
