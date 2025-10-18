@@ -85,7 +85,13 @@ class LeaveRequestSerializer(serializers.ModelSerializer):
                 f"Leave type has a maximum of {leave_type.max_days} days."
             )
 
-        contract = data['employee'].contract
+        try:
+            contract = data['employee'].contract
+        except Employee.contract.RelatedObjectDoesNotExist:
+            raise serializers.ValidationError(
+                {'employee': 'The selected employee does not have a contract.'}
+            )
+
         if leave_type.deducts_from_allowance:
             if leave_type.deduct_from == 'annual':
                 if contract.annual_leave_days < leave_days:
