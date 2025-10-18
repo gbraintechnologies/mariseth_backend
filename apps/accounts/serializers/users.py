@@ -177,8 +177,8 @@ class UserSerializer(serializers.ModelSerializer):
         ]
 
     def get_organization(self, obj):
-        try:
-            organization_user = OrganizationUser.objects.get(user=obj)
-            return ShortOrganizationSerializer(organization_user.get_user_organization()).data
-        except OrganizationUser.DoesNotExist:
-            return None
+        # Access the prefetched data
+        org_user = obj.organization_users.all()[0] if obj.organization_users.all() else None
+        if org_user and org_user.organization:
+            return ShortOrganizationSerializer(org_user.organization).data
+        return None

@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Q, Prefetch
 from rest_framework import status, views, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -16,6 +16,7 @@ from apps.shared.literals import ADD_ADMIN, CREATE_GROUPS_AND_ROLES, DELETE_ADMI
 from apps.shared.utils.permissions import UserPermission
 
 User = get_user_model()
+from apps.organizations.models import OrganizationUser
 
 
 @add_swagger_to_user_account_viewset
@@ -86,7 +87,13 @@ class UserAccountViewSet(viewsets.GenericViewSet):
         queryset = User.objects.filter(
             is_active=True,
             organization_users__organization=organization
-        ).prefetch_related('groups')
+        ).prefetch_related(
+            'groups',
+            Prefetch(
+                'organization_users',
+                queryset=OrganizationUser.objects.select_related('organization')
+            )
+        )
         if query:
             queryset = queryset.filter(
                 Q(first_name__icontains=query) |
