@@ -27,6 +27,13 @@ services:
       - ENVIRONMENT=staging
     networks:
       - app_network
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fsS http://localhost:8000/health/ || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: always
 
   db:
     image: postgres:14
@@ -39,12 +46,14 @@ services:
     volumes:
       - 'postgres_data:/var/lib/postgresql/data'
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER}" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}" ]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 30s
     networks:
       - app_network
+    restart: always
 
 
   redis:
@@ -57,9 +66,11 @@ services:
       - app_network
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: always
 
   celery:
     build: .
@@ -76,6 +87,13 @@ services:
     environment:
       - SERVICE_TYPE=celery
       - ENVIRONMENT=staging
+    healthcheck:
+      test: [ "CMD-SHELL", "celery -A iyf_connect inspect ping | grep -q 'pong'" ]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 60s
+    restart: always
 
   celery-beat:
     build: .
@@ -92,3 +110,10 @@ services:
     environment:
       - SERVICE_TYPE=celery-beat
       - ENVIRONMENT=staging
+    healthcheck:
+      test: [ "CMD-SHELL", "pgrep -f 'celery.*beat' >/dev/null || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: always
