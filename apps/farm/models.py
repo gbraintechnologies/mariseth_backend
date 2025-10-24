@@ -34,7 +34,7 @@ class Farm(BaseModel):
     region = models.ForeignKey('shared.Region', related_name='farms', on_delete=models.SET_NULL, null=True, blank=True)
     district = models.ForeignKey('shared.District', related_name='farms', on_delete=models.SET_NULL, null=True,
                                  blank=True)
-    size = models.IntegerField()
+    size = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     size_metric = models.ForeignKey(CustomType, on_delete=models.SET_NULL, null=True,
                                     related_name='farm_size_metrics')
     livestock_kept = models.CharField(max_length=255, blank=True, null=True)
