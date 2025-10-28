@@ -29,11 +29,16 @@ class MobileRegisterSerializer(serializers.Serializer):
     def create(self, validated_data):
         phone_number = validated_data['phone_number']
         farmer = Farmer.objects.get(phone_number=phone_number, is_active=True)
+
+        email_to_use = farmer.email
+        if not email_to_use or User.objects.filter(email=email_to_use).exists():
+            email_to_use = f"{phone_number}@marisethfarms.com"
+
         user, created = User.objects.update_or_create(
             phone_number=phone_number,
             defaults={
                 'username': phone_number,
-                'email': farmer.email or f"{phone_number}@marisethfarms.com",
+                'email': email_to_use,
                 'first_name': farmer.first_name,
                 'last_name': farmer.last_name,
                 'is_active': True,
