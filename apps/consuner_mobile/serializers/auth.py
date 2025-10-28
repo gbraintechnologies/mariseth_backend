@@ -17,8 +17,8 @@ class MobileRegisterSerializer(serializers.Serializer):
     phone_number = serializers.CharField(max_length=20, validators=[validate_only_digits])
 
     def validate_phone_number(self, value):
-        if not Farmer.objects.filter(phone_number=value).exists():
-            raise serializers.ValidationError("Phone number is not registered as a farmer")
+        if not Farmer.objects.filter(phone_number=value, is_active=True).exists():
+            raise serializers.ValidationError("Phone number is not registered as an active farmer")
 
         user = User.objects.filter(phone_number=value).first()
         if user and user.is_verified:

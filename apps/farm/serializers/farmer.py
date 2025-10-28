@@ -50,7 +50,7 @@ class FarmerSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField(
         validators=[
             UniqueValidator(
-                queryset=Farmer.objects.filter(is_active=True),
+                queryset=Farmer.objects.all(),
                 message="A farmer with this phone number already exists."
             )
         ],
