@@ -29,5 +29,9 @@ COPY . .
 # Expose port 8000 for the application
 EXPOSE 8000
 
+# Add a health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
+  CMD curl -fsS http://localhost:8000/health/ || exit 1
+
 # Use entrypoint.sh to run the server
 ENTRYPOINT ["/app/entrypoint.sh"]
