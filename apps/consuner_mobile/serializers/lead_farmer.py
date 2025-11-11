@@ -64,6 +64,8 @@ class MobileAddSmallholderFarmerSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
+        if validated_data.get('email') == '':
+            validated_data['email'] = None
         request = self.context['request']
         validated_data['type'] = 'smallholder'
         validated_data['created_by'] = request.user

@@ -20,7 +20,7 @@ if [ "$SERVICE_TYPE" = "web" ]; then
         --host 0.0.0.0 \
         --port 8000
   elif [ "$ENVIRONMENT" = "production" ] || [ "$ENVIRONMENT" = "staging" ]; then
-    exec daphne -b 0.0.0.0 -p 8000 mariseth.asgi:application
+    exec daphne -b 0.0.0.0 -p 8080 mariseth.asgi:application
   fi
 
 # Run Celery worker for the celery service
