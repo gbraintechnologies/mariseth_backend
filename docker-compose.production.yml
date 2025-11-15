@@ -1,19 +1,15 @@
 networks:
   app_network:
-    driver: bridge
+    external: true
+    name: e0kogks8okwk84s0w844k0co
 
 services:
   web:
     build: .
     ports:
-      - "8000:8000"
+      - "8001:8000"
     volumes:
       - .:/app
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
     env_file:
       - ./.env
     environment:
@@ -30,51 +26,11 @@ services:
       start_period: 60s
     restart: always
 
-  db:
-    image: postgres:14
-    environment:
-      POSTGRES_DB: ${DB_NAME}
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-    ports:
-      - "5431:${DB_PORT}"
-    volumes:
-      - 'postgres_data:/var/lib/postgresql/data'
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}" ]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
-    networks:
-      - app_network
-    restart: always
-
-
-  redis:
-    image: "redis:latest"
-    volumes:
-      - 'redis_data:/data'
-    ports:
-      - "6379:6379"
-    networks:
-      - app_network
-    healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
-    restart: always
-
   celery:
     build: .
     command: celery -A mariseth worker -l info -Q production
     volumes:
       - .:/app
-    depends_on:
-      - db
-      - redis
     env_file:
       - ./.env
     networks:
@@ -83,7 +39,7 @@ services:
       - SERVICE_TYPE=celery
       - ENVIRONMENT=production
     healthcheck:
-      test: [ "CMD-SHELL", "celery -A iyf_connect inspect ping | grep -q 'pong'" ]
+      test: [ "CMD-SHELL", "celery -A mariseth inspect ping | grep -q 'pong'" ]
       interval: 30s
       timeout: 15s
       retries: 5
@@ -95,9 +51,6 @@ services:
     command: sh -c "celery -A mariseth beat -l info"
     volumes:
       - .:/app
-    depends_on:
-      - db
-      - redis
     env_file:
       - ./.env
     networks:
