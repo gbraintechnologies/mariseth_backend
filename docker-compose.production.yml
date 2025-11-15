@@ -1,7 +1,7 @@
 networks:
   app_network:
     external: true
-    name: b8ggs0gg40wc4okkks88cock
+    name: e0kogks8okwk84s0w844k0co
 
 services:
   web:
