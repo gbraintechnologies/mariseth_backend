@@ -174,7 +174,23 @@ INTERNAL_HOST = env('INTERNAL_HOST')
 
 LOGGING = LOGGERS
 
-CELERY_BROKER_URL = env("CELERY_BROKER_URL")
+# Prefer an explicit writable Redis endpoint and keep compatibility with
+# existing env vars.
+REDIS_WRITE_URL = env(
+    "REDIS_WRITE_URL",
+    default=env(
+        "CELERY_BROKER_URL",
+        default=env("REDIS_URL", default=None),
+    ),
+)
+
+if REDIS_WRITE_URL:
+    CELERY_BROKER_URL = REDIS_WRITE_URL
+else:
+    CELERY_BROKER_URL = (
+        f"redis://{env('REDIS_HOST', 'redis')}:{int(env('REDIS_PORT', 6379))}/0"
+    )
+CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", default=CELERY_BROKER_URL)
 
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
@@ -194,7 +210,7 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            'hosts': [
+            'hosts': [REDIS_WRITE_URL] if REDIS_WRITE_URL else [
                 (
                     env('REDIS_HOST', 'redis'),
                     int(env('REDIS_PORT', 6379))

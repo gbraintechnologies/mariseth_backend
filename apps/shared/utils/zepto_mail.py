@@ -3,6 +3,7 @@ import sentry_sdk
 from typing import Optional
 from django.conf import settings
 from mariseth.settings.base import ENVIRONMENT
+from mariseth.logging import logger
 
 
 class ZeptoMailClient:
@@ -37,10 +38,9 @@ class ZeptoMailClient:
         ]
         responses = []
         for batch in recipient_batches:
-            print("batch", batch)
             payload = {
                 "from": {"address": sender},
-                "to": [{"email_address": {"address": r}} for r in recipients],
+                "to": [{"email_address": {"address": r}} for r in batch],
                 "subject": subject_prefix + subject,
                 "textbody": body_text,
             }
@@ -65,7 +65,7 @@ class ZeptoMailClient:
                 response.raise_for_status()
                 responses.append(response.json())
             except requests.RequestException as e:
-                print(f"Failed to send email: {e}")
+                logger.error("Failed to send ZeptoMail email: %s", e)
                 sentry_sdk.capture_exception(e)
                 raise e
 
