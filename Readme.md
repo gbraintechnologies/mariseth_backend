@@ -3,7 +3,6 @@
 ## Features
 - **User Accounts Management**: Create and manage user accounts with role-based access control.
 
-
 ## Getting Started
 
 ### Prerequisites
