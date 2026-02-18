@@ -1,7 +1,9 @@
+volumes:
+  redis_data:
+  elastic_search_data:
 networks:
   app_network:
-    external: true
-    name: e0kogks8okwk84s0w844k0co
+    driver: bridge
 
 services:
   web:
