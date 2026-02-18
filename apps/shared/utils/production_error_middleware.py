@@ -31,13 +31,13 @@ class ProductionErrorResponseMiddleware:
                 and self._is_api_request(request)
                 and getattr(response, "status_code", 200) >= 500
             ):
-                return JsonResponse({"message": self.GENERIC_MESSAGE}, status=500)
+                return JsonResponse({"message": self.GENERIC_MESSAGE}, status=429)
             return response
         except Exception as exc:
             sentry_sdk.capture_exception(exc)
             logger.exception("Unhandled server error on path=%s", request.path)
 
             if self._is_enabled() and self._is_api_request(request):
-                return JsonResponse({"message": self.GENERIC_MESSAGE}, status=500)
+                return JsonResponse({"message": self.GENERIC_MESSAGE}, status=429)
 
             raise
