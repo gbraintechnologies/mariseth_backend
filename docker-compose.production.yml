@@ -1,19 +1,12 @@
 volumes:
   redis_data:
   elastic_search_data:
-
-networks:
-  app_network:
-    driver: bridge
-
 services:
   redis-master:
     image: redis:7-alpine
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
-    networks:
-      - app_network
     restart: always
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -35,8 +28,6 @@ services:
       - ENVIRONMENT=production
       - REDIS_HOST=redis-master
       - REDIS_URL=redis://redis-master:6379
-    networks:
-      - app_network
     command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
     depends_on:
       redis-master:
@@ -56,8 +47,6 @@ services:
       - .:/app
     env_file:
       - ./.env
-    networks:
-      - app_network
     environment:
       - SERVICE_TYPE=celery
       - ENVIRONMENT=production
@@ -83,8 +72,6 @@ services:
       - .:/app
     env_file:
       - ./.env
-    networks:
-      - app_network
     environment:
       - SERVICE_TYPE=celery-beat
       - ENVIRONMENT=production
