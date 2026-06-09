@@ -444,6 +444,15 @@ class User(AbstractUser, BaseModel, PermissionsMixin):
     def __str__(self):
         return f'{self.id}-{self.get_full_name()}'
 
+    def soft_delete(self, owner, fields_to_encrypt: list = None):
+        """
+        Soft delete the user and cascade the soft delete to the linked farmer.
+        """
+        super().soft_delete(owner=owner, fields_to_encrypt=fields_to_encrypt)
+        farmer = getattr(self, 'farmer', None)
+        if farmer and farmer.is_active:
+            farmer.soft_delete(owner=owner)
+
 
 class UserChangeLog(BaseModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='change_logs')

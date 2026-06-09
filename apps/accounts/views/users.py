@@ -83,7 +83,7 @@ class UserAccountViewSet(viewsets.GenericViewSet):
             return Response({'detail': 'User does not belong to any organization.'}, status=status.HTTP_400_BAD_REQUEST)
 
         query = request.query_params.get('query')
-        user_type = request.query_params.get('user_type')
+        user_type = request.query_params.get('user_type', 'admin')
         queryset = User.objects.filter(
             is_active=True,
             organization_users__organization=organization

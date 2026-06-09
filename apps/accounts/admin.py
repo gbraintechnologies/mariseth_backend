@@ -30,7 +30,7 @@ class UserAdmin(admin.ModelAdmin):
     fieldsets = (
         ('Personal Info', {'fields': ('first_name', 'last_name', 'gender')}),
         ('Contact Info', {'fields': ('email', 'phone_number', 'username')}),
-        ('Other Info', {'fields': ('avatar', 'verification_code', 'is_verified', 'date_verified')})
+        ('Other Info', {'fields': ('avatar', 'verification_code', 'is_verified', 'is_active', 'date_verified')})
     )
     inlines = [UserGroupInline]
 

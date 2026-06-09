@@ -120,6 +120,14 @@ class Farmer(BaseModel):
     def __str__(self):
         return f"{self.id} - {self.first_name} {self.last_name}"
 
+    def soft_delete(self, owner, fields_to_encrypt: list = None):
+        """
+        Soft delete the farmer and cascade the soft delete to the linked user.
+        """
+        super().soft_delete(owner=owner, fields_to_encrypt=fields_to_encrypt)
+        if self.user_id and self.user.is_active:
+            self.user.soft_delete(owner=owner, fields_to_encrypt=['email', 'phone_number', 'username'])
+
 
 class FarmerDocument(BaseModel):
     farmer = models.ForeignKey('Farmer', related_name='documents', on_delete=models.CASCADE)
