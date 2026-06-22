@@ -5,6 +5,7 @@ from mariseth.settings.base import *
 DEBUG = env('DEBUG', cast=bool)
 # ALLOWED_HOSTS = env('ALLOWED_HOSTS', default='*', cast=Csv())
 ALLOWED_HOSTS = ["*"]
+frontend = env('FRONTEND_URL')
 ENVIRONMENT = env('ENVIRONMENT')
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=30),
@@ -14,7 +15,7 @@ SIMPLE_JWT = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "https://mariseth.scaleforge.farm",
-    "https://mariseth-staging.135.181.238.146.sslip.io"
+    frontend
 ]
 CSRF_TRUSTED_ORIGINS = [
     "http://*",
@@ -53,3 +54,4 @@ AWS_STORAGE_BUCKET_NAME = env('MINIO_BUCKET_NAME')
 
 AWS_S3_ENDPOINT_URL = env('MINIO_ENDPOINT_URL')
 MINIO_ACCESS_URL = env('MINIO_ENDPOINT_URL')
+

@@ -4,10 +4,11 @@ from mariseth.settings.base import *
 
 ALLOWED_HOSTS = ['*']
 ENVIRONMENT = env('ENVIRONMENT')
+frontend = env('FRONTEND_URL')
 DEBUG = False
 
 CORS_ALLOWED_ORIGINS = [
-    "https://mariseth.scaleforge.farm"
+    frontend
 ]
 
 CSRF_TRUSTED_ORIGINS = [

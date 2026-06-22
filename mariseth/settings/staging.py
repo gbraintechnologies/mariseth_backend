@@ -2,10 +2,10 @@ from datetime import timedelta
 
 from mariseth.settings.base import *
 
-
+frontend = env('FRONTEND_URL')
 ALLOWED_HOSTS = ['*']
 CORS_ALLOWED_ORIGINS = [
-    "https://mariseth.scaleforge.farm",
+    frontend,
     "https://mariseth-staging.135.181.238.146.sslip.io"
 ]
 CSRF_TRUSTED_ORIGINS = [

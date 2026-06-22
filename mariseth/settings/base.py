@@ -1,9 +1,9 @@
 from pathlib import Path
 
-import sentry_sdk
+# import sentry_sdk
 from decouple import config as env
 from kombu import Queue
-from sentry_sdk.integrations.django import DjangoIntegration
+# from sentry_sdk.integrations.django import DjangoIntegration
 
 from mariseth.celery_schedule import CELERY_BEAT_SCHEDULES, CELERY_TASK_ROUTES_QUEUES
 from mariseth.logging import LOGGERS
@@ -224,16 +224,16 @@ CHANNEL_LAYERS = {
 }
 CHANNEL_REDIS_PREFIX = "socket:"
 
-sentry_sdk.init(
-    dsn=env('SENTRY_DSN'),
-    traces_sample_rate=1.0,
-    _experiments={
-        "continuous_profiling_auto_start": True,
-    },
-    profiles_sample_rate=1,
-    environment=env('ENVIRONMENT'),
-    integrations=[DjangoIntegration()]
-)
+# sentry_sdk.init(
+#     dsn=env('SENTRY_DSN'),
+#     traces_sample_rate=1.0,
+#     _experiments={
+#         "continuous_profiling_auto_start": True,
+#     },
+#     profiles_sample_rate=1,
+#     environment=env('ENVIRONMENT'),
+#     integrations=[DjangoIntegration()]
+# )
 
 EMAIL_PROVIDER = "zepto_mail"
 SENDGRID_API_KEY = env("SENDGRID_API_KEY")
