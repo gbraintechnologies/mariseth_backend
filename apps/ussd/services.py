@@ -3,10 +3,17 @@ from attr import dataclass
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 import re
 
+from django.db.models import Model
+
 from apps.shared.models import Region, District
 from apps.ussd.enums import UssdSteps, UssdFlowType
 from apps.ussd.models import UssdSession
 
+
+@dataclass
+class ModalValue:
+    id:str
+    name:str
 @dataclass
 class UssdResult:
     message: str
@@ -159,31 +166,35 @@ class UssdSessionService:
             except ValueError:
                 return self.get_step_error("Invalid Date Format",session)
         elif current_step == UssdSteps.REGION:
-            if user_data == "#":
-                page_number = session.page_number
+            page_number = session.page_number
+            if user_data == "99":
                 if not self.is_valid_for_next(Region, page_number, "id"):
                     return self.get_step_error("Invalid Input",session)
                 return self.next_page(session)
             else:
-                region = Region.objects.get(pk=user_data)
-                if not region:
+                if not user_data.isdigit():
+                    return self.get_step_error("Invalid Choice", session)
+                value = self.get_page_item_selected(Region, user_data,"id", page_number)
+                if value is None or value.id == "":
                     return self.get_step_error("Invalid Choice",session)
-                payload["region_id"] = region.id
-                payload["region"] = region.name
+                payload["region_id"] = value.id
+                payload["region"] = value.name
                 session.payload = payload
                 return self.move_forward(session,UssdSteps.DISTRICT, UssdFlowType.FARM_REG)
         elif current_step == UssdSteps.DISTRICT:
-            if user_data == "#":
-                page_number = session.page_number
+            page_number = session.page_number
+            if user_data == "99":
                 if not self.is_valid_for_next(District, page_number,"id", region_id = payload["region_id"]):
                     return self.get_step_error("Invalid Input",session)
                 return self.next_page(session)
             else:
-                district = District.objects.filter(pk=user_data, region_id=payload["region_id"]).first()
-                if not district:
+                if not user_data.isdigit():
+                    return self.get_step_error("Invalid Choice", session)
+                value = self.get_page_item_selected(District, user_data,"id", page_number, region_id = payload["region_id"])
+                if value is None or value.id == "":
                     return self.get_step_error("Invalid Choice",session)
-                payload["district_id"] = district.id
-                payload["district"] = district.name
+                payload["district_id"] = value.id
+                payload["district"] = value.name
                 session.payload = payload
                 return self.move_forward(session,UssdSteps.CONFIRM_FARM_REG, UssdFlowType.FARM_REG)
         elif current_step == UssdSteps.CONFIRM_FARM_REG:
@@ -209,6 +220,22 @@ class UssdSessionService:
         else:
             return UssdResult(self.get_step_message(session),True)
 
+    def get_page_item_selected(self,model:Region | District, user_data:str, sort:str, page_number:int = 1, **kwargs) -> ModalValue:
+        try:
+            inp = int(user_data)
+            start = (page_number - 1) * self.page_size
+            end = start + self.page_size
+            if kwargs:
+                query = model.objects.filter(**kwargs).order_by(sort)
+            else:
+                query = model.objects.order_by(sort)
+            page_items = list(query[start:end])
+            query_list = page_items[inp - 1]
+            if not query_list:
+                return ModalValue("", "")
+            return ModalValue(str(query_list.id), query_list.name)
+        except (PageNotAnInteger, EmptyPage):
+            return ModalValue("", "")
 
     def is_valid_for_next(self, model, page_number:int,sort:str, *args, **kwargs) -> bool:
         if kwargs or args:
@@ -319,10 +346,10 @@ Please select your region"""
             paginator = Paginator(query_set, self.page_size)
             page_obj = paginator.get_page(page_number)
             regions = page_obj.object_list
-            for region in regions:
-                ussd_string += f"\n{region.id}. {region.name}"
+            for index, region in enumerate(regions,start=1):
+                ussd_string += f"\n{index}. {region.name}"
             if page_obj.has_next():
-                ussd_string += "\n#. Next"
+                ussd_string += "\n99. Next"
             ussd_string += "\n0. Back"
             return ussd_string
         elif current_step == UssdSteps.DISTRICT:
@@ -332,16 +359,16 @@ Please select your district"""
             paginator = Paginator(query_set, self.page_size)
             page_obj = paginator.get_page(page_number)
             districts = page_obj.object_list
-            for district in districts:
-                ussd_string += f"\n{district.id}. {district.name}"
+            for index, district in enumerate(districts,start=1):
+                ussd_string += f"\n{index}. {district.name}"
             if page_obj.has_next():
-                ussd_string += "\n#. Next"
+                ussd_string += "\n99. Next"
             ussd_string += "\n0. Back"
             return ussd_string
         elif current_step == UssdSteps.CONFIRM_FARM_REG:
             ussd_string = f"""Thank you
 Summary Detail
-Name: {payload["last_name"]} ${payload["first_name"]}
+Name: {payload["last_name"]} {payload["first_name"]}
 Date of Birth: {payload["dob"]}
 Location: {payload["district"]}, {payload["region"]}
 1.Confirm
