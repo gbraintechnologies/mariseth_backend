@@ -102,7 +102,7 @@ class UssdSessionService:
         session.delete()
         return UssdResult("Thank You", False)
 
-    def truncate_label(self,value: str, max_length: int = 10) -> str:
+    def truncate_label(self,value: str, max_length: int = 22) -> str:
         if len(value) <= max_length:
             return value
         return f"{value[:max_length - 3]}..."
