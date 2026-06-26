@@ -222,7 +222,7 @@ class UssdSessionService:
             session.history = history
             session.save(update_fields=["current_step", "history"])
             return UssdResult("""Thank you
-            Registration has been forward for approval""", False)
+Registration has been forward for approval""", False)
         else:
             return UssdResult(self.get_step_message(session),True)
 
