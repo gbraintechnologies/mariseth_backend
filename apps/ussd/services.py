@@ -19,7 +19,7 @@ class UssdResult:
     message: str
     continue_session: bool
 class UssdSessionService:
-    page_size = 10
+    page_size = 6
     def __init__(self):
          self.payload = {
              'id_type': "" ,
@@ -101,7 +101,10 @@ class UssdSessionService:
         session.delete()
         return UssdResult("Thank You", False)
 
-
+    def truncate_label(self,value: str, max_length: int = 10) -> str:
+        if len(value) <= max_length:
+            return value
+        return f"{value[:max_length - 3]}..."
     def get_step_error(self, message: str, session:UssdSession) -> UssdResult:
         return UssdResult(f"{message}\n{self.get_step_message(session)}",True)
 
@@ -347,7 +350,7 @@ Please select your region"""
             page_obj = paginator.get_page(page_number)
             regions = page_obj.object_list
             for index, region in enumerate(regions,start=1):
-                ussd_string += f"\n{index}. {region.name}"
+                ussd_string += f"\n{index}. {self.truncate_label(region.name)}"
             if page_obj.has_next():
                 ussd_string += "\n99. Next"
             ussd_string += "\n0. Back"
@@ -360,7 +363,7 @@ Please select your district"""
             page_obj = paginator.get_page(page_number)
             districts = page_obj.object_list
             for index, district in enumerate(districts,start=1):
-                ussd_string += f"\n{index}. {district.name}"
+                ussd_string += f"\n{index}. {self.truncate_label(district.name)}"
             if page_obj.has_next():
                 ussd_string += "\n99. Next"
             ussd_string += "\n0. Back"
