@@ -168,13 +168,13 @@ class UssdSessionService:
         elif current_step == UssdSteps.REGION:
             page_number = session.page_number
             if user_data == "99":
-                if not self.is_valid_for_next(Region, page_number, "id"):
-                    return self.get_step_error("Invalid Input",session)
+                if not self.is_valid_for_next(Region, page_number, "name"):
+                    return self.get_step_error("Invalid Choice",session)
                 return self.next_page(session)
             else:
                 if not user_data.isdigit():
                     return self.get_step_error("Invalid Choice", session)
-                value = self.get_page_item_selected(Region, user_data,"id", page_number)
+                value = self.get_page_item_selected(Region, user_data,"name", page_number)
                 if value is None or value.id == "":
                     return self.get_step_error("Invalid Choice",session)
                 payload["region_id"] = value.id
@@ -184,13 +184,13 @@ class UssdSessionService:
         elif current_step == UssdSteps.DISTRICT:
             page_number = session.page_number
             if user_data == "99":
-                if not self.is_valid_for_next(District, page_number,"id", region_id = payload["region_id"]):
-                    return self.get_step_error("Invalid Input",session)
+                if not self.is_valid_for_next(District, page_number,"name", region_id = payload["region_id"]):
+                    return self.get_step_error("Invalid Choice",session)
                 return self.next_page(session)
             else:
                 if not user_data.isdigit():
                     return self.get_step_error("Invalid Choice", session)
-                value = self.get_page_item_selected(District, user_data,"id", page_number, region_id = payload["region_id"])
+                value = self.get_page_item_selected(District, user_data,"name", page_number, region_id = payload["region_id"])
                 if value is None or value.id == "":
                     return self.get_step_error("Invalid Choice",session)
                 payload["district_id"] = value.id
@@ -230,9 +230,9 @@ class UssdSessionService:
             else:
                 query = model.objects.order_by(sort)
             page_items = list(query[start:end])
-            query_list = page_items[inp - 1]
-            if not query_list:
+            if len(page_items) <= inp:
                 return ModalValue("", "")
+            query_list = page_items[inp - 1]
             return ModalValue(str(query_list.id), query_list.name)
         except (PageNotAnInteger, EmptyPage):
             return ModalValue("", "")
@@ -342,7 +342,7 @@ class UssdSessionService:
         elif current_step == UssdSteps.REGION:
             ussd_string = """Location
 Please select your region"""
-            query_set = Region.objects.order_by("id")
+            query_set = Region.objects.order_by("name")
             paginator = Paginator(query_set, self.page_size)
             page_obj = paginator.get_page(page_number)
             regions = page_obj.object_list
@@ -355,7 +355,7 @@ Please select your region"""
         elif current_step == UssdSteps.DISTRICT:
             ussd_string = """Location
 Please select your district"""
-            query_set = District.objects.filter(region_id=payload["region_id"]).order_by("id")
+            query_set = District.objects.filter(region_id=payload["region_id"]).order_by("name")
             paginator = Paginator(query_set, self.page_size)
             page_obj = paginator.get_page(page_number)
             districts = page_obj.object_list
