@@ -20,7 +20,7 @@ class UssdResult:
     continue_session: bool
 class UssdSessionService:
     region_page_size = 8
-    district_page_size = 6
+    district_page_size = 4
     def __init__(self):
          self.payload = {
              'id_type': "" ,
@@ -360,8 +360,7 @@ Please select your region"""
             ussd_string += "\n0. Back"
             return ussd_string
         elif current_step == UssdSteps.DISTRICT:
-            ussd_string = """Location
-Please select your district"""
+            ussd_string = """select district"""
             query_set = District.objects.filter(region_id=payload["region_id"]).order_by("name")
             paginator = Paginator(query_set, self.district_page_size)
             page_obj = paginator.get_page(page_number)
