@@ -282,39 +282,39 @@ class UssdSessionService:
         payload = session.payload
         if current_step == UssdSteps.USSD_INIT:
             return """Welcome to Mariseth Farms
-            1. New Registration/ Update Profile
-            2. Submit a Request
-            3. Check Market Prices
-            4. My Account
-            5. Exit"""
+1. New Registration/ Update Profile
+2. Submit a Request
+3. Check Market Prices
+4. My Account
+5. Exit"""
         elif current_step == UssdSteps.FARM_REG_U_INIT:
             return """1. New Registration
-            2. Update Profile
-            0. Back"""
+2. Update Profile
+0. Back"""
         elif current_step == UssdSteps.FARM_REG_INIT:
             return """Choose ID Type
-            1. Ghana Card
-            2. NHIS
-            3. Driver's License
-            4. Voter's Card
-            5. Passport ID
-            6. No ID
-            0. Back"""
+1. Ghana Card
+2. NHIS
+3. Driver's License
+4. Voter's Card
+5. Passport ID
+6. No ID
+0. Back"""
         elif current_step == UssdSteps.ID_NUMBER:
             return """Enter ID Number (Do not include hyphen)
-            0. Back"""
+0. Back"""
         elif current_step == UssdSteps.FIRST_NAME:
             return """Please Enter First Name
-            0. Back"""
+0. Back"""
         elif current_step == UssdSteps.LAST_NAME:
             return """Please Enter Last Name
-            0. Back"""
+0. Back"""
         elif current_step == UssdSteps.DOB:
             return """Please Enter Date of Birth (YYYY-MM-DD)
-            0. Back"""
+0. Back"""
         elif current_step == UssdSteps.REGION:
             ussd_string = """Location
-            Please select your region"""
+Please select your region"""
             query_set = Region.objects.order_by("id")
             paginator = Paginator(query_set, self.page_size)
             page_obj = paginator.get_page(page_number)
@@ -327,7 +327,7 @@ class UssdSessionService:
             return ussd_string
         elif current_step == UssdSteps.DISTRICT:
             ussd_string = """Location
-            Please select your district"""
+Please select your district"""
             query_set = District.objects.filter(region_id=payload["region_id"]).order_by("id")
             paginator = Paginator(query_set, self.page_size)
             page_obj = paginator.get_page(page_number)
@@ -340,13 +340,13 @@ class UssdSessionService:
             return ussd_string
         elif current_step == UssdSteps.CONFIRM_FARM_REG:
             ussd_string = f"""Thank you
-            Summary Detail
-            Name: {payload["last_name"]} ${payload["first_name"]}
-            Date of Birth: {payload["dob"]}
-            Location: {payload["district"]}, {payload["region"]}
-            1.Confirm
-            2. Exit
-            0. Back"""
+Summary Detail
+Name: {payload["last_name"]} ${payload["first_name"]}
+Date of Birth: {payload["dob"]}
+Location: {payload["district"]}, {payload["region"]}
+1.Confirm
+2. Exit
+0. Back"""
             return ussd_string
         else:
             return ""
