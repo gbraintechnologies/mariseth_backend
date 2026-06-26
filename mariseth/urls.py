@@ -21,6 +21,7 @@ urlpatterns = [
     path('api/v1/', include('apps.outflow.urls')),
     path('api/v1/', include('apps.accounting.urls')),
     path('api/v1/', include('apps.hr.urls')),
+    path('api/v1/', include('apps.ussd.urls')),
 ]
 
 if settings.ENVIRONMENT in ['local', 'staging']:
