@@ -30,3 +30,4 @@ aiohttp==3.11.10
 uvicorn[standard]>=0.34.2
 gunicorn==23.0.0
 sendgrid==6.12.2
+python-dotenv

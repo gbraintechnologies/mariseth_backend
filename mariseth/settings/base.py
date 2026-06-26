@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'apps.outflow.apps.OutflowConfig',
     'apps.accounting.apps.AccountingConfig',
     'apps.hr.apps.HrConfig',
+    'apps.ussd.apps.UssdConfig',
 ]
 
 MIDDLEWARE = [
