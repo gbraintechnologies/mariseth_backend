@@ -171,7 +171,7 @@ class UssdSessionService:
                 return self.get_step_error("Invalid Date Format",session)
         elif current_step == UssdSteps.REGION:
             page_number = session.page_number
-            if user_data == "99":
+            if user_data == "#":
                 if not self.is_valid_for_next(Region, page_number, self.region_page_size, "name"):
                     return self.get_step_error("Invalid Choice",session)
                 return self.next_page(session)
@@ -187,7 +187,7 @@ class UssdSessionService:
                 return self.move_forward(session,UssdSteps.DISTRICT, UssdFlowType.FARM_REG)
         elif current_step == UssdSteps.DISTRICT:
             page_number = session.page_number
-            if user_data == "99":
+            if user_data == "#":
                 if not self.is_valid_for_next(District, page_number, self.district_page_size,"name", region_id = payload["region_id"]):
                     return self.get_step_error("Invalid Choice",session)
                 return self.next_page(session)
@@ -347,8 +347,7 @@ class UssdSessionService:
             return """Please Enter Date of Birth (YYYY-MM-DD)
 0. Back"""
         elif current_step == UssdSteps.REGION:
-            ussd_string = """Location
-Please select your region"""
+            ussd_string = """Select Region"""
             query_set = Region.objects.order_by("name")
             paginator = Paginator(query_set, self.region_page_size)
             page_obj = paginator.get_page(page_number)
@@ -356,11 +355,11 @@ Please select your region"""
             for index, region in enumerate(regions,start=1):
                 ussd_string += f"\n{index}. {self.truncate_label(region.name)}"
             if page_obj.has_next():
-                ussd_string += "\n99. Next"
+                ussd_string += "\n#. Next"
             ussd_string += "\n0. Back"
             return ussd_string
         elif current_step == UssdSteps.DISTRICT:
-            ussd_string = """select district"""
+            ussd_string = """Select District"""
             query_set = District.objects.filter(region_id=payload["region_id"]).order_by("name")
             paginator = Paginator(query_set, self.district_page_size)
             page_obj = paginator.get_page(page_number)
@@ -368,7 +367,7 @@ Please select your region"""
             for index, district in enumerate(districts,start=1):
                 ussd_string += f"\n{index}. {self.truncate_label(district.name)}"
             if page_obj.has_next():
-                ussd_string += "\n99. Next"
+                ussd_string += "\n#. Next"
             ussd_string += "\n0. Back"
             return ussd_string
         elif current_step == UssdSteps.CONFIRM_FARM_REG:
