@@ -19,7 +19,8 @@ class UssdResult:
     message: str
     continue_session: bool
 class UssdSessionService:
-    page_size = 6
+    region_page_size = 8
+    district_page_size = 6
     def __init__(self):
          self.payload = {
              'id_type': "" ,
@@ -171,13 +172,13 @@ class UssdSessionService:
         elif current_step == UssdSteps.REGION:
             page_number = session.page_number
             if user_data == "99":
-                if not self.is_valid_for_next(Region, page_number, "name"):
+                if not self.is_valid_for_next(Region, page_number, self.region_page_size, "name"):
                     return self.get_step_error("Invalid Choice",session)
                 return self.next_page(session)
             else:
                 if not user_data.isdigit():
                     return self.get_step_error("Invalid Choice", session)
-                value = self.get_page_item_selected(Region, user_data,"name", page_number)
+                value = self.get_page_item_selected(Region, user_data,"name", self.region_page_size, page_number)
                 if value is None or value.id == "":
                     return self.get_step_error("Invalid Choice",session)
                 payload["region_id"] = value.id
@@ -187,13 +188,15 @@ class UssdSessionService:
         elif current_step == UssdSteps.DISTRICT:
             page_number = session.page_number
             if user_data == "99":
-                if not self.is_valid_for_next(District, page_number,"name", region_id = payload["region_id"]):
+                if not self.is_valid_for_next(District, page_number, self.district_page_size,"name", region_id = payload["region_id"]):
                     return self.get_step_error("Invalid Choice",session)
                 return self.next_page(session)
             else:
                 if not user_data.isdigit():
                     return self.get_step_error("Invalid Choice", session)
-                value = self.get_page_item_selected(District, user_data,"name", page_number, region_id = payload["region_id"])
+                value = self.get_page_item_selected(District, user_data,"name"
+                                                    , self.district_page_size, page_number
+                                                    , region_id = payload["region_id"])
                 if value is None or value.id == "":
                     return self.get_step_error("Invalid Choice",session)
                 payload["district_id"] = value.id
@@ -223,11 +226,12 @@ class UssdSessionService:
         else:
             return UssdResult(self.get_step_message(session),True)
 
-    def get_page_item_selected(self,model:Region | District, user_data:str, sort:str, page_number:int = 1, **kwargs) -> ModalValue:
+    def get_page_item_selected(self,model:Region | District, user_data:str, sort:str, page_size:int
+                               , page_number:int = 1, **kwargs) -> ModalValue:
         try:
             inp = int(user_data)
-            start = (page_number - 1) * self.page_size
-            end = start + self.page_size
+            start = (page_number - 1) * page_size
+            end = start + page_size
             if kwargs:
                 query = model.objects.filter(**kwargs).order_by(sort)
             else:
@@ -240,13 +244,13 @@ class UssdSessionService:
         except (PageNotAnInteger, EmptyPage):
             return ModalValue("", "")
 
-    def is_valid_for_next(self, model, page_number:int,sort:str, *args, **kwargs) -> bool:
+    def is_valid_for_next(self, model, page_number:int,page_size,sort:str, *args, **kwargs) -> bool:
         if kwargs or args:
             value_set = model.objects.filter(**kwargs).order_by(sort)
         else:
             value_set = model.objects.order_by(sort)
         try:
-            paginator = Paginator(value_set, self.page_size)
+            paginator = Paginator(value_set, page_size)
             page_obj = paginator.page(page_number)
             return page_obj.has_next()
         except (PageNotAnInteger, EmptyPage):
@@ -346,7 +350,7 @@ class UssdSessionService:
             ussd_string = """Location
 Please select your region"""
             query_set = Region.objects.order_by("name")
-            paginator = Paginator(query_set, self.page_size)
+            paginator = Paginator(query_set, self.region_page_size)
             page_obj = paginator.get_page(page_number)
             regions = page_obj.object_list
             for index, region in enumerate(regions,start=1):
@@ -359,7 +363,7 @@ Please select your region"""
             ussd_string = """Location
 Please select your district"""
             query_set = District.objects.filter(region_id=payload["region_id"]).order_by("name")
-            paginator = Paginator(query_set, self.page_size)
+            paginator = Paginator(query_set, self.district_page_size)
             page_obj = paginator.get_page(page_number)
             districts = page_obj.object_list
             for index, district in enumerate(districts,start=1):
