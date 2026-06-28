@@ -161,7 +161,7 @@ class FarmerRegistrationRequest(BaseModel):
     date_of_birth = models.DateField(null=True, blank=True)
     email = models.EmailField(null=True, blank=True)
     comments = models.TextField(blank=True, null=True)
-    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default="Pending")
+    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default="pending")
     reviewed_by = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, blank=True, )
     reviewed_at = models.DateTimeField(null=True, blank=True)
 
