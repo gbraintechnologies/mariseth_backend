@@ -22,8 +22,10 @@ from apps.sms.utils import send_sms
 class FarmerRegistrationRequestViewSet(viewsets.GenericViewSet):
     def get_permissions(self):
         permissions = {
-            'list': VIEW_FARMER_REG_REQUEST,
-            'patch': APPROVE_OR_REJECT_FARMER_REG_REQUEST,
+            "list": VIEW_FARMER_REG_REQUEST,
+            "retrieve": VIEW_FARMER_REG_REQUEST,
+            "partial_update": APPROVE_OR_REJECT_FARMER_REG_REQUEST,
+            "update": APPROVE_OR_REJECT_FARMER_REG_REQUEST,
         }
         user_permission = permissions.get(self.action, None)
         if user_permission:
@@ -58,7 +60,7 @@ class FarmerRegistrationRequestViewSet(viewsets.GenericViewSet):
             registration_request.reviewed_at = timezone.now()
             registration_request.comments = serializer.validated_data['comments']
             registration_request.save(update_fields=['reviewed_by', 'reviewed_at', 'status', 'comments'])
-            send_sms(registration_request.phone_number, f"""Hello {registration_request.first_name}!,
+            send_sms.delay(registration_request.phone_number, f"""Hello {registration_request.first_name}!,
 Your farmer registration request was not approved.
 Reason: {registration_request.comments or "Please contact the farm office for further details."}
 You may dial *923# to submit a new registration request.""")
