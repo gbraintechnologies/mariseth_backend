@@ -43,7 +43,8 @@ from apps.shared.literals import (
     VIEW_CUSTOMER, VIEW_DEPARTMENT, VIEW_EMPLOYEE, VIEW_FARM, VIEW_FARMER,
     VIEW_GROUPS_AND_ROLES, VIEW_INFLOW_APPROVAL, VIEW_INFLOW_ORDER, VIEW_INPUT_CREDIT, VIEW_INVOICE, VIEW_JOB_TITLE,
     VIEW_LEAVE_REQUEST, VIEW_LEAVE_TYPE, VIEW_OUTFLOW_APPROVAL, VIEW_OUTFLOW_ORDER,
-    VIEW_PRODUCT, VIEW_TRAINING, VIEW_WAREHOUSE, VIEW_WAYBILL, WAREHOUSE_MANAGER_FULFILL_CREDIT
+    VIEW_PRODUCT, VIEW_TRAINING, VIEW_WAREHOUSE, VIEW_WAYBILL, WAREHOUSE_MANAGER_FULFILL_CREDIT,
+    VIEW_FARMER_REG_REQUEST,APPROVE_OR_REJECT_FARMER_REG_REQUEST
 )
 from apps.shared.models import BaseModel
 from apps.shared.overrides import FileNameEngine
@@ -384,6 +385,8 @@ class User(AbstractUser, BaseModel, PermissionsMixin):
             (CREATE_HELP, 'create a new help entry'),
             (UPDATE_HELP, 'update an existing help entry'),
             (DELETE_HELP, 'delete a help entry'),
+            (VIEW_FARMER_REG_REQUEST, 'view farmer registration request'),
+            (APPROVE_OR_REJECT_FARMER_REG_REQUEST, 'approve or decline farmer registration request'),
         ]
 
     def set_email_verification_code(self):

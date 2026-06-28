@@ -4,7 +4,10 @@ from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 import re
 
 from django.db.models import Model
+from faker.providers import phone_number
 
+from apps.farm.models import Farmer, FarmerRegistrationRequest
+from apps.farm.utils import create_farmer_reg_request
 from apps.shared.models import Region, District
 from apps.ussd.enums import UssdSteps, UssdFlowType
 from apps.ussd.models import UssdSession
@@ -87,6 +90,12 @@ class UssdSessionService:
             if not selected_choice:
                 return self.get_step_error("Invalid Choice",session)
             if selected_choice == "Farmer Registration":
+                if self.farmer_exists(phone_number):
+                    return UssdResult("A farmer is already registered with this number", False)
+                if self.status_exists(phone_number, "pending"):
+                    return UssdResult("A pending registration request already exist", False)
+                if self.status_exists(phone_number, "approved"):
+                    return UssdResult("Your registration request has already been approved", False)
                 return self.move_forward(session,UssdSteps.FARM_REG_INIT,UssdFlowType.FARM_REG,0)
             elif selected_choice == "Back":
                 return self.go_back(session)
@@ -98,6 +107,14 @@ class UssdSessionService:
             return self.exit(session)
 
 
+    def farmer_exists(self,phone_number:str) -> bool:
+        return Farmer.objects.filter(phone_number=phone_number).exists()
+
+    def status_exists(self, phone_number:str, status:str) -> bool:
+        farmer_reg_request = FarmerRegistrationRequest.objects.filter(phone_number=phone_number).order_by("date_created").last()
+        return not not (farmer_reg_request and farmer_reg_request.status == status)
+
+
     def exit(self,session:UssdSession):
         session.delete()
         return UssdResult("Thank You", False)
@@ -106,6 +123,7 @@ class UssdSessionService:
         if len(value) <= max_length:
             return value
         return f"{value[:max_length - 3]}..."
+
     def get_step_error(self, message: str, session:UssdSession) -> UssdResult:
         return UssdResult(f"{message}\n{self.get_step_message(session)}",True)
 
@@ -118,6 +136,7 @@ class UssdSessionService:
             "first_name": session.payload.get("first_name", ""),
             "last_name": session.payload.get("last_name", ""),
             "dob": session.payload.get("dob", ""),
+            "gender": session.payload.get("gender", ""),
             "id_type": session.payload.get("id_type", ""),
             "id_number": session.payload.get("id_number", ""),
             "region_id": session.payload.get("region_id", ""),
@@ -160,7 +179,18 @@ class UssdSessionService:
                 return self.get_step_error("Invalid Last Name",session)
             payload["last_name"] = user_data
             session.payload = payload
-            return self.move_forward(session,UssdSteps.DOB, UssdFlowType.FARM_REG)
+            return self.move_forward(session,UssdSteps.GENDER, UssdFlowType.FARM_REG)
+        elif current_step == UssdSteps.GENDER:
+            gender_choices = {
+                "1": "Male",
+                "2": "Female"
+            }
+            selected_choice = gender_choices.get(user_data)
+            if not selected_choice:
+                return self.get_step_error("Invalid Choice",session)
+            payload["gender"] = selected_choice
+            session.payload = payload
+            return self.move_forward(session, UssdSteps.DOB, UssdFlowType.FARM_REG)
         elif current_step == UssdSteps.DOB:
             try:
                 date_of_birth = datetime.date.fromisoformat(user_data)
@@ -221,6 +251,7 @@ class UssdSessionService:
             })
             session.history = history
             session.save(update_fields=["current_step", "history"])
+            create_farmer_reg_request(session.phone_number, payload, "USSD")
             return UssdResult("""Thank you
 Registration has been forward for approval""", False)
         else:
@@ -343,6 +374,11 @@ Registration has been forward for approval""", False)
         elif current_step == UssdSteps.LAST_NAME:
             return """Please Enter Last Name
 0. Back"""
+        elif current_step == UssdSteps.GENDER:
+            return """Select Gender
+1. Male
+2. Female
+0. Back"""
         elif current_step == UssdSteps.DOB:
             return """Please Enter Date of Birth (YYYY-MM-DD)
 0. Back"""
@@ -376,7 +412,7 @@ Summary Detail
 Name: {payload["last_name"]} {payload["first_name"]}
 Date of Birth: {payload["dob"]}
 Location: {payload["district"]}, {payload["region"]}
-1.Confirm
+1. Confirm
 2. Exit
 0. Back"""
             return ussd_string

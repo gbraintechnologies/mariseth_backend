@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'apps.accounting.apps.AccountingConfig',
     'apps.hr.apps.HrConfig',
     'apps.ussd.apps.UssdConfig',
+    'apps.sms.apps.SMSConfig',
 ]
 
 MIDDLEWARE = [

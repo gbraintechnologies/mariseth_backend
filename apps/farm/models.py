@@ -116,6 +116,7 @@ class Farmer(BaseModel):
                                     related_name='smallholder_farmers')
     leadership_experience = models.JSONField(null=True, blank=True)
     support_assistance = models.JSONField(null=True, blank=True)
+    farmer_reg_request = models.OneToOneField('FarmerRegistrationRequest', on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
         return f"{self.id} - {self.first_name} {self.last_name}"
@@ -128,6 +129,41 @@ class Farmer(BaseModel):
         if self.user_id and self.user.is_active:
             self.user.soft_delete(owner=owner, fields_to_encrypt=['email', 'phone_number', 'username'])
 
+class FarmerRegistrationRequest(BaseModel):
+    REQUEST_CHANNELS = (
+        ("USSD", "USSD"),
+    )
+    STATUS_CHOICES = (
+        ("pending", "Pending"),
+        ("approved", "Approved"),
+        ("rejected", "Rejected"),
+    )
+    id = models.AutoField(primary_key=True)
+    organization = models.ForeignKey('organizations.Organization', on_delete=models.SET_NULL, null=True, blank=True)
+    phone_number = models.CharField(max_length=100, blank=True, null=True)
+    id_type = models.CharField(max_length=50, null=True, blank=True)
+    id_number = models.CharField(max_length=50, null=True, blank=True)
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    gender = models.CharField(max_length=1, choices=Farmer.GENDER_CHOICES)
+    other_names = models.CharField(max_length=100, blank=True, null=True)
+    request_channel = models.CharField(
+        max_length=100,
+        choices=REQUEST_CHANNELS,
+        default="USSD",
+    )
+    country = models.CharField(max_length=100, null=True, blank=True)
+    region = models.ForeignKey('shared.Region', on_delete=models.SET_NULL, null=True,
+                               blank=True)
+    district = models.ForeignKey('shared.District', on_delete=models.SET_NULL, null=True,
+                                 blank=True)
+    address = models.CharField(max_length=255, null=True, blank=True)
+    date_of_birth = models.DateField(null=True, blank=True)
+    email = models.EmailField(null=True, blank=True)
+    comments = models.TextField(blank=True, null=True)
+    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default="Pending")
+    reviewed_by = models.ForeignKey('accounts.User', on_delete=models.SET_NULL, null=True, blank=True, )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
 
 class FarmerDocument(BaseModel):
     farmer = models.ForeignKey('Farmer', related_name='documents', on_delete=models.CASCADE)

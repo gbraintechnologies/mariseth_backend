@@ -1,6 +1,14 @@
-from django.db.models import Max, Q
+import datetime
+from http import HTTPStatus
 
-from apps.farm.models import Farm, Farmer, Product
+from attr import dataclass
+from celery import shared_task
+from django.db.models import Max, Q
+from rest_framework.response import Response
+
+from apps.farm.models import Farm, Farmer, Product, FarmerRegistrationRequest
+from apps.organizations.views import organization
+from apps.sms.utils import send_sms
 
 
 def generate_farm_id(name):
@@ -122,7 +130,36 @@ def build_farm_filter_q(params, organization):
 
     return filter_q
 
+def build_farmer_reg_filter_q(params,organization):
+    filter_q = Q(is_active=True, organization=organization)
 
+    query = params.get('query')
+    status = params.get('status')
+    region = params.get('region')
+    district = params.get('district')
+    date_from = params.get('date_from')
+    date_to = params.get('date_to')
+
+    if region:
+        filter_q &= Q(region=region)
+
+    if district:
+        filter_q &= Q(district=district)
+
+    if date_from and date_to:
+        filter_q &= Q(date_created__date__range=[date_from, date_to])
+
+    if status:
+        filter_q &= Q(status=status)
+
+    if query:
+        filter_q &= (
+                Q(name__icontains=query) |
+                Q(farm_id__icontains=query) |
+                Q(farmer__first_name__icontains=query) |
+                Q(farmer__last_name__icontains=query)
+        )
+    return filter_q
 def build_farmer_filter_q(params, organization):
     filter_q = Q(is_active=True, organization=organization)
 
@@ -206,3 +243,40 @@ def build_product_filter_q(params, organization):
         )
 
     return filter_q
+
+@shared_task
+def create_farmer_reg_request(phone_number, payload, channel):
+    if not Farmer.objects.filter(phone_number=phone_number).exists():
+        farmer_reg_request = FarmerRegistrationRequest.objects.filter(phone_number=phone_number).order_by("date_created").last()
+        if not farmer_reg_request or farmer_reg_request.status == "Rejected":
+            try:
+                date_of_birth = datetime.date.fromisoformat(payload.get("date_of_birth",""))
+            except ValueError:
+                date_of_birth = datetime.date.fromisoformat("2000-01-01")
+            gender = payload.get("gender","")
+            if gender == "Male":
+                gender = "m"
+            else:
+                gender = "f"
+            FarmerRegistrationRequest.objects.create(
+                phone_number=phone_number,
+                id_type=payload.get("id_type",""),
+                id_number=payload.get("id_number",""),
+                first_name=payload.get("first_name",""),
+                last_name=payload.get("last_name",""),
+                email=payload.get("email",""),
+                region_id=payload.get("region_id",""),
+                district_id=payload.get("district_id",""),
+                date_of_birth=date_of_birth,
+                gender=gender,
+                country=payload.get("country","Ghana"),
+                address=payload.get("address",""),
+                request_channel=channel,
+                organization_id="1"
+            )
+            send_sms(phone_number,f"""Hello {payload.get("first_name", "Person")}!,
+Your registration request has been submitted and is awaiting approval. You will be notified by SMS once it is approved.""")
+
+
+
+

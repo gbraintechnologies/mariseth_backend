@@ -24,5 +24,5 @@ urlpatterns = [
     path('api/v1/', include('apps.ussd.urls')),
 ]
 
-if settings.ENVIRONMENT in ['local', 'staging']:
+if settings.ENVIRONMENT in ['local', 'staging','production']:
     urlpatterns += [path('', include('mariseth.swagger_urls'))]

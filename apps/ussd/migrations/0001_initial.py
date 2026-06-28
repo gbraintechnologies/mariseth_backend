@@ -22,7 +22,7 @@ class Migration(migrations.Migration):
                 ('is_active', models.BooleanField(default=True)),
                 ('phone_number', models.CharField(db_index=True, max_length=20)),
                 ('session_id', models.CharField(max_length=100, unique=True)),
-                ('current_step', models.CharField(choices=[('USSD_INIT', 'USSD_INIT'), ('FARM_REG_U_INIT', 'FARM_REG_U_INIT'), ('FARM_REG_INIT', 'FARM_REG_INIT'), ('CHOOSE_ID', 'CHOOSE_ID'), ('ID_NUMBER', 'ID_NUMBER'), ('FIRST_NAME', 'FIRST_NAME'), ('LAST_NAME', 'LAST_NAME'), ('DOB', 'DOB'), ('REGION', 'REGION'), ('DISTRICT', 'DISTRICT'), ('FARM_SIZE', 'FARM_SIZE'), ('CONFIRM_FARM_REG', 'CONFIRM_FARM_REG'), ('COMPLETE', 'COMPLETE'), ('END', 'END')], default='USSD_INIT', max_length=100)),
+                ('current_step', models.CharField(choices=[('USSD_INIT', 'USSD_INIT'), ('FARM_REG_U_INIT', 'FARM_REG_U_INIT'), ('FARM_REG_INIT', 'FARM_REG_INIT'), ('CHOOSE_ID', 'CHOOSE_ID'), ('ID_NUMBER', 'ID_NUMBER'), ('FIRST_NAME', 'FIRST_NAME'), ('LAST_NAME', 'LAST_NAME'), ('GENDER','GENDER'), ('DOB', 'DOB'), ('REGION', 'REGION'), ('DISTRICT', 'DISTRICT'), ('FARM_SIZE', 'FARM_SIZE'), ('CONFIRM_FARM_REG', 'CONFIRM_FARM_REG'), ('COMPLETE', 'COMPLETE'), ('END', 'END')], default='USSD_INIT', max_length=100)),
                 ('payload', models.JSONField(blank=True, default=dict)),
                 ('date_created', models.DateTimeField(auto_now_add=True)),
                 ('date_modified', models.DateTimeField(auto_now_add=True)),
