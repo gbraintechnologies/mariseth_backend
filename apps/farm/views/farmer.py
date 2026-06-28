@@ -56,7 +56,7 @@ class FarmerViewSet(viewsets.GenericViewSet):
                 farmer_reg_request.status = "approved"
                 farmer_reg_request.reviewed_by = request.user
                 farmer_reg_request.reviewed_at = timezone.now()
-                farmer_reg_request.save(update_fields=['status'])
+                farmer_reg_request.save(update_fields=['status',"reviewed_by", "reviewed_at"])
                 send_sms(farmer_reg_request.phone_number, f"""Hello {farmer_reg_request.first_name}!,
 Your farmer registration has been approved. To view your details, dial *923# and select Option 4: My Account.""")
             return Response(FullFarmerSerializer(serializer.instance).data, status=status.HTTP_201_CREATED)
