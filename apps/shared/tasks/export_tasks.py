@@ -11,14 +11,15 @@ from apps.credit.models import Credit, CreditPayback
 from apps.credit.serializers.credits import CreditExportSerializer
 from apps.credit.serializers.payback import PaybackExportSerializer
 from apps.credit.utils import build_credit_filter_q, build_payback_filter_q
-from apps.farm.models import Farm, Farmer, Product
+from apps.farm.models import Farm, Farmer, Product, FarmerRegistrationRequest
 from apps.farm.serializers.farm import FarmExportSerializer
 from apps.farm.serializers.farmer import FarmerExportSerializer
+from apps.farm.serializers.farmer_reg_request import FarmerRegistrationRequestResponseSerializer
 from apps.farm.serializers.products import ProductExportSerializer
 from apps.farm.utils import (
     build_farm_filter_q,
     build_farmer_filter_q,
-    build_product_filter_q,
+    build_product_filter_q, build_farmer_reg_filter_q,
 )
 from apps.inflow.models import InflowOrder
 from apps.inflow.serializers import InflowOrderExportSerializer
@@ -302,6 +303,73 @@ def process_farmer_export(filter_params):
         sentry_sdk.capture_exception(e)
         logger.error(f"Farmer export failed: {str(e)}")
 
+@shared_task
+def process_farmer_reg_req_export(filter_params):
+    try:
+        user = User.objects.get(pk=filter_params["user_id"])
+        organization = Organization.objects.get(pk=filter_params["organization_id"])
+
+        filter_q = build_farmer_reg_filter_q(filter_params, organization)
+
+        farmer_reg_requests = (
+            FarmerRegistrationRequest.objects.select_related(
+                "reviewed_by", "region", "district"
+            )
+            .filter(filter_q)
+            .order_by("-date_created")
+            .distinct()
+        )
+
+        serializer = FarmerRegistrationRequestResponseSerializer(farmer_reg_requests, many=True)
+        export_data = serializer.data
+
+        df = pd.DataFrame(export_data)
+
+        # Base column mapping
+        column_map = {
+            "id": "ID",
+            "first_name": "First Name",
+            "last_name": "Last Name",
+            "gender": "Gender",
+            "date_of_birth": "Date of Birth",
+            "id_type": "ID Type",
+            "id_number": "ID Number",
+            "phone_number": "Phone Number",
+            "email": "Email",
+            "region": "Region",
+            "district": "District",
+            "country": "Country",
+            "request_channel": "Request Channel",
+            "status": "Status",
+            "reviewed_by": "Approved By",
+            "reviewed_at": "Approved At",
+            "date_created": "Date Created",
+        }
+
+        df.rename(columns=column_map, inplace=True)
+
+        file_name = f"Farmers_Registration_Request_Export_{datetime.now().strftime('%Y-%m-%d_%H-%M')}.csv"
+        csv_buffer = StringIO()
+        df.to_csv(csv_buffer, index=False)
+        file_data = BytesIO(csv_buffer.getvalue().encode("utf-8"))
+
+        s3_url = upload_to_s3(file_data, file_name)
+
+        if not s3_url:
+            return
+
+        group_names = [f"user_{user.id}"]
+        message = {
+            "has_permission": True,
+            "results": s3_url,
+            "export_type": "farmer_export",
+        }
+        send_client_notification(
+            message=message, message_type="export_notification", group_names=group_names
+        )
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
+        logger.error(f"Farmer export failed: {str(e)}")
 
 @shared_task
 def process_credit_export(filter_params):

@@ -37,6 +37,8 @@ LIST_FARMERS = 'farmer|list_farmers'
 UPLOAD_FARMERS = 'farmer|upload_farmers'
 GET_SMALLHOLDERS_BY_LEAD = 'farmer|get_smallholders_by_lead'
 GET_FARMER_CREDIT_HISTORY = 'farmer|get_farmer_credit_history'
+VIEW_FARMER_REG_REQUEST = 'farmer|view_farmer_reg_request'
+APPROVE_OR_REJECT_FARMER_REG_REQUEST = 'farmer|approve_or_reject_farmer_reg_request'
 
 # Farmer
 CREATE_PRODUCT = 'product|create_product'
@@ -46,6 +48,7 @@ VIEW_PRODUCT = 'product|view_product'
 LIST_PRODUCTS = 'product|list_products'
 UPLOAD_PRODUCTS = 'product|upload_products'
 GET_PRODUCT_MOVEMENT = 'product|get_product_movement'
+
 
 # Credits
 CREATE_CREDIT = 'credit|create_credit'

@@ -3,7 +3,7 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
 from apps.accounts.serializers.users import ShortUserSerializer
-from apps.farm.models import Farm, Farmer, FarmerDocument
+from apps.farm.models import Farm, Farmer, FarmerDocument, FarmerRegistrationRequest
 from apps.farm.serializers.farm import FullFarmSerializer
 from apps.farm.utils import generate_farmer_id
 from apps.shared.models import District, Region
@@ -23,6 +23,7 @@ class ShortFarmerSerializer(serializers.ModelSerializer):
         model = Farmer
         fields = ('id', 'first_name', 'last_name', 'type')
         read_only_fields = ('id',)
+
 
 
 class FarmerSerializer(serializers.ModelSerializer):
@@ -46,6 +47,11 @@ class FarmerSerializer(serializers.ModelSerializer):
         required=False,
         allow_null=True,
     )
+    farmer_reg_request = serializers.PrimaryKeyRelatedField(
+        queryset=FarmerRegistrationRequest.objects.all(),
+        required=False,
+        allow_null=True,
+    )
     documents = FarmerDocumentSerializer(many=True, required=False)
     phone_number = serializers.CharField(
         validators=[
@@ -63,7 +69,8 @@ class FarmerSerializer(serializers.ModelSerializer):
             'id', 'type', 'first_name', 'last_name', 'other_names', 'gender',
             'date_of_birth', 'id_number', 'phone_number', 'email', 'address',
             'village', 'region', 'district', 'country', 'farm', 'lead_farmer',
-            'leadership_experience', 'support_assistance', 'id_type', 'documents'
+            'leadership_experience', 'support_assistance', 'id_type', 'documents',
+            'farmer_reg_request'
         )
         read_only_fields = ('id',)
 
@@ -81,6 +88,10 @@ class FarmerSerializer(serializers.ModelSerializer):
         if data.get('district') and not data.get('region'):
             raise serializers.ValidationError(
                 {'region': 'Region must be provided when district is specified.'}
+            )
+        if data.get('phone_number') != data.get('farmer_reg_request').phone_number:
+            raise serializers.ValidationError(
+                {'phone_number': 'Phone number must be provided when farmer_reg_request is specified.'}
             )
         return data
 
