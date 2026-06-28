@@ -48,21 +48,18 @@ class FarmerViewSet(viewsets.GenericViewSet):
 
     @transaction.atomic
     def create(self, request):
-        try:
-            serializer = FarmerSerializer(data=request.data, context={'request': request})
-            if serializer.is_valid():
-                farmer = serializer.save(organization=request.organization)
-                farmer_reg_request = farmer.farmer_reg_request
-                if farmer_reg_request:
-                    farmer_reg_request.status = "approved"
-                    farmer_reg_request.reviewed_by = request.user
-                    farmer_reg_request.reviewed_at = timezone.now()
-                    farmer_reg_request.save(update_fields=['status'])
-                    send_sms.delay(farmer_reg_request.phone_number, f"""Hello {farmer_reg_request.first_name}!,
-    Your farmer registration has been approved. To view your details, dial *923# and select Option 4: My Account.""")
-                return Response(FullFarmerSerializer(serializer.instance).data, status=status.HTTP_201_CREATED)
-        except Exception as ex:
-            print(ex)
+        serializer = FarmerSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            farmer = serializer.save(organization=request.organization)
+            farmer_reg_request = farmer.farmer_reg_request
+            if farmer_reg_request:
+                farmer_reg_request.status = "approved"
+                farmer_reg_request.reviewed_by = request.user
+                farmer_reg_request.reviewed_at = timezone.now()
+                farmer_reg_request.save(update_fields=['status'])
+                send_sms(farmer_reg_request.phone_number, f"""Hello {farmer_reg_request.first_name}!,
+Your farmer registration has been approved. To view your details, dial *923# and select Option 4: My Account.""")
+            return Response(FullFarmerSerializer(serializer.instance).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @transaction.atomic

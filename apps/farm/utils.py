@@ -274,7 +274,7 @@ def create_farmer_reg_request(phone_number, payload, channel):
                 request_channel=channel,
                 organization_id="1"
             )
-            send_sms.delay(phone_number,f"""Hello {payload.get("first_name", "Person")}!,
+            send_sms(phone_number,f"""Hello {payload.get("first_name", "Person")}!,
 Your registration request has been submitted and is awaiting approval. You will be notified by SMS once it is approved.""")
 
 

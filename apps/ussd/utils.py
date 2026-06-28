@@ -268,7 +268,7 @@ Registration has been forward for approval""", False)
             else:
                 query = model.objects.order_by(sort)
             page_items = list(query[start:end])
-            if len(page_items) <= inp:
+            if len(page_items) < inp:
                 return ModalValue("", "")
             query_list = page_items[inp - 1]
             return ModalValue(str(query_list.id), query_list.name)
